@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+ <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <!-- Diagram content (shape and connector positions) -->
+    <edmx:Diagrams>
+      <Diagram DiagramId="02d60ce2e7084096a974d7fc9c368373" Name="Diagram1">
+        <EntityTypeShape EntityType="DVPModel.BillOfMaterial" Width="1.5" PointX="11.25" PointY="8.125" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.CierreStatus" Width="1.5" PointX="12" PointY="16.5" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.Clasificacion" Width="1.5" PointX="7.5" PointY="24.25" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.ClasificacionMaterial" Width="1.5" PointX="3.75" PointY="4.375" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.ComponenteEquipo" Width="1.5" PointX="7.5" PointY="21.125" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.DataOperacion" Width="1.5" PointX="8.25" PointY="7" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.Entradas" Width="1.5" PointX="0.75" PointY="0.75" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.Equipo" Width="1.5" PointX="3" PointY="10.75" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.Gerencia" Width="1.5" PointX="3.75" PointY="8.125" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.Inventarios" Width="1.5" PointX="2.75" PointY="0.75" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.Material" Width="1.5" PointX="6" PointY="3.375" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.Pais" Width="1.5" PointX="0.75" PointY="11.875" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.Paros" Width="1.5" PointX="9.75" PointY="15.125" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.Planta" Width="1.5" PointX="0.75" PointY="8.125" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.Proceso" Width="1.5" PointX="0.75" PointY="15.25" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.Rol" Width="1.5" PointX="9" PointY="4.125" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.Salidas" Width="1.5" PointX="0.75" PointY="4.75" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.SubEquipo" Width="1.5" PointX="5.25" PointY="21.125" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.sysdiagrams" Width="1.5" PointX="8.75" PointY="0.75" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.TagEquipo" Width="1.5" PointX="5.25" PointY="24" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.TipoEvento" Width="1.5" PointX="7.5" PointY="27.125" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.TipoFalla" Width="1.5" PointX="9.75" PointY="22" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.TipoMovimientoSAP" Width="1.5" PointX="6" PointY="7.75" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.TipoOperacion" Width="1.5" PointX="6" PointY="17.25" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.TokenRegistro" Width="1.5" PointX="8.25" PointY="12" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.UnidadMedida" Width="1.5" PointX="6" PointY="1" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.UnidadOperativa" Width="1.5" PointX="0.75" PointY="17.875" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.Usuario" Width="1.5" PointX="6" PointY="10.25" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.UsuarioRol" Width="1.5" PointX="11.25" PointY="12" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.ValidacionReportes" Width="1.5" PointX="9.75" PointY="26" IsExpanded="true" />
+        <AssociationConnector Association="DVPModel.FK_Material_BillOfMaterial" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_TipoMovimientoSAPID_BillOfMaterial" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_TipoOperacion_BillOfMaterial" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_Paros_CierreStatus" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_ValidacionReportes_CierreStatus" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_Clasificacion_Paros" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_Clasificacion_TipoFalla" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_ClasificacionMaterial_Material" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_ComponenteEquipo_Paros" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_ComponenteEquipo_TipoFalla" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_SubEquipo_ComponenteEquipo" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_CantidadReal_DataOperacion" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_Equipo_DataOperacion" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_Material_DataOperacion" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_TipoMovimientoSAPID_DataOperacion" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_TipoOperacion_DataOperacion" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_UnidadMedida_DataOperacion" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_Equipo_Paros" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_Equipo_SeccionEquipo" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_Equipo_TagEquipo" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_Pais_Equipo" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_Planta_Equipo" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_Proceso_Equipo" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_UnidadOperativa_Equipo" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_Gerencia_Usuario" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_Pais_Usuario" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_SubEquipo_Paros" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_TipoEvento_Paros" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_TipoFalla_Paros" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_UsuarioValidador_Paros" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_Planta_Usuario" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK__UsuarioRo__RolID__6477ECF3" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK__TokenRegi__Usuar__6754599E" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK_UnidadOperativa_Usuario" ManuallyRouted="false" />
+        <AssociationConnector Association="DVPModel.FK__UsuarioRo__Usuar__6383C8BA" ManuallyRouted="false" />
+      </Diagram>
+    </edmx:Diagrams>
+  </edmx:Designer>
+</edmx:Edmx>

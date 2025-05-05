@@ -1,0 +1,2339 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+    <Schema Namespace="DVPModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <EntityType Name="BillOfMaterial">
+          <Key>
+            <PropertyRef Name="BillOfMaterialID" />
+          </Key>
+          <Property Name="BillOfMaterialID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="MaterialID" Type="int" />
+          <Property Name="TipoOperacionID" Type="int" />
+          <Property Name="TipoMovimientoSAPID" Type="int" />
+        </EntityType>
+        <EntityType Name="CierreStatus">
+          <Key>
+            <PropertyRef Name="CierreStatusID" />
+          </Key>
+          <Property Name="CierreStatusID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="FechaCierre" Type="datetime" />
+          <Property Name="FechaReporte" Type="datetime" />
+          <Property Name="ValidacionReportesID" Type="int" />
+          <Property Name="ParosID" Type="int" />
+          <Property Name="Cerrado" Type="bit" />
+        </EntityType>
+        <EntityType Name="Clasificacion">
+          <Key>
+            <PropertyRef Name="ClasificacionID" />
+          </Key>
+          <Property Name="ClasificacionID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar(max)" Nullable="false" />
+          <Property Name="Ajeno" Type="bit" />
+          <Property Name="AfectaTMEF" Type="bit" />
+        </EntityType>
+        <EntityType Name="ClasificacionMaterial">
+          <Key>
+            <PropertyRef Name="ClasificacionMaterialID" />
+          </Key>
+          <Property Name="ClasificacionMaterialID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="200" />
+        </EntityType>
+        <EntityType Name="ComponenteEquipo">
+          <Key>
+            <PropertyRef Name="ComponenteEquipoID" />
+          </Key>
+          <Property Name="ComponenteEquipoID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="200" Nullable="false" />
+          <Property Name="SubEquipoID" Type="int" />
+        </EntityType>
+        <EntityType Name="DataOperacion">
+          <Key>
+            <PropertyRef Name="DataOperacionID" />
+          </Key>
+          <Property Name="DataOperacionID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="EquipoID" Type="int" />
+          <Property Name="TipoOperacionID" Type="int" />
+          <Property Name="MaterialID" Type="int" />
+          <Property Name="CantidadObtenida" Type="decimal" Precision="10" Scale="5" />
+          <Property Name="CantidadReal" Type="decimal" Precision="10" Scale="5" />
+          <Property Name="UnidadMedidaID" Type="int" />
+          <Property Name="TipoMovimientoSAPID" Type="int" />
+          <Property Name="FechaReporte" Type="datetime" />
+        </EntityType>
+        <EntityType Name="Entradas">
+          <Key>
+            <PropertyRef Name="EntradasID" />
+          </Key>
+          <Property Name="EntradasID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="MaterialSAP" Type="int" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="200" />
+          <Property Name="Cantidad" Type="decimal" Precision="20" Scale="5" />
+          <Property Name="FechaTransaccion" Type="datetime" />
+          <Property Name="TipoMovimientoSAP" Type="nvarchar" MaxLength="100" />
+          <Property Name="FehaReporte" Type="datetime" />
+        </EntityType>
+        <EntityType Name="Equipo">
+          <Key>
+            <PropertyRef Name="EquipoID" />
+          </Key>
+          <Property Name="EquipoID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="CondigoDetalle" Type="nvarchar" MaxLength="100" />
+          <Property Name="CondigoSAP" Type="nvarchar" MaxLength="30" />
+          <Property Name="ProcesoID" Type="int" />
+          <Property Name="PlantaID" Type="int" />
+          <Property Name="UnidadOperativaID" Type="int" />
+          <Property Name="PaisID" Type="int" />
+          <Property Name="BuscarParo" Type="bit" />
+          <Property Name="Active" Type="bit" />
+        </EntityType>
+        <EntityType Name="Gerencia">
+          <Key>
+            <PropertyRef Name="GerenciaID" />
+          </Key>
+          <Property Name="GerenciaID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="100" Nullable="false" />
+          <Property Name="Active" Type="bit" />
+        </EntityType>
+        <EntityType Name="Inventarios">
+          <Key>
+            <PropertyRef Name="SalidasID" />
+          </Key>
+          <Property Name="SalidasID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="MaterialSAP" Type="int" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="200" />
+          <Property Name="Cantidad" Type="decimal" Precision="20" Scale="5" />
+          <Property Name="FechaTransaccion" Type="datetime" />
+          <Property Name="TipoMovimientoSAP" Type="nvarchar" MaxLength="100" />
+          <Property Name="FehaReporte" Type="datetime" />
+        </EntityType>
+        <EntityType Name="Material">
+          <Key>
+            <PropertyRef Name="MaterialID" />
+          </Key>
+          <Property Name="MaterialID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="200" />
+          <Property Name="CodSAPNuevo" Type="nvarchar" MaxLength="200" />
+          <Property Name="CodOldSAP" Type="nvarchar" MaxLength="200" />
+          <Property Name="Producido" Type="bit" />
+          <Property Name="ClasificacionMaterialID" Type="int" />
+          <Property Name="Alterno" Type="bit" />
+          <Property Name="AfectaInventario" Type="bit" />
+          <Property Name="IDStock" Type="nvarchar(max)" />
+        </EntityType>
+        <EntityType Name="Pais">
+          <Key>
+            <PropertyRef Name="PaisID" />
+          </Key>
+          <Property Name="PaisID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="CodigoSAP" Type="nvarchar" MaxLength="30" Nullable="false" />
+          <Property Name="CodigoSAPNuevo" Type="nvarchar" MaxLength="30" Nullable="false" />
+          <Property Name="Active" Type="bit" />
+        </EntityType>
+        <EntityType Name="Paros">
+          <Key>
+            <PropertyRef Name="ParosID" />
+          </Key>
+          <Property Name="ParosID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="FechaCreacion" Type="datetime" />
+          <Property Name="FechaInicio" Type="datetime" />
+          <Property Name="FechaEvento" Type="datetime" />
+          <Property Name="Comentario" Type="nvarchar(max)" />
+          <Property Name="EquipoID" Type="int" />
+          <Property Name="SubEquipoID" Type="int" />
+          <Property Name="ComponenteEquipoID" Type="int" />
+          <Property Name="ClasificacionID" Type="int" />
+          <Property Name="TipoFallaID" Type="int" />
+          <Property Name="StatusValidate" Type="bit" />
+          <Property Name="StatusDelete" Type="bit" />
+          <Property Name="TipoEventoID" Type="int" />
+          <Property Name="UsuarioCreadorID" Type="int" />
+          <Property Name="ParoRelacionadoID" Type="int" />
+        </EntityType>
+        <EntityType Name="Planta">
+          <Key>
+            <PropertyRef Name="PlantaID" />
+          </Key>
+          <Property Name="PlantaID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="CodigoSAP" Type="nvarchar" MaxLength="30" Nullable="false" />
+          <Property Name="CodigoSAPNuevo" Type="nvarchar" MaxLength="30" Nullable="false" />
+          <Property Name="Active" Type="bit" />
+        </EntityType>
+        <EntityType Name="Proceso">
+          <Key>
+            <PropertyRef Name="ProcesoID" />
+          </Key>
+          <Property Name="ProcesoID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="Active" Type="bit" />
+        </EntityType>
+        <EntityType Name="Rol">
+          <Key>
+            <PropertyRef Name="RolID" />
+          </Key>
+          <Property Name="RolID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="Active" Type="bit" Nullable="false" />
+        </EntityType>
+        <EntityType Name="Salidas">
+          <Key>
+            <PropertyRef Name="SalidasID" />
+          </Key>
+          <Property Name="SalidasID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="MaterialSAP" Type="int" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="200" />
+          <Property Name="Cantidad" Type="decimal" Precision="20" Scale="5" />
+          <Property Name="FechaTransaccion" Type="datetime" />
+          <Property Name="TipoMovimientoSAP" Type="nvarchar" MaxLength="100" />
+          <Property Name="FehaReporte" Type="datetime" />
+        </EntityType>
+        <EntityType Name="SubEquipo">
+          <Key>
+            <PropertyRef Name="SubEquipoID" />
+          </Key>
+          <Property Name="SubEquipoID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="200" Nullable="false" />
+          <Property Name="EquipoID" Type="int" />
+        </EntityType>
+        <EntityType Name="sysdiagrams">
+          <Key>
+            <PropertyRef Name="diagram_id" />
+          </Key>
+          <Property Name="name" Type="nvarchar" MaxLength="128" Nullable="false" />
+          <Property Name="principal_id" Type="int" Nullable="false" />
+          <Property Name="diagram_id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="version" Type="int" />
+          <Property Name="definition" Type="varbinary(max)" />
+        </EntityType>
+        <EntityType Name="TagEquipo">
+          <Key>
+            <PropertyRef Name="TagEquipoID" />
+          </Key>
+          <Property Name="TagEquipoID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar(max)" />
+          <Property Name="TagName" Type="nvarchar(max)" />
+          <Property Name="TagCode" Type="nvarchar(max)" />
+          <Property Name="EquipoID" Type="int" />
+        </EntityType>
+        <EntityType Name="TipoEvento">
+          <Key>
+            <PropertyRef Name="TipoEventoID" />
+          </Key>
+          <Property Name="TipoEventoID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="50" Nullable="false" />
+        </EntityType>
+        <EntityType Name="TipoFalla">
+          <Key>
+            <PropertyRef Name="TipoFallaID" />
+          </Key>
+          <Property Name="TipoFallaID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="200" Nullable="false" />
+          <Property Name="ClasificacionID" Type="int" />
+          <Property Name="ComponenteEquipoID" Type="int" />
+        </EntityType>
+        <EntityType Name="TipoMovimientoSAP">
+          <Key>
+            <PropertyRef Name="TipoMovimientoSAPID" />
+          </Key>
+          <Property Name="TipoMovimientoSAPID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="100" />
+        </EntityType>
+        <EntityType Name="TipoOperacion">
+          <Key>
+            <PropertyRef Name="TipoOperacionID" />
+          </Key>
+          <Property Name="TipoOperacionID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="100" />
+          <Property Name="MovimientoSAP" Type="nvarchar" MaxLength="50" />
+        </EntityType>
+        <EntityType Name="TokenRegistro">
+          <Key>
+            <PropertyRef Name="TokenRegistroID" />
+          </Key>
+          <Property Name="TokenRegistroID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="UsuarioID" Type="int" Nullable="false" />
+          <Property Name="Token" Type="nvarchar(max)" Nullable="false" />
+          <Property Name="FechaExpiracion" Type="datetime" Nullable="false" />
+        </EntityType>
+        <EntityType Name="UnidadMedida">
+          <Key>
+            <PropertyRef Name="UnidadMedidaID" />
+          </Key>
+          <Property Name="UnidadMedidaID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="100" />
+        </EntityType>
+        <EntityType Name="UnidadOperativa">
+          <Key>
+            <PropertyRef Name="UnidadOperativaID" />
+          </Key>
+          <Property Name="UnidadOperativaID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="Active" Type="bit" />
+        </EntityType>
+        <EntityType Name="Usuario">
+          <Key>
+            <PropertyRef Name="UsuarioID" />
+          </Key>
+          <Property Name="UsuarioID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="100" Nullable="false" />
+          <Property Name="Email" Type="nvarchar" MaxLength="255" Nullable="false" />
+          <Property Name="Nombre" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="ContraseñaHash" Type="nvarchar" MaxLength="255" />
+          <Property Name="ADUsername" Type="nvarchar" MaxLength="255" />
+          <Property Name="EsAD" Type="bit" Nullable="false" />
+          <Property Name="FechaMigracionAD" Type="datetime" />
+          <Property Name="Token" Type="nvarchar(max)" />
+          <Property Name="UltimoLogin" Type="datetime" />
+          <Property Name="NumeroEmpleado" Type="nvarchar" MaxLength="200" />
+          <Property Name="PlantaID" Type="int" />
+          <Property Name="UnidadOperativaID" Type="int" />
+          <Property Name="PaisID" Type="int" />
+          <Property Name="GerenciaID" Type="int" />
+          <Property Name="Active" Type="bit" Nullable="false" />
+        </EntityType>
+        <EntityType Name="UsuarioRol">
+          <Key>
+            <PropertyRef Name="UsuarioRolID" />
+          </Key>
+          <Property Name="UsuarioRolID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="UsuarioID" Type="int" Nullable="false" />
+          <Property Name="RolID" Type="int" Nullable="false" />
+        </EntityType>
+        <EntityType Name="ValidacionReportes">
+          <Key>
+            <PropertyRef Name="ValidacionReportesID" />
+          </Key>
+          <Property Name="ValidacionReportesID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripción" Type="nvarchar" MaxLength="50" Nullable="false" />
+        </EntityType>
+        <Association Name="FK__TokenRegi__Usuar__6754599E">
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="1" />
+          <End Role="TokenRegistro" Type="Self.TokenRegistro" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Usuario">
+              <PropertyRef Name="UsuarioID" />
+            </Principal>
+            <Dependent Role="TokenRegistro">
+              <PropertyRef Name="UsuarioID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__UsuarioRo__RolID__6477ECF3">
+          <End Role="Rol" Type="Self.Rol" Multiplicity="1" />
+          <End Role="UsuarioRol" Type="Self.UsuarioRol" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Rol">
+              <PropertyRef Name="RolID" />
+            </Principal>
+            <Dependent Role="UsuarioRol">
+              <PropertyRef Name="RolID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__UsuarioRo__Usuar__6383C8BA">
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="1" />
+          <End Role="UsuarioRol" Type="Self.UsuarioRol" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Usuario">
+              <PropertyRef Name="UsuarioID" />
+            </Principal>
+            <Dependent Role="UsuarioRol">
+              <PropertyRef Name="UsuarioID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_CantidadReal_DataOperacion">
+          <End Role="Material" Type="Self.Material" Multiplicity="0..1" />
+          <End Role="DataOperacion" Type="Self.DataOperacion" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Material">
+              <PropertyRef Name="MaterialID" />
+            </Principal>
+            <Dependent Role="DataOperacion">
+              <PropertyRef Name="MaterialID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Clasificacion_Paros">
+          <End Role="Clasificacion" Type="Self.Clasificacion" Multiplicity="0..1" />
+          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Clasificacion">
+              <PropertyRef Name="ClasificacionID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="ClasificacionID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Clasificacion_TipoFalla">
+          <End Role="Clasificacion" Type="Self.Clasificacion" Multiplicity="0..1" />
+          <End Role="TipoFalla" Type="Self.TipoFalla" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Clasificacion">
+              <PropertyRef Name="ClasificacionID" />
+            </Principal>
+            <Dependent Role="TipoFalla">
+              <PropertyRef Name="ClasificacionID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_ClasificacionMaterial_Material">
+          <End Role="ClasificacionMaterial" Type="Self.ClasificacionMaterial" Multiplicity="0..1" />
+          <End Role="Material" Type="Self.Material" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="ClasificacionMaterial">
+              <PropertyRef Name="ClasificacionMaterialID" />
+            </Principal>
+            <Dependent Role="Material">
+              <PropertyRef Name="ClasificacionMaterialID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_ComponenteEquipo_Paros">
+          <End Role="ComponenteEquipo" Type="Self.ComponenteEquipo" Multiplicity="0..1" />
+          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="ComponenteEquipo">
+              <PropertyRef Name="ComponenteEquipoID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="ComponenteEquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_ComponenteEquipo_TipoFalla">
+          <End Role="ComponenteEquipo" Type="Self.ComponenteEquipo" Multiplicity="0..1" />
+          <End Role="TipoFalla" Type="Self.TipoFalla" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="ComponenteEquipo">
+              <PropertyRef Name="ComponenteEquipoID" />
+            </Principal>
+            <Dependent Role="TipoFalla">
+              <PropertyRef Name="ComponenteEquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Equipo_DataOperacion">
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="0..1" />
+          <End Role="DataOperacion" Type="Self.DataOperacion" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Equipo">
+              <PropertyRef Name="EquipoID" />
+            </Principal>
+            <Dependent Role="DataOperacion">
+              <PropertyRef Name="EquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Equipo_Paros">
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="0..1" />
+          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Equipo">
+              <PropertyRef Name="EquipoID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="EquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Equipo_SeccionEquipo">
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="0..1" />
+          <End Role="SubEquipo" Type="Self.SubEquipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Equipo">
+              <PropertyRef Name="EquipoID" />
+            </Principal>
+            <Dependent Role="SubEquipo">
+              <PropertyRef Name="EquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Equipo_TagEquipo">
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="0..1" />
+          <End Role="TagEquipo" Type="Self.TagEquipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Equipo">
+              <PropertyRef Name="EquipoID" />
+            </Principal>
+            <Dependent Role="TagEquipo">
+              <PropertyRef Name="EquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Gerencia_Usuario">
+          <End Role="Gerencia" Type="Self.Gerencia" Multiplicity="0..1" />
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Gerencia">
+              <PropertyRef Name="GerenciaID" />
+            </Principal>
+            <Dependent Role="Usuario">
+              <PropertyRef Name="GerenciaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Material_BillOfMaterial">
+          <End Role="Material" Type="Self.Material" Multiplicity="0..1" />
+          <End Role="BillOfMaterial" Type="Self.BillOfMaterial" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Material">
+              <PropertyRef Name="MaterialID" />
+            </Principal>
+            <Dependent Role="BillOfMaterial">
+              <PropertyRef Name="MaterialID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Material_DataOperacion">
+          <End Role="Material" Type="Self.Material" Multiplicity="0..1" />
+          <End Role="DataOperacion" Type="Self.DataOperacion" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Material">
+              <PropertyRef Name="MaterialID" />
+            </Principal>
+            <Dependent Role="DataOperacion">
+              <PropertyRef Name="MaterialID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Pais_Equipo">
+          <End Role="Pais" Type="Self.Pais" Multiplicity="0..1" />
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Pais">
+              <PropertyRef Name="PaisID" />
+            </Principal>
+            <Dependent Role="Equipo">
+              <PropertyRef Name="PaisID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Pais_Usuario">
+          <End Role="Pais" Type="Self.Pais" Multiplicity="0..1" />
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Pais">
+              <PropertyRef Name="PaisID" />
+            </Principal>
+            <Dependent Role="Usuario">
+              <PropertyRef Name="PaisID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Paros_CierreStatus">
+          <End Role="Paros" Type="Self.Paros" Multiplicity="0..1" />
+          <End Role="CierreStatus" Type="Self.CierreStatus" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Paros">
+              <PropertyRef Name="ParosID" />
+            </Principal>
+            <Dependent Role="CierreStatus">
+              <PropertyRef Name="ParosID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Planta_Equipo">
+          <End Role="Planta" Type="Self.Planta" Multiplicity="0..1" />
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Planta">
+              <PropertyRef Name="PlantaID" />
+            </Principal>
+            <Dependent Role="Equipo">
+              <PropertyRef Name="PlantaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Planta_Usuario">
+          <End Role="Planta" Type="Self.Planta" Multiplicity="0..1" />
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Planta">
+              <PropertyRef Name="PlantaID" />
+            </Principal>
+            <Dependent Role="Usuario">
+              <PropertyRef Name="PlantaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Proceso_Equipo">
+          <End Role="Proceso" Type="Self.Proceso" Multiplicity="0..1" />
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Proceso">
+              <PropertyRef Name="ProcesoID" />
+            </Principal>
+            <Dependent Role="Equipo">
+              <PropertyRef Name="ProcesoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_SubEquipo_ComponenteEquipo">
+          <End Role="SubEquipo" Type="Self.SubEquipo" Multiplicity="0..1" />
+          <End Role="ComponenteEquipo" Type="Self.ComponenteEquipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="SubEquipo">
+              <PropertyRef Name="SubEquipoID" />
+            </Principal>
+            <Dependent Role="ComponenteEquipo">
+              <PropertyRef Name="SubEquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_SubEquipo_Paros">
+          <End Role="SubEquipo" Type="Self.SubEquipo" Multiplicity="0..1" />
+          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="SubEquipo">
+              <PropertyRef Name="SubEquipoID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="SubEquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TipoEvento_Paros">
+          <End Role="TipoEvento" Type="Self.TipoEvento" Multiplicity="0..1" />
+          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoEvento">
+              <PropertyRef Name="TipoEventoID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="TipoEventoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TipoFalla_Paros">
+          <End Role="TipoFalla" Type="Self.TipoFalla" Multiplicity="0..1" />
+          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoFalla">
+              <PropertyRef Name="TipoFallaID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="TipoFallaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TipoMovimientoSAPID_BillOfMaterial">
+          <End Role="TipoMovimientoSAP" Type="Self.TipoMovimientoSAP" Multiplicity="0..1" />
+          <End Role="BillOfMaterial" Type="Self.BillOfMaterial" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoMovimientoSAP">
+              <PropertyRef Name="TipoMovimientoSAPID" />
+            </Principal>
+            <Dependent Role="BillOfMaterial">
+              <PropertyRef Name="TipoMovimientoSAPID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TipoMovimientoSAPID_DataOperacion">
+          <End Role="TipoMovimientoSAP" Type="Self.TipoMovimientoSAP" Multiplicity="0..1" />
+          <End Role="DataOperacion" Type="Self.DataOperacion" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoMovimientoSAP">
+              <PropertyRef Name="TipoMovimientoSAPID" />
+            </Principal>
+            <Dependent Role="DataOperacion">
+              <PropertyRef Name="TipoMovimientoSAPID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TipoOperacion_BillOfMaterial">
+          <End Role="TipoOperacion" Type="Self.TipoOperacion" Multiplicity="0..1" />
+          <End Role="BillOfMaterial" Type="Self.BillOfMaterial" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoOperacion">
+              <PropertyRef Name="TipoOperacionID" />
+            </Principal>
+            <Dependent Role="BillOfMaterial">
+              <PropertyRef Name="TipoOperacionID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TipoOperacion_DataOperacion">
+          <End Role="TipoOperacion" Type="Self.TipoOperacion" Multiplicity="0..1" />
+          <End Role="DataOperacion" Type="Self.DataOperacion" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoOperacion">
+              <PropertyRef Name="TipoOperacionID" />
+            </Principal>
+            <Dependent Role="DataOperacion">
+              <PropertyRef Name="TipoOperacionID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_UnidadMedida_DataOperacion">
+          <End Role="UnidadMedida" Type="Self.UnidadMedida" Multiplicity="0..1" />
+          <End Role="DataOperacion" Type="Self.DataOperacion" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="UnidadMedida">
+              <PropertyRef Name="UnidadMedidaID" />
+            </Principal>
+            <Dependent Role="DataOperacion">
+              <PropertyRef Name="UnidadMedidaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_UnidadOperativa_Equipo">
+          <End Role="UnidadOperativa" Type="Self.UnidadOperativa" Multiplicity="0..1" />
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="UnidadOperativa">
+              <PropertyRef Name="UnidadOperativaID" />
+            </Principal>
+            <Dependent Role="Equipo">
+              <PropertyRef Name="UnidadOperativaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_UnidadOperativa_Usuario">
+          <End Role="UnidadOperativa" Type="Self.UnidadOperativa" Multiplicity="0..1" />
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="UnidadOperativa">
+              <PropertyRef Name="UnidadOperativaID" />
+            </Principal>
+            <Dependent Role="Usuario">
+              <PropertyRef Name="UnidadOperativaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_UsuarioValidador_Paros">
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="0..1" />
+          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Usuario">
+              <PropertyRef Name="UsuarioID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="UsuarioCreadorID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_ValidacionReportes_CierreStatus">
+          <End Role="ValidacionReportes" Type="Self.ValidacionReportes" Multiplicity="0..1" />
+          <End Role="CierreStatus" Type="Self.CierreStatus" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="ValidacionReportes">
+              <PropertyRef Name="ValidacionReportesID" />
+            </Principal>
+            <Dependent Role="CierreStatus">
+              <PropertyRef Name="ValidacionReportesID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Function Name="fn_diagramobjects" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="true" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo" ReturnType="int" />
+        <Function Name="sp_alterdiagram" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="diagramname" Type="nvarchar" Mode="In" />
+          <Parameter Name="owner_id" Type="int" Mode="In" />
+          <Parameter Name="version" Type="int" Mode="In" />
+          <Parameter Name="definition" Type="varbinary(max)" Mode="In" />
+        </Function>
+        <Function Name="sp_creatediagram" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="diagramname" Type="nvarchar" Mode="In" />
+          <Parameter Name="owner_id" Type="int" Mode="In" />
+          <Parameter Name="version" Type="int" Mode="In" />
+          <Parameter Name="definition" Type="varbinary(max)" Mode="In" />
+        </Function>
+        <Function Name="sp_dropdiagram" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="diagramname" Type="nvarchar" Mode="In" />
+          <Parameter Name="owner_id" Type="int" Mode="In" />
+        </Function>
+        <Function Name="sp_helpdiagramdefinition" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="diagramname" Type="nvarchar" Mode="In" />
+          <Parameter Name="owner_id" Type="int" Mode="In" />
+        </Function>
+        <Function Name="sp_helpdiagrams" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="diagramname" Type="nvarchar" Mode="In" />
+          <Parameter Name="owner_id" Type="int" Mode="In" />
+        </Function>
+        <Function Name="sp_renamediagram" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="diagramname" Type="nvarchar" Mode="In" />
+          <Parameter Name="owner_id" Type="int" Mode="In" />
+          <Parameter Name="new_diagramname" Type="nvarchar" Mode="In" />
+        </Function>
+        <Function Name="sp_upgraddiagrams" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo" />
+        <EntityContainer Name="DVPModelStoreContainer">
+          <EntitySet Name="BillOfMaterial" EntityType="Self.BillOfMaterial" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="CierreStatus" EntityType="Self.CierreStatus" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Clasificacion" EntityType="Self.Clasificacion" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="ClasificacionMaterial" EntityType="Self.ClasificacionMaterial" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="ComponenteEquipo" EntityType="Self.ComponenteEquipo" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="DataOperacion" EntityType="Self.DataOperacion" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Entradas" EntityType="Self.Entradas" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Equipo" EntityType="Self.Equipo" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Gerencia" EntityType="Self.Gerencia" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Inventarios" EntityType="Self.Inventarios" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Material" EntityType="Self.Material" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Pais" EntityType="Self.Pais" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Paros" EntityType="Self.Paros" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Planta" EntityType="Self.Planta" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Proceso" EntityType="Self.Proceso" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Rol" EntityType="Self.Rol" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Salidas" EntityType="Self.Salidas" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="SubEquipo" EntityType="Self.SubEquipo" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="sysdiagrams" EntityType="Self.sysdiagrams" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="TagEquipo" EntityType="Self.TagEquipo" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="TipoEvento" EntityType="Self.TipoEvento" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="TipoFalla" EntityType="Self.TipoFalla" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="TipoMovimientoSAP" EntityType="Self.TipoMovimientoSAP" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="TipoOperacion" EntityType="Self.TipoOperacion" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="TokenRegistro" EntityType="Self.TokenRegistro" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="UnidadMedida" EntityType="Self.UnidadMedida" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="UnidadOperativa" EntityType="Self.UnidadOperativa" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Usuario" EntityType="Self.Usuario" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="UsuarioRol" EntityType="Self.UsuarioRol" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="ValidacionReportes" EntityType="Self.ValidacionReportes" Schema="dbo" store:Type="Tables" />
+          <AssociationSet Name="FK__TokenRegi__Usuar__6754599E" Association="Self.FK__TokenRegi__Usuar__6754599E">
+            <End Role="Usuario" EntitySet="Usuario" />
+            <End Role="TokenRegistro" EntitySet="TokenRegistro" />
+          </AssociationSet>
+          <AssociationSet Name="FK__UsuarioRo__RolID__6477ECF3" Association="Self.FK__UsuarioRo__RolID__6477ECF3">
+            <End Role="Rol" EntitySet="Rol" />
+            <End Role="UsuarioRol" EntitySet="UsuarioRol" />
+          </AssociationSet>
+          <AssociationSet Name="FK__UsuarioRo__Usuar__6383C8BA" Association="Self.FK__UsuarioRo__Usuar__6383C8BA">
+            <End Role="Usuario" EntitySet="Usuario" />
+            <End Role="UsuarioRol" EntitySet="UsuarioRol" />
+          </AssociationSet>
+          <AssociationSet Name="FK_CantidadReal_DataOperacion" Association="Self.FK_CantidadReal_DataOperacion">
+            <End Role="Material" EntitySet="Material" />
+            <End Role="DataOperacion" EntitySet="DataOperacion" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Clasificacion_Paros" Association="Self.FK_Clasificacion_Paros">
+            <End Role="Clasificacion" EntitySet="Clasificacion" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Clasificacion_TipoFalla" Association="Self.FK_Clasificacion_TipoFalla">
+            <End Role="Clasificacion" EntitySet="Clasificacion" />
+            <End Role="TipoFalla" EntitySet="TipoFalla" />
+          </AssociationSet>
+          <AssociationSet Name="FK_ClasificacionMaterial_Material" Association="Self.FK_ClasificacionMaterial_Material">
+            <End Role="ClasificacionMaterial" EntitySet="ClasificacionMaterial" />
+            <End Role="Material" EntitySet="Material" />
+          </AssociationSet>
+          <AssociationSet Name="FK_ComponenteEquipo_Paros" Association="Self.FK_ComponenteEquipo_Paros">
+            <End Role="ComponenteEquipo" EntitySet="ComponenteEquipo" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_ComponenteEquipo_TipoFalla" Association="Self.FK_ComponenteEquipo_TipoFalla">
+            <End Role="ComponenteEquipo" EntitySet="ComponenteEquipo" />
+            <End Role="TipoFalla" EntitySet="TipoFalla" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Equipo_DataOperacion" Association="Self.FK_Equipo_DataOperacion">
+            <End Role="Equipo" EntitySet="Equipo" />
+            <End Role="DataOperacion" EntitySet="DataOperacion" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Equipo_Paros" Association="Self.FK_Equipo_Paros">
+            <End Role="Equipo" EntitySet="Equipo" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Equipo_SeccionEquipo" Association="Self.FK_Equipo_SeccionEquipo">
+            <End Role="Equipo" EntitySet="Equipo" />
+            <End Role="SubEquipo" EntitySet="SubEquipo" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Equipo_TagEquipo" Association="Self.FK_Equipo_TagEquipo">
+            <End Role="Equipo" EntitySet="Equipo" />
+            <End Role="TagEquipo" EntitySet="TagEquipo" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Gerencia_Usuario" Association="Self.FK_Gerencia_Usuario">
+            <End Role="Gerencia" EntitySet="Gerencia" />
+            <End Role="Usuario" EntitySet="Usuario" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Material_BillOfMaterial" Association="Self.FK_Material_BillOfMaterial">
+            <End Role="Material" EntitySet="Material" />
+            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Material_DataOperacion" Association="Self.FK_Material_DataOperacion">
+            <End Role="Material" EntitySet="Material" />
+            <End Role="DataOperacion" EntitySet="DataOperacion" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Pais_Equipo" Association="Self.FK_Pais_Equipo">
+            <End Role="Pais" EntitySet="Pais" />
+            <End Role="Equipo" EntitySet="Equipo" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Pais_Usuario" Association="Self.FK_Pais_Usuario">
+            <End Role="Pais" EntitySet="Pais" />
+            <End Role="Usuario" EntitySet="Usuario" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Paros_CierreStatus" Association="Self.FK_Paros_CierreStatus">
+            <End Role="Paros" EntitySet="Paros" />
+            <End Role="CierreStatus" EntitySet="CierreStatus" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Planta_Equipo" Association="Self.FK_Planta_Equipo">
+            <End Role="Planta" EntitySet="Planta" />
+            <End Role="Equipo" EntitySet="Equipo" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Planta_Usuario" Association="Self.FK_Planta_Usuario">
+            <End Role="Planta" EntitySet="Planta" />
+            <End Role="Usuario" EntitySet="Usuario" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Proceso_Equipo" Association="Self.FK_Proceso_Equipo">
+            <End Role="Proceso" EntitySet="Proceso" />
+            <End Role="Equipo" EntitySet="Equipo" />
+          </AssociationSet>
+          <AssociationSet Name="FK_SubEquipo_ComponenteEquipo" Association="Self.FK_SubEquipo_ComponenteEquipo">
+            <End Role="SubEquipo" EntitySet="SubEquipo" />
+            <End Role="ComponenteEquipo" EntitySet="ComponenteEquipo" />
+          </AssociationSet>
+          <AssociationSet Name="FK_SubEquipo_Paros" Association="Self.FK_SubEquipo_Paros">
+            <End Role="SubEquipo" EntitySet="SubEquipo" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TipoEvento_Paros" Association="Self.FK_TipoEvento_Paros">
+            <End Role="TipoEvento" EntitySet="TipoEvento" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TipoFalla_Paros" Association="Self.FK_TipoFalla_Paros">
+            <End Role="TipoFalla" EntitySet="TipoFalla" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TipoMovimientoSAPID_BillOfMaterial" Association="Self.FK_TipoMovimientoSAPID_BillOfMaterial">
+            <End Role="TipoMovimientoSAP" EntitySet="TipoMovimientoSAP" />
+            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TipoMovimientoSAPID_DataOperacion" Association="Self.FK_TipoMovimientoSAPID_DataOperacion">
+            <End Role="TipoMovimientoSAP" EntitySet="TipoMovimientoSAP" />
+            <End Role="DataOperacion" EntitySet="DataOperacion" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TipoOperacion_BillOfMaterial" Association="Self.FK_TipoOperacion_BillOfMaterial">
+            <End Role="TipoOperacion" EntitySet="TipoOperacion" />
+            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TipoOperacion_DataOperacion" Association="Self.FK_TipoOperacion_DataOperacion">
+            <End Role="TipoOperacion" EntitySet="TipoOperacion" />
+            <End Role="DataOperacion" EntitySet="DataOperacion" />
+          </AssociationSet>
+          <AssociationSet Name="FK_UnidadMedida_DataOperacion" Association="Self.FK_UnidadMedida_DataOperacion">
+            <End Role="UnidadMedida" EntitySet="UnidadMedida" />
+            <End Role="DataOperacion" EntitySet="DataOperacion" />
+          </AssociationSet>
+          <AssociationSet Name="FK_UnidadOperativa_Equipo" Association="Self.FK_UnidadOperativa_Equipo">
+            <End Role="UnidadOperativa" EntitySet="UnidadOperativa" />
+            <End Role="Equipo" EntitySet="Equipo" />
+          </AssociationSet>
+          <AssociationSet Name="FK_UnidadOperativa_Usuario" Association="Self.FK_UnidadOperativa_Usuario">
+            <End Role="UnidadOperativa" EntitySet="UnidadOperativa" />
+            <End Role="Usuario" EntitySet="Usuario" />
+          </AssociationSet>
+          <AssociationSet Name="FK_UsuarioValidador_Paros" Association="Self.FK_UsuarioValidador_Paros">
+            <End Role="Usuario" EntitySet="Usuario" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_ValidacionReportes_CierreStatus" Association="Self.FK_ValidacionReportes_CierreStatus">
+            <End Role="ValidacionReportes" EntitySet="ValidacionReportes" />
+            <End Role="CierreStatus" EntitySet="CierreStatus" />
+          </AssociationSet>
+        </EntityContainer>
+      </Schema></edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="DVPModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+        <EntityType Name="BillOfMaterial">
+          <Key>
+            <PropertyRef Name="BillOfMaterialID" />
+          </Key>
+          <Property Name="BillOfMaterialID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="MaterialID" Type="Int32" />
+          <Property Name="TipoOperacionID" Type="Int32" />
+          <Property Name="TipoMovimientoSAPID" Type="Int32" />
+          <NavigationProperty Name="Material" Relationship="Self.FK_Material_BillOfMaterial" FromRole="BillOfMaterial" ToRole="Material" />
+          <NavigationProperty Name="TipoMovimientoSAP" Relationship="Self.FK_TipoMovimientoSAPID_BillOfMaterial" FromRole="BillOfMaterial" ToRole="TipoMovimientoSAP" />
+          <NavigationProperty Name="TipoOperacion" Relationship="Self.FK_TipoOperacion_BillOfMaterial" FromRole="BillOfMaterial" ToRole="TipoOperacion" />
+        </EntityType>
+        <EntityType Name="CierreStatus">
+          <Key>
+            <PropertyRef Name="CierreStatusID" />
+          </Key>
+          <Property Name="CierreStatusID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="FechaCierre" Type="DateTime" Precision="3" />
+          <Property Name="FechaReporte" Type="DateTime" Precision="3" />
+          <Property Name="ValidacionReportesID" Type="Int32" />
+          <Property Name="ParosID" Type="Int32" />
+          <Property Name="Cerrado" Type="Boolean" />
+          <NavigationProperty Name="Paros" Relationship="Self.FK_Paros_CierreStatus" FromRole="CierreStatus" ToRole="Paros" />
+          <NavigationProperty Name="ValidacionReportes" Relationship="Self.FK_ValidacionReportes_CierreStatus" FromRole="CierreStatus" ToRole="ValidacionReportes" />
+        </EntityType>
+        <EntityType Name="Clasificacion">
+          <Key>
+            <PropertyRef Name="ClasificacionID" />
+          </Key>
+          <Property Name="ClasificacionID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Ajeno" Type="Boolean" />
+          <Property Name="AfectaTMEF" Type="Boolean" />
+          <NavigationProperty Name="Paros" Relationship="Self.FK_Clasificacion_Paros" FromRole="Clasificacion" ToRole="Paros" />
+          <NavigationProperty Name="TipoFalla" Relationship="Self.FK_Clasificacion_TipoFalla" FromRole="Clasificacion" ToRole="TipoFalla" />
+        </EntityType>
+        <EntityType Name="ClasificacionMaterial">
+          <Key>
+            <PropertyRef Name="ClasificacionMaterialID" />
+          </Key>
+          <Property Name="ClasificacionMaterialID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="200" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="Material" Relationship="Self.FK_ClasificacionMaterial_Material" FromRole="ClasificacionMaterial" ToRole="Material" />
+        </EntityType>
+        <EntityType Name="ComponenteEquipo">
+          <Key>
+            <PropertyRef Name="ComponenteEquipoID" />
+          </Key>
+          <Property Name="ComponenteEquipoID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="200" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="SubEquipoID" Type="Int32" />
+          <NavigationProperty Name="Paros" Relationship="Self.FK_ComponenteEquipo_Paros" FromRole="ComponenteEquipo" ToRole="Paros" />
+          <NavigationProperty Name="TipoFalla" Relationship="Self.FK_ComponenteEquipo_TipoFalla" FromRole="ComponenteEquipo" ToRole="TipoFalla" />
+          <NavigationProperty Name="SubEquipo" Relationship="Self.FK_SubEquipo_ComponenteEquipo" FromRole="ComponenteEquipo" ToRole="SubEquipo" />
+        </EntityType>
+        <EntityType Name="DataOperacion">
+          <Key>
+            <PropertyRef Name="DataOperacionID" />
+          </Key>
+          <Property Name="DataOperacionID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="EquipoID" Type="Int32" />
+          <Property Name="TipoOperacionID" Type="Int32" />
+          <Property Name="MaterialID" Type="Int32" />
+          <Property Name="CantidadObtenida" Type="Decimal" Precision="10" Scale="5" />
+          <Property Name="CantidadReal" Type="Decimal" Precision="10" Scale="5" />
+          <Property Name="UnidadMedidaID" Type="Int32" />
+          <Property Name="TipoMovimientoSAPID" Type="Int32" />
+          <Property Name="FechaReporte" Type="DateTime" Precision="3" />
+          <NavigationProperty Name="Material" Relationship="Self.FK_CantidadReal_DataOperacion" FromRole="DataOperacion" ToRole="Material" />
+          <NavigationProperty Name="Equipo" Relationship="Self.FK_Equipo_DataOperacion" FromRole="DataOperacion" ToRole="Equipo" />
+          <NavigationProperty Name="Material1" Relationship="Self.FK_Material_DataOperacion" FromRole="DataOperacion" ToRole="Material" />
+          <NavigationProperty Name="TipoMovimientoSAP" Relationship="Self.FK_TipoMovimientoSAPID_DataOperacion" FromRole="DataOperacion" ToRole="TipoMovimientoSAP" />
+          <NavigationProperty Name="TipoOperacion" Relationship="Self.FK_TipoOperacion_DataOperacion" FromRole="DataOperacion" ToRole="TipoOperacion" />
+          <NavigationProperty Name="UnidadMedida" Relationship="Self.FK_UnidadMedida_DataOperacion" FromRole="DataOperacion" ToRole="UnidadMedida" />
+        </EntityType>
+        <EntityType Name="Entradas">
+          <Key>
+            <PropertyRef Name="EntradasID" />
+          </Key>
+          <Property Name="EntradasID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="MaterialSAP" Type="Int32" />
+          <Property Name="Descripcion" Type="String" MaxLength="200" FixedLength="false" Unicode="true" />
+          <Property Name="Cantidad" Type="Decimal" Precision="20" Scale="5" />
+          <Property Name="FechaTransaccion" Type="DateTime" Precision="3" />
+          <Property Name="TipoMovimientoSAP" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Name="FehaReporte" Type="DateTime" Precision="3" />
+        </EntityType>
+        <EntityType Name="Equipo">
+          <Key>
+            <PropertyRef Name="EquipoID" />
+          </Key>
+          <Property Name="EquipoID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="CondigoDetalle" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Name="CondigoSAP" Type="String" MaxLength="30" FixedLength="false" Unicode="true" />
+          <Property Name="ProcesoID" Type="Int32" />
+          <Property Name="PlantaID" Type="Int32" />
+          <Property Name="UnidadOperativaID" Type="Int32" />
+          <Property Name="PaisID" Type="Int32" />
+          <Property Name="BuscarParo" Type="Boolean" />
+          <Property Name="Active" Type="Boolean" />
+          <NavigationProperty Name="DataOperacion" Relationship="Self.FK_Equipo_DataOperacion" FromRole="Equipo" ToRole="DataOperacion" />
+          <NavigationProperty Name="Paros" Relationship="Self.FK_Equipo_Paros" FromRole="Equipo" ToRole="Paros" />
+          <NavigationProperty Name="SubEquipo" Relationship="Self.FK_Equipo_SeccionEquipo" FromRole="Equipo" ToRole="SubEquipo" />
+          <NavigationProperty Name="TagEquipo" Relationship="Self.FK_Equipo_TagEquipo" FromRole="Equipo" ToRole="TagEquipo" />
+          <NavigationProperty Name="Pais" Relationship="Self.FK_Pais_Equipo" FromRole="Equipo" ToRole="Pais" />
+          <NavigationProperty Name="Planta" Relationship="Self.FK_Planta_Equipo" FromRole="Equipo" ToRole="Planta" />
+          <NavigationProperty Name="Proceso" Relationship="Self.FK_Proceso_Equipo" FromRole="Equipo" ToRole="Proceso" />
+          <NavigationProperty Name="UnidadOperativa" Relationship="Self.FK_UnidadOperativa_Equipo" FromRole="Equipo" ToRole="UnidadOperativa" />
+        </EntityType>
+        <EntityType Name="Gerencia">
+          <Key>
+            <PropertyRef Name="GerenciaID" />
+          </Key>
+          <Property Name="GerenciaID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="100" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Active" Type="Boolean" />
+          <NavigationProperty Name="Usuario" Relationship="Self.FK_Gerencia_Usuario" FromRole="Gerencia" ToRole="Usuario" />
+        </EntityType>
+        <EntityType Name="Inventarios">
+          <Key>
+            <PropertyRef Name="SalidasID" />
+          </Key>
+          <Property Name="SalidasID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="MaterialSAP" Type="Int32" />
+          <Property Name="Descripcion" Type="String" MaxLength="200" FixedLength="false" Unicode="true" />
+          <Property Name="Cantidad" Type="Decimal" Precision="20" Scale="5" />
+          <Property Name="FechaTransaccion" Type="DateTime" Precision="3" />
+          <Property Name="TipoMovimientoSAP" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Name="FehaReporte" Type="DateTime" Precision="3" />
+        </EntityType>
+        <EntityType Name="Material">
+          <Key>
+            <PropertyRef Name="MaterialID" />
+          </Key>
+          <Property Name="MaterialID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="200" FixedLength="false" Unicode="true" />
+          <Property Name="CodSAPNuevo" Type="String" MaxLength="200" FixedLength="false" Unicode="true" />
+          <Property Name="CodOldSAP" Type="String" MaxLength="200" FixedLength="false" Unicode="true" />
+          <Property Name="Producido" Type="Boolean" />
+          <Property Name="ClasificacionMaterialID" Type="Int32" />
+          <Property Name="Alterno" Type="Boolean" />
+          <Property Name="AfectaInventario" Type="Boolean" />
+          <Property Name="IDStock" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="BillOfMaterial" Relationship="Self.FK_Material_BillOfMaterial" FromRole="Material" ToRole="BillOfMaterial" />
+          <NavigationProperty Name="ClasificacionMaterial" Relationship="Self.FK_ClasificacionMaterial_Material" FromRole="Material" ToRole="ClasificacionMaterial" />
+          <NavigationProperty Name="DataOperacion" Relationship="Self.FK_CantidadReal_DataOperacion" FromRole="Material" ToRole="DataOperacion" />
+          <NavigationProperty Name="DataOperacion1" Relationship="Self.FK_Material_DataOperacion" FromRole="Material" ToRole="DataOperacion" />
+        </EntityType>
+        <EntityType Name="Pais">
+          <Key>
+            <PropertyRef Name="PaisID" />
+          </Key>
+          <Property Name="PaisID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="CodigoSAP" Type="String" MaxLength="30" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="CodigoSAPNuevo" Type="String" MaxLength="30" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Active" Type="Boolean" />
+          <NavigationProperty Name="Equipo" Relationship="Self.FK_Pais_Equipo" FromRole="Pais" ToRole="Equipo" />
+          <NavigationProperty Name="Usuario" Relationship="Self.FK_Pais_Usuario" FromRole="Pais" ToRole="Usuario" />
+        </EntityType>
+        <EntityType Name="Paros">
+          <Key>
+            <PropertyRef Name="ParosID" />
+          </Key>
+          <Property Name="ParosID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="FechaCreacion" Type="DateTime" Precision="3" />
+          <Property Name="FechaInicio" Type="DateTime" Precision="3" />
+          <Property Name="FechaEvento" Type="DateTime" Precision="3" />
+          <Property Name="Comentario" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
+          <Property Name="EquipoID" Type="Int32" />
+          <Property Name="SubEquipoID" Type="Int32" />
+          <Property Name="ComponenteEquipoID" Type="Int32" />
+          <Property Name="ClasificacionID" Type="Int32" />
+          <Property Name="TipoFallaID" Type="Int32" />
+          <Property Name="StatusValidate" Type="Boolean" />
+          <Property Name="StatusDelete" Type="Boolean" />
+          <Property Name="TipoEventoID" Type="Int32" />
+          <Property Name="UsuarioCreadorID" Type="Int32" />
+          <NavigationProperty Name="CierreStatus" Relationship="Self.FK_Paros_CierreStatus" FromRole="Paros" ToRole="CierreStatus" />
+          <NavigationProperty Name="Clasificacion" Relationship="Self.FK_Clasificacion_Paros" FromRole="Paros" ToRole="Clasificacion" />
+          <NavigationProperty Name="ComponenteEquipo" Relationship="Self.FK_ComponenteEquipo_Paros" FromRole="Paros" ToRole="ComponenteEquipo" />
+          <NavigationProperty Name="Equipo" Relationship="Self.FK_Equipo_Paros" FromRole="Paros" ToRole="Equipo" />
+          <NavigationProperty Name="SubEquipo" Relationship="Self.FK_SubEquipo_Paros" FromRole="Paros" ToRole="SubEquipo" />
+          <NavigationProperty Name="TipoEvento" Relationship="Self.FK_TipoEvento_Paros" FromRole="Paros" ToRole="TipoEvento" />
+          <NavigationProperty Name="TipoFalla" Relationship="Self.FK_TipoFalla_Paros" FromRole="Paros" ToRole="TipoFalla" />
+          <NavigationProperty Name="Usuario" Relationship="Self.FK_UsuarioValidador_Paros" FromRole="Paros" ToRole="Usuario" />
+          <Property Name="ParoRelacionadoID" Type="Int32" />
+        </EntityType>
+        <EntityType Name="Planta">
+          <Key>
+            <PropertyRef Name="PlantaID" />
+          </Key>
+          <Property Name="PlantaID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="CodigoSAP" Type="String" MaxLength="30" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="CodigoSAPNuevo" Type="String" MaxLength="30" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Active" Type="Boolean" />
+          <NavigationProperty Name="Equipo" Relationship="Self.FK_Planta_Equipo" FromRole="Planta" ToRole="Equipo" />
+          <NavigationProperty Name="Usuario" Relationship="Self.FK_Planta_Usuario" FromRole="Planta" ToRole="Usuario" />
+        </EntityType>
+        <EntityType Name="Proceso">
+          <Key>
+            <PropertyRef Name="ProcesoID" />
+          </Key>
+          <Property Name="ProcesoID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Active" Type="Boolean" />
+          <NavigationProperty Name="Equipo" Relationship="Self.FK_Proceso_Equipo" FromRole="Proceso" ToRole="Equipo" />
+        </EntityType>
+        <EntityType Name="Rol">
+          <Key>
+            <PropertyRef Name="RolID" />
+          </Key>
+          <Property Name="RolID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Active" Type="Boolean" Nullable="false" />
+          <NavigationProperty Name="UsuarioRol" Relationship="Self.FK__UsuarioRo__RolID__6477ECF3" FromRole="Rol" ToRole="UsuarioRol" />
+        </EntityType>
+        <EntityType Name="Salidas">
+          <Key>
+            <PropertyRef Name="SalidasID" />
+          </Key>
+          <Property Name="SalidasID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="MaterialSAP" Type="Int32" />
+          <Property Name="Descripcion" Type="String" MaxLength="200" FixedLength="false" Unicode="true" />
+          <Property Name="Cantidad" Type="Decimal" Precision="20" Scale="5" />
+          <Property Name="FechaTransaccion" Type="DateTime" Precision="3" />
+          <Property Name="TipoMovimientoSAP" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Name="FehaReporte" Type="DateTime" Precision="3" />
+        </EntityType>
+        <EntityType Name="SubEquipo">
+          <Key>
+            <PropertyRef Name="SubEquipoID" />
+          </Key>
+          <Property Name="SubEquipoID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="200" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="EquipoID" Type="Int32" />
+          <NavigationProperty Name="ComponenteEquipo" Relationship="Self.FK_SubEquipo_ComponenteEquipo" FromRole="SubEquipo" ToRole="ComponenteEquipo" />
+          <NavigationProperty Name="Equipo" Relationship="Self.FK_Equipo_SeccionEquipo" FromRole="SubEquipo" ToRole="Equipo" />
+          <NavigationProperty Name="Paros" Relationship="Self.FK_SubEquipo_Paros" FromRole="SubEquipo" ToRole="Paros" />
+        </EntityType>
+        <EntityType Name="sysdiagrams">
+          <Key>
+            <PropertyRef Name="diagram_id" />
+          </Key>
+          <Property Name="name" Type="String" MaxLength="128" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="principal_id" Type="Int32" Nullable="false" />
+          <Property Name="diagram_id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="version" Type="Int32" />
+          <Property Name="definition" Type="Binary" MaxLength="Max" FixedLength="false" />
+        </EntityType>
+        <EntityType Name="TagEquipo">
+          <Key>
+            <PropertyRef Name="TagEquipoID" />
+          </Key>
+          <Property Name="TagEquipoID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
+          <Property Name="TagName" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
+          <Property Name="TagCode" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
+          <Property Name="EquipoID" Type="Int32" />
+          <NavigationProperty Name="Equipo" Relationship="Self.FK_Equipo_TagEquipo" FromRole="TagEquipo" ToRole="Equipo" />
+        </EntityType>
+        <EntityType Name="TipoEvento">
+          <Key>
+            <PropertyRef Name="TipoEventoID" />
+          </Key>
+          <Property Name="TipoEventoID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <NavigationProperty Name="Paros" Relationship="Self.FK_TipoEvento_Paros" FromRole="TipoEvento" ToRole="Paros" />
+        </EntityType>
+        <EntityType Name="TipoFalla">
+          <Key>
+            <PropertyRef Name="TipoFallaID" />
+          </Key>
+          <Property Name="TipoFallaID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="200" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="ClasificacionID" Type="Int32" />
+          <Property Name="ComponenteEquipoID" Type="Int32" />
+          <NavigationProperty Name="Clasificacion" Relationship="Self.FK_Clasificacion_TipoFalla" FromRole="TipoFalla" ToRole="Clasificacion" />
+          <NavigationProperty Name="ComponenteEquipo" Relationship="Self.FK_ComponenteEquipo_TipoFalla" FromRole="TipoFalla" ToRole="ComponenteEquipo" />
+          <NavigationProperty Name="Paros" Relationship="Self.FK_TipoFalla_Paros" FromRole="TipoFalla" ToRole="Paros" />
+        </EntityType>
+        <EntityType Name="TipoMovimientoSAP">
+          <Key>
+            <PropertyRef Name="TipoMovimientoSAPID" />
+          </Key>
+          <Property Name="TipoMovimientoSAPID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="BillOfMaterial" Relationship="Self.FK_TipoMovimientoSAPID_BillOfMaterial" FromRole="TipoMovimientoSAP" ToRole="BillOfMaterial" />
+          <NavigationProperty Name="DataOperacion" Relationship="Self.FK_TipoMovimientoSAPID_DataOperacion" FromRole="TipoMovimientoSAP" ToRole="DataOperacion" />
+        </EntityType>
+        <EntityType Name="TipoOperacion">
+          <Key>
+            <PropertyRef Name="TipoOperacionID" />
+          </Key>
+          <Property Name="TipoOperacionID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Name="MovimientoSAP" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="BillOfMaterial" Relationship="Self.FK_TipoOperacion_BillOfMaterial" FromRole="TipoOperacion" ToRole="BillOfMaterial" />
+          <NavigationProperty Name="DataOperacion" Relationship="Self.FK_TipoOperacion_DataOperacion" FromRole="TipoOperacion" ToRole="DataOperacion" />
+        </EntityType>
+        <EntityType Name="TokenRegistro">
+          <Key>
+            <PropertyRef Name="TokenRegistroID" />
+          </Key>
+          <Property Name="TokenRegistroID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="UsuarioID" Type="Int32" Nullable="false" />
+          <Property Name="Token" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="FechaExpiracion" Type="DateTime" Nullable="false" Precision="3" />
+          <NavigationProperty Name="Usuario" Relationship="Self.FK__TokenRegi__Usuar__6754599E" FromRole="TokenRegistro" ToRole="Usuario" />
+        </EntityType>
+        <EntityType Name="UnidadMedida">
+          <Key>
+            <PropertyRef Name="UnidadMedidaID" />
+          </Key>
+          <Property Name="UnidadMedidaID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="DataOperacion" Relationship="Self.FK_UnidadMedida_DataOperacion" FromRole="UnidadMedida" ToRole="DataOperacion" />
+        </EntityType>
+        <EntityType Name="UnidadOperativa">
+          <Key>
+            <PropertyRef Name="UnidadOperativaID" />
+          </Key>
+          <Property Name="UnidadOperativaID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Active" Type="Boolean" />
+          <NavigationProperty Name="Equipo" Relationship="Self.FK_UnidadOperativa_Equipo" FromRole="UnidadOperativa" ToRole="Equipo" />
+          <NavigationProperty Name="Usuario" Relationship="Self.FK_UnidadOperativa_Usuario" FromRole="UnidadOperativa" ToRole="Usuario" />
+        </EntityType>
+        <EntityType Name="Usuario">
+          <Key>
+            <PropertyRef Name="UsuarioID" />
+          </Key>
+          <Property Name="UsuarioID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="100" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Email" Type="String" MaxLength="255" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Nombre" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="ContraseñaHash" Type="String" MaxLength="255" FixedLength="false" Unicode="true" />
+          <Property Name="ADUsername" Type="String" MaxLength="255" FixedLength="false" Unicode="true" />
+          <Property Name="EsAD" Type="Boolean" Nullable="false" />
+          <Property Name="FechaMigracionAD" Type="DateTime" Precision="3" />
+          <Property Name="Token" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
+          <Property Name="UltimoLogin" Type="DateTime" Precision="3" />
+          <Property Name="NumeroEmpleado" Type="String" MaxLength="200" FixedLength="false" Unicode="true" />
+          <Property Name="PlantaID" Type="Int32" />
+          <Property Name="UnidadOperativaID" Type="Int32" />
+          <Property Name="PaisID" Type="Int32" />
+          <Property Name="GerenciaID" Type="Int32" />
+          <Property Name="Active" Type="Boolean" Nullable="false" />
+          <NavigationProperty Name="Gerencia" Relationship="Self.FK_Gerencia_Usuario" FromRole="Usuario" ToRole="Gerencia" />
+          <NavigationProperty Name="Pais" Relationship="Self.FK_Pais_Usuario" FromRole="Usuario" ToRole="Pais" />
+          <NavigationProperty Name="Paros" Relationship="Self.FK_UsuarioValidador_Paros" FromRole="Usuario" ToRole="Paros" />
+          <NavigationProperty Name="Planta" Relationship="Self.FK_Planta_Usuario" FromRole="Usuario" ToRole="Planta" />
+          <NavigationProperty Name="TokenRegistro" Relationship="Self.FK__TokenRegi__Usuar__6754599E" FromRole="Usuario" ToRole="TokenRegistro" />
+          <NavigationProperty Name="UnidadOperativa" Relationship="Self.FK_UnidadOperativa_Usuario" FromRole="Usuario" ToRole="UnidadOperativa" />
+          <NavigationProperty Name="UsuarioRol" Relationship="Self.FK__UsuarioRo__Usuar__6383C8BA" FromRole="Usuario" ToRole="UsuarioRol" />
+        </EntityType>
+        <EntityType Name="UsuarioRol">
+          <Key>
+            <PropertyRef Name="UsuarioRolID" />
+          </Key>
+          <Property Name="UsuarioRolID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="UsuarioID" Type="Int32" Nullable="false" />
+          <Property Name="RolID" Type="Int32" Nullable="false" />
+          <NavigationProperty Name="Rol" Relationship="Self.FK__UsuarioRo__RolID__6477ECF3" FromRole="UsuarioRol" ToRole="Rol" />
+          <NavigationProperty Name="Usuario" Relationship="Self.FK__UsuarioRo__Usuar__6383C8BA" FromRole="UsuarioRol" ToRole="Usuario" />
+        </EntityType>
+        <EntityType Name="ValidacionReportes">
+          <Key>
+            <PropertyRef Name="ValidacionReportesID" />
+          </Key>
+          <Property Name="ValidacionReportesID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripción" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <NavigationProperty Name="CierreStatus" Relationship="Self.FK_ValidacionReportes_CierreStatus" FromRole="ValidacionReportes" ToRole="CierreStatus" />
+        </EntityType>
+        <Association Name="FK_Material_BillOfMaterial">
+          <End Role="Material" Type="Self.Material" Multiplicity="0..1" />
+          <End Role="BillOfMaterial" Type="Self.BillOfMaterial" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Material">
+              <PropertyRef Name="MaterialID" />
+            </Principal>
+            <Dependent Role="BillOfMaterial">
+              <PropertyRef Name="MaterialID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TipoMovimientoSAPID_BillOfMaterial">
+          <End Role="TipoMovimientoSAP" Type="Self.TipoMovimientoSAP" Multiplicity="0..1" />
+          <End Role="BillOfMaterial" Type="Self.BillOfMaterial" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoMovimientoSAP">
+              <PropertyRef Name="TipoMovimientoSAPID" />
+            </Principal>
+            <Dependent Role="BillOfMaterial">
+              <PropertyRef Name="TipoMovimientoSAPID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TipoOperacion_BillOfMaterial">
+          <End Role="TipoOperacion" Type="Self.TipoOperacion" Multiplicity="0..1" />
+          <End Role="BillOfMaterial" Type="Self.BillOfMaterial" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoOperacion">
+              <PropertyRef Name="TipoOperacionID" />
+            </Principal>
+            <Dependent Role="BillOfMaterial">
+              <PropertyRef Name="TipoOperacionID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Paros_CierreStatus">
+          <End Role="Paros" Type="Self.Paros" Multiplicity="0..1" />
+          <End Role="CierreStatus" Type="Self.CierreStatus" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Paros">
+              <PropertyRef Name="ParosID" />
+            </Principal>
+            <Dependent Role="CierreStatus">
+              <PropertyRef Name="ParosID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_ValidacionReportes_CierreStatus">
+          <End Role="ValidacionReportes" Type="Self.ValidacionReportes" Multiplicity="0..1" />
+          <End Role="CierreStatus" Type="Self.CierreStatus" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="ValidacionReportes">
+              <PropertyRef Name="ValidacionReportesID" />
+            </Principal>
+            <Dependent Role="CierreStatus">
+              <PropertyRef Name="ValidacionReportesID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Clasificacion_Paros">
+          <End Role="Clasificacion" Type="Self.Clasificacion" Multiplicity="0..1" />
+          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Clasificacion">
+              <PropertyRef Name="ClasificacionID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="ClasificacionID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Clasificacion_TipoFalla">
+          <End Role="Clasificacion" Type="Self.Clasificacion" Multiplicity="0..1" />
+          <End Role="TipoFalla" Type="Self.TipoFalla" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Clasificacion">
+              <PropertyRef Name="ClasificacionID" />
+            </Principal>
+            <Dependent Role="TipoFalla">
+              <PropertyRef Name="ClasificacionID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_ClasificacionMaterial_Material">
+          <End Role="ClasificacionMaterial" Type="Self.ClasificacionMaterial" Multiplicity="0..1" />
+          <End Role="Material" Type="Self.Material" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="ClasificacionMaterial">
+              <PropertyRef Name="ClasificacionMaterialID" />
+            </Principal>
+            <Dependent Role="Material">
+              <PropertyRef Name="ClasificacionMaterialID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_ComponenteEquipo_Paros">
+          <End Role="ComponenteEquipo" Type="Self.ComponenteEquipo" Multiplicity="0..1" />
+          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="ComponenteEquipo">
+              <PropertyRef Name="ComponenteEquipoID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="ComponenteEquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_ComponenteEquipo_TipoFalla">
+          <End Role="ComponenteEquipo" Type="Self.ComponenteEquipo" Multiplicity="0..1" />
+          <End Role="TipoFalla" Type="Self.TipoFalla" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="ComponenteEquipo">
+              <PropertyRef Name="ComponenteEquipoID" />
+            </Principal>
+            <Dependent Role="TipoFalla">
+              <PropertyRef Name="ComponenteEquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_SubEquipo_ComponenteEquipo">
+          <End Role="SubEquipo" Type="Self.SubEquipo" Multiplicity="0..1" />
+          <End Role="ComponenteEquipo" Type="Self.ComponenteEquipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="SubEquipo">
+              <PropertyRef Name="SubEquipoID" />
+            </Principal>
+            <Dependent Role="ComponenteEquipo">
+              <PropertyRef Name="SubEquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_CantidadReal_DataOperacion">
+          <End Role="Material" Type="Self.Material" Multiplicity="0..1" />
+          <End Role="DataOperacion" Type="Self.DataOperacion" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Material">
+              <PropertyRef Name="MaterialID" />
+            </Principal>
+            <Dependent Role="DataOperacion">
+              <PropertyRef Name="MaterialID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Equipo_DataOperacion">
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="0..1" />
+          <End Role="DataOperacion" Type="Self.DataOperacion" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Equipo">
+              <PropertyRef Name="EquipoID" />
+            </Principal>
+            <Dependent Role="DataOperacion">
+              <PropertyRef Name="EquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Material_DataOperacion">
+          <End Role="Material" Type="Self.Material" Multiplicity="0..1" />
+          <End Role="DataOperacion" Type="Self.DataOperacion" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Material">
+              <PropertyRef Name="MaterialID" />
+            </Principal>
+            <Dependent Role="DataOperacion">
+              <PropertyRef Name="MaterialID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TipoMovimientoSAPID_DataOperacion">
+          <End Role="TipoMovimientoSAP" Type="Self.TipoMovimientoSAP" Multiplicity="0..1" />
+          <End Role="DataOperacion" Type="Self.DataOperacion" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoMovimientoSAP">
+              <PropertyRef Name="TipoMovimientoSAPID" />
+            </Principal>
+            <Dependent Role="DataOperacion">
+              <PropertyRef Name="TipoMovimientoSAPID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TipoOperacion_DataOperacion">
+          <End Role="TipoOperacion" Type="Self.TipoOperacion" Multiplicity="0..1" />
+          <End Role="DataOperacion" Type="Self.DataOperacion" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoOperacion">
+              <PropertyRef Name="TipoOperacionID" />
+            </Principal>
+            <Dependent Role="DataOperacion">
+              <PropertyRef Name="TipoOperacionID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_UnidadMedida_DataOperacion">
+          <End Role="UnidadMedida" Type="Self.UnidadMedida" Multiplicity="0..1" />
+          <End Role="DataOperacion" Type="Self.DataOperacion" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="UnidadMedida">
+              <PropertyRef Name="UnidadMedidaID" />
+            </Principal>
+            <Dependent Role="DataOperacion">
+              <PropertyRef Name="UnidadMedidaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Equipo_Paros">
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="0..1" />
+          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Equipo">
+              <PropertyRef Name="EquipoID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="EquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Equipo_SeccionEquipo">
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="0..1" />
+          <End Role="SubEquipo" Type="Self.SubEquipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Equipo">
+              <PropertyRef Name="EquipoID" />
+            </Principal>
+            <Dependent Role="SubEquipo">
+              <PropertyRef Name="EquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Equipo_TagEquipo">
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="0..1" />
+          <End Role="TagEquipo" Type="Self.TagEquipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Equipo">
+              <PropertyRef Name="EquipoID" />
+            </Principal>
+            <Dependent Role="TagEquipo">
+              <PropertyRef Name="EquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Pais_Equipo">
+          <End Role="Pais" Type="Self.Pais" Multiplicity="0..1" />
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Pais">
+              <PropertyRef Name="PaisID" />
+            </Principal>
+            <Dependent Role="Equipo">
+              <PropertyRef Name="PaisID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Planta_Equipo">
+          <End Role="Planta" Type="Self.Planta" Multiplicity="0..1" />
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Planta">
+              <PropertyRef Name="PlantaID" />
+            </Principal>
+            <Dependent Role="Equipo">
+              <PropertyRef Name="PlantaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Proceso_Equipo">
+          <End Role="Proceso" Type="Self.Proceso" Multiplicity="0..1" />
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Proceso">
+              <PropertyRef Name="ProcesoID" />
+            </Principal>
+            <Dependent Role="Equipo">
+              <PropertyRef Name="ProcesoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_UnidadOperativa_Equipo">
+          <End Role="UnidadOperativa" Type="Self.UnidadOperativa" Multiplicity="0..1" />
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="UnidadOperativa">
+              <PropertyRef Name="UnidadOperativaID" />
+            </Principal>
+            <Dependent Role="Equipo">
+              <PropertyRef Name="UnidadOperativaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Gerencia_Usuario">
+          <End Role="Gerencia" Type="Self.Gerencia" Multiplicity="0..1" />
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Gerencia">
+              <PropertyRef Name="GerenciaID" />
+            </Principal>
+            <Dependent Role="Usuario">
+              <PropertyRef Name="GerenciaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Pais_Usuario">
+          <End Role="Pais" Type="Self.Pais" Multiplicity="0..1" />
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Pais">
+              <PropertyRef Name="PaisID" />
+            </Principal>
+            <Dependent Role="Usuario">
+              <PropertyRef Name="PaisID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_SubEquipo_Paros">
+          <End Role="SubEquipo" Type="Self.SubEquipo" Multiplicity="0..1" />
+          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="SubEquipo">
+              <PropertyRef Name="SubEquipoID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="SubEquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TipoEvento_Paros">
+          <End Role="TipoEvento" Type="Self.TipoEvento" Multiplicity="0..1" />
+          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoEvento">
+              <PropertyRef Name="TipoEventoID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="TipoEventoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TipoFalla_Paros">
+          <End Role="TipoFalla" Type="Self.TipoFalla" Multiplicity="0..1" />
+          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoFalla">
+              <PropertyRef Name="TipoFallaID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="TipoFallaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_UsuarioValidador_Paros">
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="0..1" />
+          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Usuario">
+              <PropertyRef Name="UsuarioID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="UsuarioCreadorID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Planta_Usuario">
+          <End Role="Planta" Type="Self.Planta" Multiplicity="0..1" />
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Planta">
+              <PropertyRef Name="PlantaID" />
+            </Principal>
+            <Dependent Role="Usuario">
+              <PropertyRef Name="PlantaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__UsuarioRo__RolID__6477ECF3">
+          <End Role="Rol" Type="Self.Rol" Multiplicity="1" />
+          <End Role="UsuarioRol" Type="Self.UsuarioRol" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Rol">
+              <PropertyRef Name="RolID" />
+            </Principal>
+            <Dependent Role="UsuarioRol">
+              <PropertyRef Name="RolID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__TokenRegi__Usuar__6754599E">
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="1" />
+          <End Role="TokenRegistro" Type="Self.TokenRegistro" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Usuario">
+              <PropertyRef Name="UsuarioID" />
+            </Principal>
+            <Dependent Role="TokenRegistro">
+              <PropertyRef Name="UsuarioID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_UnidadOperativa_Usuario">
+          <End Role="UnidadOperativa" Type="Self.UnidadOperativa" Multiplicity="0..1" />
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="UnidadOperativa">
+              <PropertyRef Name="UnidadOperativaID" />
+            </Principal>
+            <Dependent Role="Usuario">
+              <PropertyRef Name="UnidadOperativaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__UsuarioRo__Usuar__6383C8BA">
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="1" />
+          <End Role="UsuarioRol" Type="Self.UsuarioRol" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Usuario">
+              <PropertyRef Name="UsuarioID" />
+            </Principal>
+            <Dependent Role="UsuarioRol">
+              <PropertyRef Name="UsuarioID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityContainer Name="DVPEntities" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="BillOfMaterial" EntityType="Self.BillOfMaterial" />
+          <EntitySet Name="CierreStatus" EntityType="Self.CierreStatus" />
+          <EntitySet Name="Clasificacion" EntityType="Self.Clasificacion" />
+          <EntitySet Name="ClasificacionMaterial" EntityType="Self.ClasificacionMaterial" />
+          <EntitySet Name="ComponenteEquipo" EntityType="Self.ComponenteEquipo" />
+          <EntitySet Name="DataOperacion" EntityType="Self.DataOperacion" />
+          <EntitySet Name="Entradas" EntityType="Self.Entradas" />
+          <EntitySet Name="Equipo" EntityType="Self.Equipo" />
+          <EntitySet Name="Gerencia" EntityType="Self.Gerencia" />
+          <EntitySet Name="Inventarios" EntityType="Self.Inventarios" />
+          <EntitySet Name="Material" EntityType="Self.Material" />
+          <EntitySet Name="Pais" EntityType="Self.Pais" />
+          <EntitySet Name="Paros" EntityType="Self.Paros" />
+          <EntitySet Name="Planta" EntityType="Self.Planta" />
+          <EntitySet Name="Proceso" EntityType="Self.Proceso" />
+          <EntitySet Name="Rol" EntityType="Self.Rol" />
+          <EntitySet Name="Salidas" EntityType="Self.Salidas" />
+          <EntitySet Name="SubEquipo" EntityType="Self.SubEquipo" />
+          <EntitySet Name="sysdiagrams" EntityType="Self.sysdiagrams" />
+          <EntitySet Name="TagEquipo" EntityType="Self.TagEquipo" />
+          <EntitySet Name="TipoEvento" EntityType="Self.TipoEvento" />
+          <EntitySet Name="TipoFalla" EntityType="Self.TipoFalla" />
+          <EntitySet Name="TipoMovimientoSAP" EntityType="Self.TipoMovimientoSAP" />
+          <EntitySet Name="TipoOperacion" EntityType="Self.TipoOperacion" />
+          <EntitySet Name="TokenRegistro" EntityType="Self.TokenRegistro" />
+          <EntitySet Name="UnidadMedida" EntityType="Self.UnidadMedida" />
+          <EntitySet Name="UnidadOperativa" EntityType="Self.UnidadOperativa" />
+          <EntitySet Name="Usuario" EntityType="Self.Usuario" />
+          <EntitySet Name="UsuarioRol" EntityType="Self.UsuarioRol" />
+          <EntitySet Name="ValidacionReportes" EntityType="Self.ValidacionReportes" />
+          <AssociationSet Name="FK_Material_BillOfMaterial" Association="Self.FK_Material_BillOfMaterial">
+            <End Role="Material" EntitySet="Material" />
+            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TipoMovimientoSAPID_BillOfMaterial" Association="Self.FK_TipoMovimientoSAPID_BillOfMaterial">
+            <End Role="TipoMovimientoSAP" EntitySet="TipoMovimientoSAP" />
+            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TipoOperacion_BillOfMaterial" Association="Self.FK_TipoOperacion_BillOfMaterial">
+            <End Role="TipoOperacion" EntitySet="TipoOperacion" />
+            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Paros_CierreStatus" Association="Self.FK_Paros_CierreStatus">
+            <End Role="Paros" EntitySet="Paros" />
+            <End Role="CierreStatus" EntitySet="CierreStatus" />
+          </AssociationSet>
+          <AssociationSet Name="FK_ValidacionReportes_CierreStatus" Association="Self.FK_ValidacionReportes_CierreStatus">
+            <End Role="ValidacionReportes" EntitySet="ValidacionReportes" />
+            <End Role="CierreStatus" EntitySet="CierreStatus" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Clasificacion_Paros" Association="Self.FK_Clasificacion_Paros">
+            <End Role="Clasificacion" EntitySet="Clasificacion" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Clasificacion_TipoFalla" Association="Self.FK_Clasificacion_TipoFalla">
+            <End Role="Clasificacion" EntitySet="Clasificacion" />
+            <End Role="TipoFalla" EntitySet="TipoFalla" />
+          </AssociationSet>
+          <AssociationSet Name="FK_ClasificacionMaterial_Material" Association="Self.FK_ClasificacionMaterial_Material">
+            <End Role="ClasificacionMaterial" EntitySet="ClasificacionMaterial" />
+            <End Role="Material" EntitySet="Material" />
+          </AssociationSet>
+          <AssociationSet Name="FK_ComponenteEquipo_Paros" Association="Self.FK_ComponenteEquipo_Paros">
+            <End Role="ComponenteEquipo" EntitySet="ComponenteEquipo" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_ComponenteEquipo_TipoFalla" Association="Self.FK_ComponenteEquipo_TipoFalla">
+            <End Role="ComponenteEquipo" EntitySet="ComponenteEquipo" />
+            <End Role="TipoFalla" EntitySet="TipoFalla" />
+          </AssociationSet>
+          <AssociationSet Name="FK_SubEquipo_ComponenteEquipo" Association="Self.FK_SubEquipo_ComponenteEquipo">
+            <End Role="SubEquipo" EntitySet="SubEquipo" />
+            <End Role="ComponenteEquipo" EntitySet="ComponenteEquipo" />
+          </AssociationSet>
+          <AssociationSet Name="FK_CantidadReal_DataOperacion" Association="Self.FK_CantidadReal_DataOperacion">
+            <End Role="Material" EntitySet="Material" />
+            <End Role="DataOperacion" EntitySet="DataOperacion" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Equipo_DataOperacion" Association="Self.FK_Equipo_DataOperacion">
+            <End Role="Equipo" EntitySet="Equipo" />
+            <End Role="DataOperacion" EntitySet="DataOperacion" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Material_DataOperacion" Association="Self.FK_Material_DataOperacion">
+            <End Role="Material" EntitySet="Material" />
+            <End Role="DataOperacion" EntitySet="DataOperacion" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TipoMovimientoSAPID_DataOperacion" Association="Self.FK_TipoMovimientoSAPID_DataOperacion">
+            <End Role="TipoMovimientoSAP" EntitySet="TipoMovimientoSAP" />
+            <End Role="DataOperacion" EntitySet="DataOperacion" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TipoOperacion_DataOperacion" Association="Self.FK_TipoOperacion_DataOperacion">
+            <End Role="TipoOperacion" EntitySet="TipoOperacion" />
+            <End Role="DataOperacion" EntitySet="DataOperacion" />
+          </AssociationSet>
+          <AssociationSet Name="FK_UnidadMedida_DataOperacion" Association="Self.FK_UnidadMedida_DataOperacion">
+            <End Role="UnidadMedida" EntitySet="UnidadMedida" />
+            <End Role="DataOperacion" EntitySet="DataOperacion" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Equipo_Paros" Association="Self.FK_Equipo_Paros">
+            <End Role="Equipo" EntitySet="Equipo" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Equipo_SeccionEquipo" Association="Self.FK_Equipo_SeccionEquipo">
+            <End Role="Equipo" EntitySet="Equipo" />
+            <End Role="SubEquipo" EntitySet="SubEquipo" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Equipo_TagEquipo" Association="Self.FK_Equipo_TagEquipo">
+            <End Role="Equipo" EntitySet="Equipo" />
+            <End Role="TagEquipo" EntitySet="TagEquipo" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Pais_Equipo" Association="Self.FK_Pais_Equipo">
+            <End Role="Pais" EntitySet="Pais" />
+            <End Role="Equipo" EntitySet="Equipo" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Planta_Equipo" Association="Self.FK_Planta_Equipo">
+            <End Role="Planta" EntitySet="Planta" />
+            <End Role="Equipo" EntitySet="Equipo" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Proceso_Equipo" Association="Self.FK_Proceso_Equipo">
+            <End Role="Proceso" EntitySet="Proceso" />
+            <End Role="Equipo" EntitySet="Equipo" />
+          </AssociationSet>
+          <AssociationSet Name="FK_UnidadOperativa_Equipo" Association="Self.FK_UnidadOperativa_Equipo">
+            <End Role="UnidadOperativa" EntitySet="UnidadOperativa" />
+            <End Role="Equipo" EntitySet="Equipo" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Gerencia_Usuario" Association="Self.FK_Gerencia_Usuario">
+            <End Role="Gerencia" EntitySet="Gerencia" />
+            <End Role="Usuario" EntitySet="Usuario" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Pais_Usuario" Association="Self.FK_Pais_Usuario">
+            <End Role="Pais" EntitySet="Pais" />
+            <End Role="Usuario" EntitySet="Usuario" />
+          </AssociationSet>
+          <AssociationSet Name="FK_SubEquipo_Paros" Association="Self.FK_SubEquipo_Paros">
+            <End Role="SubEquipo" EntitySet="SubEquipo" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TipoEvento_Paros" Association="Self.FK_TipoEvento_Paros">
+            <End Role="TipoEvento" EntitySet="TipoEvento" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TipoFalla_Paros" Association="Self.FK_TipoFalla_Paros">
+            <End Role="TipoFalla" EntitySet="TipoFalla" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_UsuarioValidador_Paros" Association="Self.FK_UsuarioValidador_Paros">
+            <End Role="Usuario" EntitySet="Usuario" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Planta_Usuario" Association="Self.FK_Planta_Usuario">
+            <End Role="Planta" EntitySet="Planta" />
+            <End Role="Usuario" EntitySet="Usuario" />
+          </AssociationSet>
+          <AssociationSet Name="FK__UsuarioRo__RolID__6477ECF3" Association="Self.FK__UsuarioRo__RolID__6477ECF3">
+            <End Role="Rol" EntitySet="Rol" />
+            <End Role="UsuarioRol" EntitySet="UsuarioRol" />
+          </AssociationSet>
+          <AssociationSet Name="FK__TokenRegi__Usuar__6754599E" Association="Self.FK__TokenRegi__Usuar__6754599E">
+            <End Role="Usuario" EntitySet="Usuario" />
+            <End Role="TokenRegistro" EntitySet="TokenRegistro" />
+          </AssociationSet>
+          <AssociationSet Name="FK_UnidadOperativa_Usuario" Association="Self.FK_UnidadOperativa_Usuario">
+            <End Role="UnidadOperativa" EntitySet="UnidadOperativa" />
+            <End Role="Usuario" EntitySet="Usuario" />
+          </AssociationSet>
+          <AssociationSet Name="FK__UsuarioRo__Usuar__6383C8BA" Association="Self.FK__UsuarioRo__Usuar__6383C8BA">
+            <End Role="Usuario" EntitySet="Usuario" />
+            <End Role="UsuarioRol" EntitySet="UsuarioRol" />
+          </AssociationSet>
+          <FunctionImport Name="sp_alterdiagram">
+            <Parameter Name="diagramname" Mode="In" Type="String" />
+            <Parameter Name="owner_id" Mode="In" Type="Int32" />
+            <Parameter Name="version" Mode="In" Type="Int32" />
+            <Parameter Name="definition" Mode="In" Type="Binary" />
+          </FunctionImport>
+          <FunctionImport Name="sp_creatediagram">
+            <Parameter Name="diagramname" Mode="In" Type="String" />
+            <Parameter Name="owner_id" Mode="In" Type="Int32" />
+            <Parameter Name="version" Mode="In" Type="Int32" />
+            <Parameter Name="definition" Mode="In" Type="Binary" />
+          </FunctionImport>
+          <FunctionImport Name="sp_dropdiagram">
+            <Parameter Name="diagramname" Mode="In" Type="String" />
+            <Parameter Name="owner_id" Mode="In" Type="Int32" />
+          </FunctionImport>
+          <FunctionImport Name="sp_helpdiagramdefinition" ReturnType="Collection(DVPModel.sp_helpdiagramdefinition_Result)">
+            <Parameter Name="diagramname" Mode="In" Type="String" />
+            <Parameter Name="owner_id" Mode="In" Type="Int32" />
+          </FunctionImport>
+          <FunctionImport Name="sp_helpdiagrams" ReturnType="Collection(DVPModel.sp_helpdiagrams_Result)">
+            <Parameter Name="diagramname" Mode="In" Type="String" />
+            <Parameter Name="owner_id" Mode="In" Type="Int32" />
+          </FunctionImport>
+          <FunctionImport Name="sp_renamediagram">
+            <Parameter Name="diagramname" Mode="In" Type="String" />
+            <Parameter Name="owner_id" Mode="In" Type="Int32" />
+            <Parameter Name="new_diagramname" Mode="In" Type="String" />
+          </FunctionImport>
+          <FunctionImport Name="sp_upgraddiagrams" />
+        </EntityContainer>
+        <ComplexType Name="sp_helpdiagramdefinition_Result">
+          <Property Type="Int32" Name="version" Nullable="true" />
+          <Property Type="Binary" Name="definition" Nullable="true" />
+        </ComplexType>
+        <ComplexType Name="sp_helpdiagrams_Result">
+          <Property Type="String" Name="Database" Nullable="true" MaxLength="128" />
+          <Property Type="String" Name="Name" Nullable="false" MaxLength="128" />
+          <Property Type="Int32" Name="ID" Nullable="false" />
+          <Property Type="String" Name="Owner" Nullable="true" MaxLength="128" />
+          <Property Type="Int32" Name="OwnerID" Nullable="false" />
+        </ComplexType>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="DVPModelStoreContainer" CdmEntityContainer="DVPEntities">
+          <EntitySetMapping Name="BillOfMaterial">
+            <EntityTypeMapping TypeName="DVPModel.BillOfMaterial">
+              <MappingFragment StoreEntitySet="BillOfMaterial">
+                <ScalarProperty Name="BillOfMaterialID" ColumnName="BillOfMaterialID" />
+                <ScalarProperty Name="MaterialID" ColumnName="MaterialID" />
+                <ScalarProperty Name="TipoOperacionID" ColumnName="TipoOperacionID" />
+                <ScalarProperty Name="TipoMovimientoSAPID" ColumnName="TipoMovimientoSAPID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="CierreStatus">
+            <EntityTypeMapping TypeName="DVPModel.CierreStatus">
+              <MappingFragment StoreEntitySet="CierreStatus">
+                <ScalarProperty Name="CierreStatusID" ColumnName="CierreStatusID" />
+                <ScalarProperty Name="FechaCierre" ColumnName="FechaCierre" />
+                <ScalarProperty Name="FechaReporte" ColumnName="FechaReporte" />
+                <ScalarProperty Name="ValidacionReportesID" ColumnName="ValidacionReportesID" />
+                <ScalarProperty Name="ParosID" ColumnName="ParosID" />
+                <ScalarProperty Name="Cerrado" ColumnName="Cerrado" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Clasificacion">
+            <EntityTypeMapping TypeName="DVPModel.Clasificacion">
+              <MappingFragment StoreEntitySet="Clasificacion">
+                <ScalarProperty Name="ClasificacionID" ColumnName="ClasificacionID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="Ajeno" ColumnName="Ajeno" />
+                <ScalarProperty Name="AfectaTMEF" ColumnName="AfectaTMEF" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="ClasificacionMaterial">
+            <EntityTypeMapping TypeName="DVPModel.ClasificacionMaterial">
+              <MappingFragment StoreEntitySet="ClasificacionMaterial">
+                <ScalarProperty Name="ClasificacionMaterialID" ColumnName="ClasificacionMaterialID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="ComponenteEquipo">
+            <EntityTypeMapping TypeName="DVPModel.ComponenteEquipo">
+              <MappingFragment StoreEntitySet="ComponenteEquipo">
+                <ScalarProperty Name="ComponenteEquipoID" ColumnName="ComponenteEquipoID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="SubEquipoID" ColumnName="SubEquipoID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="DataOperacion">
+            <EntityTypeMapping TypeName="DVPModel.DataOperacion">
+              <MappingFragment StoreEntitySet="DataOperacion">
+                <ScalarProperty Name="DataOperacionID" ColumnName="DataOperacionID" />
+                <ScalarProperty Name="EquipoID" ColumnName="EquipoID" />
+                <ScalarProperty Name="TipoOperacionID" ColumnName="TipoOperacionID" />
+                <ScalarProperty Name="MaterialID" ColumnName="MaterialID" />
+                <ScalarProperty Name="CantidadObtenida" ColumnName="CantidadObtenida" />
+                <ScalarProperty Name="CantidadReal" ColumnName="CantidadReal" />
+                <ScalarProperty Name="UnidadMedidaID" ColumnName="UnidadMedidaID" />
+                <ScalarProperty Name="TipoMovimientoSAPID" ColumnName="TipoMovimientoSAPID" />
+                <ScalarProperty Name="FechaReporte" ColumnName="FechaReporte" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Entradas">
+            <EntityTypeMapping TypeName="DVPModel.Entradas">
+              <MappingFragment StoreEntitySet="Entradas">
+                <ScalarProperty Name="EntradasID" ColumnName="EntradasID" />
+                <ScalarProperty Name="MaterialSAP" ColumnName="MaterialSAP" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="Cantidad" ColumnName="Cantidad" />
+                <ScalarProperty Name="FechaTransaccion" ColumnName="FechaTransaccion" />
+                <ScalarProperty Name="TipoMovimientoSAP" ColumnName="TipoMovimientoSAP" />
+                <ScalarProperty Name="FehaReporte" ColumnName="FehaReporte" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Equipo">
+            <EntityTypeMapping TypeName="DVPModel.Equipo">
+              <MappingFragment StoreEntitySet="Equipo">
+                <ScalarProperty Name="EquipoID" ColumnName="EquipoID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="CondigoDetalle" ColumnName="CondigoDetalle" />
+                <ScalarProperty Name="CondigoSAP" ColumnName="CondigoSAP" />
+                <ScalarProperty Name="ProcesoID" ColumnName="ProcesoID" />
+                <ScalarProperty Name="PlantaID" ColumnName="PlantaID" />
+                <ScalarProperty Name="UnidadOperativaID" ColumnName="UnidadOperativaID" />
+                <ScalarProperty Name="PaisID" ColumnName="PaisID" />
+                <ScalarProperty Name="BuscarParo" ColumnName="BuscarParo" />
+                <ScalarProperty Name="Active" ColumnName="Active" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Gerencia">
+            <EntityTypeMapping TypeName="DVPModel.Gerencia">
+              <MappingFragment StoreEntitySet="Gerencia">
+                <ScalarProperty Name="GerenciaID" ColumnName="GerenciaID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="Active" ColumnName="Active" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Inventarios">
+            <EntityTypeMapping TypeName="DVPModel.Inventarios">
+              <MappingFragment StoreEntitySet="Inventarios">
+                <ScalarProperty Name="SalidasID" ColumnName="SalidasID" />
+                <ScalarProperty Name="MaterialSAP" ColumnName="MaterialSAP" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="Cantidad" ColumnName="Cantidad" />
+                <ScalarProperty Name="FechaTransaccion" ColumnName="FechaTransaccion" />
+                <ScalarProperty Name="TipoMovimientoSAP" ColumnName="TipoMovimientoSAP" />
+                <ScalarProperty Name="FehaReporte" ColumnName="FehaReporte" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Material">
+            <EntityTypeMapping TypeName="DVPModel.Material">
+              <MappingFragment StoreEntitySet="Material">
+                <ScalarProperty Name="MaterialID" ColumnName="MaterialID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="CodSAPNuevo" ColumnName="CodSAPNuevo" />
+                <ScalarProperty Name="CodOldSAP" ColumnName="CodOldSAP" />
+                <ScalarProperty Name="Producido" ColumnName="Producido" />
+                <ScalarProperty Name="ClasificacionMaterialID" ColumnName="ClasificacionMaterialID" />
+                <ScalarProperty Name="Alterno" ColumnName="Alterno" />
+                <ScalarProperty Name="AfectaInventario" ColumnName="AfectaInventario" />
+                <ScalarProperty Name="IDStock" ColumnName="IDStock" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Pais">
+            <EntityTypeMapping TypeName="DVPModel.Pais">
+              <MappingFragment StoreEntitySet="Pais">
+                <ScalarProperty Name="PaisID" ColumnName="PaisID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="CodigoSAP" ColumnName="CodigoSAP" />
+                <ScalarProperty Name="CodigoSAPNuevo" ColumnName="CodigoSAPNuevo" />
+                <ScalarProperty Name="Active" ColumnName="Active" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Paros">
+            <EntityTypeMapping TypeName="DVPModel.Paros">
+              <MappingFragment StoreEntitySet="Paros">
+                <ScalarProperty Name="ParoRelacionadoID" ColumnName="ParoRelacionadoID" />
+                <ScalarProperty Name="ParosID" ColumnName="ParosID" />
+                <ScalarProperty Name="FechaCreacion" ColumnName="FechaCreacion" />
+                <ScalarProperty Name="FechaInicio" ColumnName="FechaInicio" />
+                <ScalarProperty Name="FechaEvento" ColumnName="FechaEvento" />
+                <ScalarProperty Name="Comentario" ColumnName="Comentario" />
+                <ScalarProperty Name="EquipoID" ColumnName="EquipoID" />
+                <ScalarProperty Name="SubEquipoID" ColumnName="SubEquipoID" />
+                <ScalarProperty Name="ComponenteEquipoID" ColumnName="ComponenteEquipoID" />
+                <ScalarProperty Name="ClasificacionID" ColumnName="ClasificacionID" />
+                <ScalarProperty Name="TipoFallaID" ColumnName="TipoFallaID" />
+                <ScalarProperty Name="StatusValidate" ColumnName="StatusValidate" />
+                <ScalarProperty Name="StatusDelete" ColumnName="StatusDelete" />
+                <ScalarProperty Name="TipoEventoID" ColumnName="TipoEventoID" />
+                <ScalarProperty Name="UsuarioCreadorID" ColumnName="UsuarioCreadorID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Planta">
+            <EntityTypeMapping TypeName="DVPModel.Planta">
+              <MappingFragment StoreEntitySet="Planta">
+                <ScalarProperty Name="PlantaID" ColumnName="PlantaID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="CodigoSAP" ColumnName="CodigoSAP" />
+                <ScalarProperty Name="CodigoSAPNuevo" ColumnName="CodigoSAPNuevo" />
+                <ScalarProperty Name="Active" ColumnName="Active" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Proceso">
+            <EntityTypeMapping TypeName="DVPModel.Proceso">
+              <MappingFragment StoreEntitySet="Proceso">
+                <ScalarProperty Name="ProcesoID" ColumnName="ProcesoID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="Active" ColumnName="Active" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Rol">
+            <EntityTypeMapping TypeName="DVPModel.Rol">
+              <MappingFragment StoreEntitySet="Rol">
+                <ScalarProperty Name="RolID" ColumnName="RolID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="Active" ColumnName="Active" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Salidas">
+            <EntityTypeMapping TypeName="DVPModel.Salidas">
+              <MappingFragment StoreEntitySet="Salidas">
+                <ScalarProperty Name="SalidasID" ColumnName="SalidasID" />
+                <ScalarProperty Name="MaterialSAP" ColumnName="MaterialSAP" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="Cantidad" ColumnName="Cantidad" />
+                <ScalarProperty Name="FechaTransaccion" ColumnName="FechaTransaccion" />
+                <ScalarProperty Name="TipoMovimientoSAP" ColumnName="TipoMovimientoSAP" />
+                <ScalarProperty Name="FehaReporte" ColumnName="FehaReporte" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="SubEquipo">
+            <EntityTypeMapping TypeName="DVPModel.SubEquipo">
+              <MappingFragment StoreEntitySet="SubEquipo">
+                <ScalarProperty Name="SubEquipoID" ColumnName="SubEquipoID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="EquipoID" ColumnName="EquipoID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="sysdiagrams">
+            <EntityTypeMapping TypeName="DVPModel.sysdiagrams">
+              <MappingFragment StoreEntitySet="sysdiagrams">
+                <ScalarProperty Name="name" ColumnName="name" />
+                <ScalarProperty Name="principal_id" ColumnName="principal_id" />
+                <ScalarProperty Name="diagram_id" ColumnName="diagram_id" />
+                <ScalarProperty Name="version" ColumnName="version" />
+                <ScalarProperty Name="definition" ColumnName="definition" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="TagEquipo">
+            <EntityTypeMapping TypeName="DVPModel.TagEquipo">
+              <MappingFragment StoreEntitySet="TagEquipo">
+                <ScalarProperty Name="TagEquipoID" ColumnName="TagEquipoID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="TagName" ColumnName="TagName" />
+                <ScalarProperty Name="TagCode" ColumnName="TagCode" />
+                <ScalarProperty Name="EquipoID" ColumnName="EquipoID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="TipoEvento">
+            <EntityTypeMapping TypeName="DVPModel.TipoEvento">
+              <MappingFragment StoreEntitySet="TipoEvento">
+                <ScalarProperty Name="TipoEventoID" ColumnName="TipoEventoID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="TipoFalla">
+            <EntityTypeMapping TypeName="DVPModel.TipoFalla">
+              <MappingFragment StoreEntitySet="TipoFalla">
+                <ScalarProperty Name="TipoFallaID" ColumnName="TipoFallaID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="ClasificacionID" ColumnName="ClasificacionID" />
+                <ScalarProperty Name="ComponenteEquipoID" ColumnName="ComponenteEquipoID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="TipoMovimientoSAP">
+            <EntityTypeMapping TypeName="DVPModel.TipoMovimientoSAP">
+              <MappingFragment StoreEntitySet="TipoMovimientoSAP">
+                <ScalarProperty Name="TipoMovimientoSAPID" ColumnName="TipoMovimientoSAPID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="TipoOperacion">
+            <EntityTypeMapping TypeName="DVPModel.TipoOperacion">
+              <MappingFragment StoreEntitySet="TipoOperacion">
+                <ScalarProperty Name="TipoOperacionID" ColumnName="TipoOperacionID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="MovimientoSAP" ColumnName="MovimientoSAP" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="TokenRegistro">
+            <EntityTypeMapping TypeName="DVPModel.TokenRegistro">
+              <MappingFragment StoreEntitySet="TokenRegistro">
+                <ScalarProperty Name="TokenRegistroID" ColumnName="TokenRegistroID" />
+                <ScalarProperty Name="UsuarioID" ColumnName="UsuarioID" />
+                <ScalarProperty Name="Token" ColumnName="Token" />
+                <ScalarProperty Name="FechaExpiracion" ColumnName="FechaExpiracion" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="UnidadMedida">
+            <EntityTypeMapping TypeName="DVPModel.UnidadMedida">
+              <MappingFragment StoreEntitySet="UnidadMedida">
+                <ScalarProperty Name="UnidadMedidaID" ColumnName="UnidadMedidaID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="UnidadOperativa">
+            <EntityTypeMapping TypeName="DVPModel.UnidadOperativa">
+              <MappingFragment StoreEntitySet="UnidadOperativa">
+                <ScalarProperty Name="UnidadOperativaID" ColumnName="UnidadOperativaID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="Active" ColumnName="Active" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Usuario">
+            <EntityTypeMapping TypeName="DVPModel.Usuario">
+              <MappingFragment StoreEntitySet="Usuario">
+                <ScalarProperty Name="UsuarioID" ColumnName="UsuarioID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="Email" ColumnName="Email" />
+                <ScalarProperty Name="Nombre" ColumnName="Nombre" />
+                <ScalarProperty Name="ContraseñaHash" ColumnName="ContraseñaHash" />
+                <ScalarProperty Name="ADUsername" ColumnName="ADUsername" />
+                <ScalarProperty Name="EsAD" ColumnName="EsAD" />
+                <ScalarProperty Name="FechaMigracionAD" ColumnName="FechaMigracionAD" />
+                <ScalarProperty Name="Token" ColumnName="Token" />
+                <ScalarProperty Name="UltimoLogin" ColumnName="UltimoLogin" />
+                <ScalarProperty Name="NumeroEmpleado" ColumnName="NumeroEmpleado" />
+                <ScalarProperty Name="PlantaID" ColumnName="PlantaID" />
+                <ScalarProperty Name="UnidadOperativaID" ColumnName="UnidadOperativaID" />
+                <ScalarProperty Name="PaisID" ColumnName="PaisID" />
+                <ScalarProperty Name="GerenciaID" ColumnName="GerenciaID" />
+                <ScalarProperty Name="Active" ColumnName="Active" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="UsuarioRol">
+            <EntityTypeMapping TypeName="DVPModel.UsuarioRol">
+              <MappingFragment StoreEntitySet="UsuarioRol">
+                <ScalarProperty Name="UsuarioRolID" ColumnName="UsuarioRolID" />
+                <ScalarProperty Name="UsuarioID" ColumnName="UsuarioID" />
+                <ScalarProperty Name="RolID" ColumnName="RolID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="ValidacionReportes">
+            <EntityTypeMapping TypeName="DVPModel.ValidacionReportes">
+              <MappingFragment StoreEntitySet="ValidacionReportes">
+                <ScalarProperty Name="ValidacionReportesID" ColumnName="ValidacionReportesID" />
+                <ScalarProperty Name="Descripción" ColumnName="Descripción" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <FunctionImportMapping FunctionImportName="sp_alterdiagram" FunctionName="DVPModel.Store.sp_alterdiagram" />
+          <FunctionImportMapping FunctionImportName="sp_creatediagram" FunctionName="DVPModel.Store.sp_creatediagram" />
+          <FunctionImportMapping FunctionImportName="sp_dropdiagram" FunctionName="DVPModel.Store.sp_dropdiagram" />
+          <FunctionImportMapping FunctionImportName="sp_helpdiagramdefinition" FunctionName="DVPModel.Store.sp_helpdiagramdefinition">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="DVPModel.sp_helpdiagramdefinition_Result">
+                <ScalarProperty Name="version" ColumnName="version" />
+                <ScalarProperty Name="definition" ColumnName="definition" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
+          <FunctionImportMapping FunctionImportName="sp_helpdiagrams" FunctionName="DVPModel.Store.sp_helpdiagrams">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="DVPModel.sp_helpdiagrams_Result">
+                <ScalarProperty Name="Database" ColumnName="Database" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+                <ScalarProperty Name="Owner" ColumnName="Owner" />
+                <ScalarProperty Name="OwnerID" ColumnName="OwnerID" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
+          <FunctionImportMapping FunctionImportName="sp_renamediagram" FunctionName="DVPModel.Store.sp_renamediagram" />
+          <FunctionImportMapping FunctionImportName="sp_upgraddiagrams" FunctionName="DVPModel.Store.sp_upgraddiagrams" />
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="false" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="true" />
+        <DesignerProperty Name="UseLegacyProvider" Value="false" />
+        <DesignerProperty Name="CodeGenerationStrategy" Value="None" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams></Diagrams>
+  </Designer>
+</edmx:Edmx>

@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data Validation Progreso ~DVP</title>
+  <link rel="shortcut icon" type="image/png" href="../assets/images/logos/cementos_logo.jpg" />
+  <link rel="stylesheet" href="" />
+</head>
+<style>
+  /* Estilo para el contenedor de la fecha y hora */
+  .container {
+      font-family: Arial, sans-serif;
+      display: flex; /* Usamos flex para alinearlos horizontalmente */
+      justify-content: center; /* Centra los elementos horizontalmente */
+      align-items: center; /* Centra los elementos verticalmente */
+      gap: 20px; /* Espacio entre los divs */
+      margin-top: 20px;
+  }
+  /* Estilo para los divs de fecha y hora */
+  .input-container {
+      font-size: 18px;
+      display: flex;
+      flex-direction: column; /* Los inputs se alinean de arriba hacia abajo */
+      align-items: center;
+  }
+  input {
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 10px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      background-color: #f0f0f0;
+  }
+</style>
+
+<body>
+  <!--  Body Wrapper -->
+  <div class="page-wrapper" id="main-wrapper" data-layout="vertical" data-navbarbg="skin6" data-sidebartype="full"
+    data-sidebar-position="fixed" data-header-position="fixed">
+    <!-- Sidebar Start -->
+    <aside class="left-sidebar">
+      <!-- Sidebar scroll-->
+      <div>
+        <div class="brand-logo d-flex align-items-center justify-content-between">
+          <a href="./index.html" class="text-nowrap logo-img">
+            <img src="../assets/images/logos/Logo-Nuevo-Cempro2_.png" width="180" alt="" />
+          </a>
+          <div class="close-btn d-xl-none d-block sidebartoggler cursor-pointer" id="sidebarCollapse">
+            <i class="ti ti-x fs-8"></i>
+          </div>
+        </div>
+        <!-- Sidebar navigation-->
+        <nav class="sidebar-nav scroll-sidebar" data-simplebar="">
+          <ul id="sidebarnav">
+            <li class="nav-small-cap">
+              <i class="ti ti-dots nav-small-cap-icon fs-4"></i>
+              <span class="hide-menu">Home</span>
+            </li>
+            <li class="sidebar-item">
+              <a class="sidebar-link" href="./index.html" aria-expanded="false">
+                <span>
+                  <i class="ti ti-layout-dashboard"></i>
+                </span>
+                <span class="hide-menu">Dashboard</span>
+              </a>
+            </li>
+            <li class="nav-small-cap">
+              <i class="ti ti-dots nav-small-cap-icon fs-4"></i>
+              <span class="hide-menu">UI COMPONENTS</span>
+            </li>
+            <li class="sidebar-item">
+              <a class="sidebar-link" href="./ui-buttons.html" aria-expanded="false">
+                <span>
+                  <i class="ti ti-article"></i>
+                </span>
+                <span class="hide-menu">Buttons</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a class="sidebar-link" href="./ui-alerts.html" aria-expanded="false">
+                <span>
+                  <i class="ti ti-alert-circle"></i>
+                </span>
+                <span class="hide-menu">Alerts</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a class="sidebar-link" href="./ui-card.html" aria-expanded="false">
+                <span>
+                  <i class="ti ti-cards"></i>
+                </span>
+                <span class="hide-menu">Card</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a class="sidebar-link" href="./ui-forms.html" aria-expanded="false">
+                <span>
+                  <i class="ti ti-file-description"></i>
+                </span>
+                <span class="hide-menu">Forms</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a class="sidebar-link" href="./ui-typography.html" aria-expanded="false">
+                <span>
+                  <i class="ti ti-typography"></i>
+                </span>
+                <span class="hide-menu">Typography</span>
+              </a>
+            </li>
+            <li class="nav-small-cap">
+              <i class="ti ti-dots nav-small-cap-icon fs-4"></i>
+              <span class="hide-menu">AUTH</span>
+            </li>
+            <li class="sidebar-item">
+              <a class="sidebar-link" href="./authentication-login.html" aria-expanded="false">
+                <span>
+                  <i class="ti ti-login"></i>
+                </span>
+                <span class="hide-menu">Login</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a class="sidebar-link" href="./authentication-register.html" aria-expanded="false">
+                <span>
+                  <i class="ti ti-user-plus"></i>
+                </span>
+                <span class="hide-menu">Register</span>
+              </a>
+            </li>
+            <li class="nav-small-cap">
+              <i class="ti ti-dots nav-small-cap-icon fs-4"></i>
+              <span class="hide-menu">EXTRA</span>
+            </li>
+            <li class="sidebar-item">
+              <a class="sidebar-link" href="./icon-tabler.html" aria-expanded="false">
+                <span>
+                  <i class="ti ti-mood-happy"></i>
+                </span>
+                <span class="hide-menu">Icons</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a class="sidebar-link" href="./sample-page.html" aria-expanded="false">
+                <span>
+                  <i class="ti ti-aperture"></i>
+                </span>
+                <span class="hide-menu">Sample Page</span>
+              </a>
+            </li>
+          </ul>
+          <div class="unlimited-access hide-menu bg-light-primary position-relative mb-7 mt-5 rounded">
+            <div class="d-flex">
+              <div class="unlimited-access-title me-3">
+                <h6 class="fw-semibold fs-4 mb-6 text-dark w-85">Upgrade to pro</h6>
+                <a href="https://adminmart.com/product/modernize-bootstrap-5-admin-template/" target="_blank" class="btn btn-primary fs-2 fw-semibold lh-sm">Buy Pro</a>
+              </div>
+              <div class="unlimited-access-img">
+                <img src="../assets/images/backgrounds/rocket.png" alt="" class="img-fluid">
+              </div>
+            </div>
+          </div>
+        </nav>
+        <!-- End Sidebar navigation -->
+      </div>
+      <!-- End Sidebar scroll-->
+    </aside>
+    <!--  Sidebar End -->
+    <!--  Main wrapper -->
+    <div class="body-wrapper">
+      <!--  Header Start -->
+      <header class="app-header">
+        <nav class="navbar navbar-expand-lg navbar-light">
+          <ul class="navbar-nav">
+            <li class="nav-item d-block d-xl-none">
+              <a class="nav-link sidebartoggler nav-icon-hover" id="headerCollapse" href="javascript:void(0)">
+                <i class="ti ti-menu-2"></i>
+              </a>
+            </li>
+          </ul>
+          <div class="navbar-collapse justify-content-end px-0" id="navbarNav">
+            <ul class="navbar-nav flex-row ms-auto align-items-center justify-content-end">
+              <li class="nav-item dropdown">
+                <a class="nav-link nav-icon-hover" href="javascript:void(0)" id="drop2" data-bs-toggle="dropdown"
+                  aria-expanded="false">
+                  <img src="../assets/images/profile/user-1.jpg" alt="" width="35" height="35" class="rounded-circle">
+                </a>
+                <div class="dropdown-menu dropdown-menu-end dropdown-menu-animate-up" aria-labelledby="drop2">
+                  <div class="message-body">
+                    <a href="javascript:void(0)" class="d-flex align-items-center gap-2 dropdown-item">
+                      <i class="ti ti-user fs-6"></i>
+                      <p class="mb-0 fs-3">My Profile</p>
+                    </a>
+                    <a href="javascript:void(0)" class="d-flex align-items-center gap-2 dropdown-item">
+                      <i class="ti ti-mail fs-6"></i>
+                      <p class="mb-0 fs-3">My Account</p>
+                    </a>
+                    <a href="javascript:void(0)" class="d-flex align-items-center gap-2 dropdown-item">
+                      <i class="ti ti-list-check fs-6"></i>
+                      <p class="mb-0 fs-3">My Task</p>
+                    </a>
+                    <a href="./authentication-login.html" class="btn btn-outline-primary mx-3 mt-2 d-block">Logout</a>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </header>
+      <!--  Header End -->
+      <div class="container-fluid">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title fw-semibold mb-2">Downtime Validation</h5>
+            <div class="card">
+              <div class="card-body">
+                <form>
+                  <div class="mb-3">
+                    <label class="form-label">Equipment</label>
+                    <select class="form-select">
+                      <option>Crusher 01</option>
+                      <option>Chrusher 02</option>
+                      <option>Raw mill 01</option>
+                      <option>Raw mill 02</option>
+                      <option>Kiln 01</option>
+                      <option>Kiln 02</option>
+                      <option>Finish Mill 01</option>
+                      <option>Finish Mill 02</option>
+                      <option>Finish Mill 03</option>
+                      <option>Paking 01</option>
+                      <option>Paking 02</option>
+                      <option>Paking 03</option>
+                      <option>Paking 04</option>
+                    </select>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Clasification</label>
+                    <select class="form-select">
+                      <option>Electrical Failure</option>
+                      <option>Energy Savings</option>
+                      <option>Equipment´s External Causes</option>
+                      <option>High Inventory</option>
+                      <option>Instrumentation and Control</option>
+                      <option>Logistic´s Administration</option>
+                      <option>Mayor Maintenence</option>
+                      <option>Mechanical Failure</option>
+                      <option>Operation Failure</option>
+                      <option>Plant´s External Causes</option>
+                      <option>Programed Maintenence</option>
+                      <option>Programed Operation</option>
+                      <option>Project Excution</option>
+                      <option>Strategic Reasons</option>
+                      <option>Cut of External Service</option>
+                      <option>Lack of own process materials</option>
+                      <option>Refractory incidents</option>
+                      <option>Lack of raw materials supply</option>
+                    </select>
+                  </div>
+                  <div class="mb-3">
+                    <label for="exampleInputEmail1" class="form-label">Comment</label>
+                    <textarea type="text" class="form-control" id="comment"></textarea>
+                  </div>
+                  <div class="input-container">
+                    <label for="fecha">Selecciona la Fecha:</label>
+                    <input type="date" id="fecha">
+                    <label for="hora">Selecciona la Hora:</label>
+                    <input type="time" id="hora">
+                </div>
+                <div class="d-flex">
+                  <button type="button" class="btn btn-outline-success m-1 ms-auto">Save</button>
+                </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+  <script src="../assets/libs/jquery/dist/jquery.min.js"></script>
+  <script src="../assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../assets/js/sidebarmenu.js"></script>
+  <script src="../assets/js/app.min.js"></script>
+  <script src="../assets/libs/simplebar/dist/simplebar.js"></script>
+</body>
+
+<script>
+  // Función para actualizar la fecha
+  function mostrarFecha() {
+      const fecha = new Date();
+      const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('fecha').textContent = fecha.toLocaleDateString('es-ES', opciones);
+  }
+
+  // Función para actualizar la hora
+  function mostrarHora() {
+      const hora = new Date();
+      const horas = hora.getHours().toString().padStart(2, '0');
+      const minutos = hora.getMinutes().toString().padStart(2, '0');
+      const segundos = hora.getSeconds().toString().padStart(2, '0');
+      document.getElementById('hora').textContent = `${horas}:${minutos}:${segundos}`;
+  }
+
+  // Llamamos a las funciones para mostrar la fecha y la hora
+  mostrarFecha();
+  mostrarHora();
+
+  // Actualizamos la hora cada segundo
+  setInterval(mostrarHora, 1000);
+</script>
+
+</html>
