@@ -17,9 +17,9 @@ namespace DataAccess
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         public Usuario()
         {
-            this.Paros = new HashSet<Paros>();
             this.TokenRegistro = new HashSet<TokenRegistro>();
             this.UsuarioRol = new HashSet<UsuarioRol>();
+            this.Paros = new HashSet<Paros>();
         }
     
         public int UsuarioID { get; set; }
@@ -41,13 +41,13 @@ namespace DataAccess
     
         public virtual Gerencia Gerencia { get; set; }
         public virtual Pais Pais { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<Paros> Paros { get; set; }
         public virtual Planta Planta { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<TokenRegistro> TokenRegistro { get; set; }
         public virtual UnidadOperativa UnidadOperativa { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<UsuarioRol> UsuarioRol { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<Paros> Paros { get; set; }
     }
 }

@@ -22,7 +22,7 @@ namespace DataAccess
     
         public int ParosID { get; set; }
         public Nullable<System.DateTime> FechaCreacion { get; set; }
-        public Nullable<System.DateTime> FechaInicio { get; set; }
+        public Nullable<System.DateTime> FechaModificacion { get; set; }
         public Nullable<System.DateTime> FechaEvento { get; set; }
         public string Comentario { get; set; }
         public Nullable<int> EquipoID { get; set; }

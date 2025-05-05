@@ -17,8 +17,8 @@ namespace DataAccess
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         public ComponenteEquipo()
         {
-            this.Paros = new HashSet<Paros>();
             this.TipoFalla = new HashSet<TipoFalla>();
+            this.Paros = new HashSet<Paros>();
         }
     
         public int ComponenteEquipoID { get; set; }
@@ -26,9 +26,9 @@ namespace DataAccess
         public Nullable<int> SubEquipoID { get; set; }
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<Paros> Paros { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<TipoFalla> TipoFalla { get; set; }
         public virtual SubEquipo SubEquipo { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<Paros> Paros { get; set; }
     }
 }

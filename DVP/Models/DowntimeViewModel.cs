@@ -35,6 +35,7 @@ namespace DVP.Models
         public DateTime _fechaCreacionParo { get; set; }
         public DateTime _fechaInicio { get; set; }
         public DateTime _fechaEvento { get; set; }
+        public DateTime _fechaModificacion { get; set; }
         public TimeSpan _horaEvento { get; set; }
 
 

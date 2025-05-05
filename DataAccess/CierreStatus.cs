@@ -21,7 +21,7 @@ namespace DataAccess
         public Nullable<int> ParosID { get; set; }
         public Nullable<bool> Cerrado { get; set; }
     
-        public virtual Paros Paros { get; set; }
         public virtual ValidacionReportes ValidacionReportes { get; set; }
+        public virtual Paros Paros { get; set; }
     }
 }

@@ -17,7 +17,6 @@
         <EntityTypeShape EntityType="DVPModel.Inventarios" Width="1.5" PointX="2.75" PointY="0.75" IsExpanded="true" />
         <EntityTypeShape EntityType="DVPModel.Material" Width="1.5" PointX="6" PointY="3.375" IsExpanded="true" />
         <EntityTypeShape EntityType="DVPModel.Pais" Width="1.5" PointX="0.75" PointY="11.875" IsExpanded="true" />
-        <EntityTypeShape EntityType="DVPModel.Paros" Width="1.5" PointX="9.75" PointY="15.125" IsExpanded="true" />
         <EntityTypeShape EntityType="DVPModel.Planta" Width="1.5" PointX="0.75" PointY="8.125" IsExpanded="true" />
         <EntityTypeShape EntityType="DVPModel.Proceso" Width="1.5" PointX="0.75" PointY="15.25" IsExpanded="true" />
         <EntityTypeShape EntityType="DVPModel.Rol" Width="1.5" PointX="9" PointY="4.125" IsExpanded="true" />
@@ -38,12 +37,9 @@
         <AssociationConnector Association="DVPModel.FK_Material_BillOfMaterial" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_TipoMovimientoSAPID_BillOfMaterial" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_TipoOperacion_BillOfMaterial" ManuallyRouted="false" />
-        <AssociationConnector Association="DVPModel.FK_Paros_CierreStatus" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_ValidacionReportes_CierreStatus" ManuallyRouted="false" />
-        <AssociationConnector Association="DVPModel.FK_Clasificacion_Paros" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_Clasificacion_TipoFalla" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_ClasificacionMaterial_Material" ManuallyRouted="false" />
-        <AssociationConnector Association="DVPModel.FK_ComponenteEquipo_Paros" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_ComponenteEquipo_TipoFalla" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_SubEquipo_ComponenteEquipo" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_CantidadReal_DataOperacion" ManuallyRouted="false" />
@@ -52,7 +48,6 @@
         <AssociationConnector Association="DVPModel.FK_TipoMovimientoSAPID_DataOperacion" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_TipoOperacion_DataOperacion" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_UnidadMedida_DataOperacion" ManuallyRouted="false" />
-        <AssociationConnector Association="DVPModel.FK_Equipo_Paros" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_Equipo_SeccionEquipo" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_Equipo_TagEquipo" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_Pais_Equipo" ManuallyRouted="false" />
@@ -61,15 +56,20 @@
         <AssociationConnector Association="DVPModel.FK_UnidadOperativa_Equipo" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_Gerencia_Usuario" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_Pais_Usuario" ManuallyRouted="false" />
-        <AssociationConnector Association="DVPModel.FK_SubEquipo_Paros" ManuallyRouted="false" />
-        <AssociationConnector Association="DVPModel.FK_TipoEvento_Paros" ManuallyRouted="false" />
-        <AssociationConnector Association="DVPModel.FK_TipoFalla_Paros" ManuallyRouted="false" />
-        <AssociationConnector Association="DVPModel.FK_UsuarioValidador_Paros" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_Planta_Usuario" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK__UsuarioRo__RolID__6477ECF3" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK__TokenRegi__Usuar__6754599E" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_UnidadOperativa_Usuario" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK__UsuarioRo__Usuar__6383C8BA" ManuallyRouted="false" />
+        <EntityTypeShape EntityType="DVPModel.Paros" Width="1.5" PointX="9.5" PointY="15.375" />
+        <AssociationConnector Association="DVPModel.FK_Paros_CierreStatus" />
+        <AssociationConnector Association="DVPModel.FK_Clasificacion_Paros" />
+        <AssociationConnector Association="DVPModel.FK_ComponenteEquipo_Paros" />
+        <AssociationConnector Association="DVPModel.FK_Equipo_Paros" />
+        <AssociationConnector Association="DVPModel.FK_SubEquipo_Paros" />
+        <AssociationConnector Association="DVPModel.FK_TipoEvento_Paros" />
+        <AssociationConnector Association="DVPModel.FK_TipoFalla_Paros" />
+        <AssociationConnector Association="DVPModel.FK_UsuarioValidador_Paros" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

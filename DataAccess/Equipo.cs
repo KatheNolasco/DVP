@@ -18,9 +18,9 @@ namespace DataAccess
         public Equipo()
         {
             this.DataOperacion = new HashSet<DataOperacion>();
-            this.Paros = new HashSet<Paros>();
             this.SubEquipo = new HashSet<SubEquipo>();
             this.TagEquipo = new HashSet<TagEquipo>();
+            this.Paros = new HashSet<Paros>();
         }
     
         public int EquipoID { get; set; }
@@ -37,8 +37,6 @@ namespace DataAccess
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<DataOperacion> DataOperacion { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<Paros> Paros { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<SubEquipo> SubEquipo { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<TagEquipo> TagEquipo { get; set; }
@@ -46,5 +44,7 @@ namespace DataAccess
         public virtual Planta Planta { get; set; }
         public virtual Proceso Proceso { get; set; }
         public virtual UnidadOperativa UnidadOperativa { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<Paros> Paros { get; set; }
     }
 }

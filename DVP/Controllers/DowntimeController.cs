@@ -105,7 +105,9 @@ namespace DVP.Controllers
                     _tipoFallaId = p.TipoFallaID,
                     _clasificacionId = p.ClasificacionID,
                     _comment = p.Comentario,
-                    _fechaEvento = p.FechaEvento
+                    _fechaEvento = p.FechaEvento,
+                    _statusValidate = p.StatusValidate,
+                    _statusDelete = p.StatusDelete,
                 })
                 .FirstOrDefault();
 
@@ -150,6 +152,8 @@ namespace DVP.Controllers
                     Comentario = data._comment,
                     FechaEvento = data._fechaEvento,
                     FechaCreacion = DateTime.Now,
+                    StatusValidate = false,
+                    StatusDelete = false,
                 };
 
                 _dvpEntities.Paros.Add(nuevoParo);
@@ -169,30 +173,59 @@ namespace DVP.Controllers
         [HttpPost]
         public JsonResult UpdateDowntime(DowntimeViewModel data)
         {
-            if (data == null)
+            if (data == null || data._paroId <= 0)
             {
-                return Json(new { success = false, message = "Datos inválidos." });
+                return Json(new { success = false, message = "Datos inválidos o ID no proporcionado." });
             }
 
             try
             {
-                var paroExistente = _dvpEntities.Paros.FirstOrDefault(p =>
-                    p.EquipoID == data._equipoId &&
-                    p.FechaEvento == data._fechaEvento &&
-                    p.TipoEventoID == data._tipoEventoId
-                );
+                var paroExistente = _dvpEntities.Paros.FirstOrDefault(p => p.ParosID == data._paroId);
 
                 if (paroExistente == null)
                 {
                     return Json(new { success = false, message = "No se encontró el paro para actualizar." });
                 }
 
+                // Actualizar campos
+                paroExistente.EquipoID = data._equipoId;
                 paroExistente.SubEquipoID = data._subEquipoId;
                 paroExistente.ComponenteEquipoID = data._componenteEquipoId;
                 paroExistente.ClasificacionID = data._clasificacionId;
                 paroExistente.TipoFallaID = data._tipoFallaId;
                 paroExistente.Comentario = data._comment;
+                paroExistente.FechaEvento = data._fechaEvento;
+                paroExistente.FechaModificacion = DateTime.Now;
+                paroExistente.StatusValidate = true;
 
+                _dvpEntities.SaveChanges();
+
+                return Json(new { success = true, paroId = paroExistente.ParosID });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public JsonResult UpdatePending(DowntimeViewModel data)
+        {
+            if (data == null || data._paroId <= 0)
+            {
+                return Json(new { success = false, message = "Datos inválidos o ID no proporcionado." });
+            }
+
+            try
+            {
+                var paroExistente = _dvpEntities.Paros.FirstOrDefault(p => p.ParosID == data._paroId);
+
+                if (paroExistente == null)
+                {
+                    return Json(new { success = false, message = "No se encontró el paro para actualizar." });
+                }
+
+                paroExistente.StatusValidate = false;
 
                 _dvpEntities.SaveChanges();
 

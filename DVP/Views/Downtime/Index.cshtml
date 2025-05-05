@@ -67,7 +67,10 @@
                     <div class="card">
                         <div class="card-body">
                             <h5 class="card-title fw-semibold mb-4 text-end">
-                                Downtime Validation Date: <input type="date" id="fechaReporte" onchange="filtrarPorFecha()">
+                                <i class="bi bi-unlock-fill text-warning ms-2"></i>
+                                @*<i class="bi bi-lock-fill text-warning ms-2"></i>*@
+                                Downtime Validation Date:
+                                <input type="date" id="fechaReporte" onchange="filtrarPorFecha()">
                             </h5>
                             <h5 class="card-title fw-semibold mb-4">Equipments - Planta San Pedro</h5>
                             <div class="card">
@@ -92,7 +95,7 @@
                             <div class="card w-500">
                                 <div class="card-body p-4">
                                     <div class="text-end">
-                                        <button type="button" onclick="newdowntime()" class="btn btn-outline-dark m-1">
+                                        <button type="button" onclick="newdowntime()" class="btn btn-outline-dark m-1"> 
                                             New Downtime
                                         </button>
                                     </div>
@@ -115,7 +118,14 @@
                                                 @foreach (var item in Model.GetdowntimeListCurrentMonth())
                                                 {
                                                     <tr data-equipo-id="@item._equipoId">
-                                                        <td class="text-center bg-white"><span class="text-danger">&#10060;</span></td>
+                                                        @if (item._statusValidate == true)
+                                                        {
+                                                            <td class="text-center bg-white"><span class="text-success">&#10004;</span></td>
+                                                        }
+                                                        else
+                                                        {
+                                                            <td class="text-center bg-white"><span class="text-danger">&#10060;</span></td>
+                                                        }
                                                         <td class="text-center bg-white"><strong>@item._equipoName</strong></td>
                                                         <td class="text-center bg-white">@item._fechaEvento.ToString("dd-MM-yyyy HH:mm:ss")</td>
                                                         <td class="text-center bg-white">
@@ -218,10 +228,10 @@
                                                 <br />
                                                 <br />
                                                 <div class="d-flex justify-content-end">
-                                                    <button type="button" class="btn btn-outline-danger m-1">
+                                                    <button type="button" id="pendingEdit"  class="btn btn-outline-danger m-1">
                                                         Pending <span class="text-danger ms-2">&#10060;</span>
                                                     </button>
-                                                    <button type="button" class="btn btn-outline-success m-1">
+                                                    <button type="button" id="validateEdit" class="btn btn-outline-success m-1">
                                                         Validate <span class="text-success ms-2">&#10004;</span>
                                                     </button>
                                                 </div>
@@ -295,7 +305,7 @@
                                             <select class="form-select" id="_tipoFallaId">
                                                 <option value="">La falla para este paro es:</option>
                                             </select>
-</div>
+                                            </div>
                                     <div class="mb-3">
                                         <label class="form-label">Comment</label>
                                         <textarea type="text" class="form-control" id="_comment" required></textarea>
@@ -346,6 +356,7 @@
         penEditModal(paroId);
     });
 
+    //Calcular fecha del input.
     window.addEventListener('DOMContentLoaded', () => {
             const fechaInput = document.getElementById('fechaReporte');
             const hoy = new Date();
@@ -363,7 +374,7 @@
 
             // 5 días después del último día del mes actual
             const cincoDiasDespues = new Date(ultimoDiaMesActual);
-            cincoDiasDespues.setDate(ultimoDiaMesActual.getDate() + 5);
+            cincoDiasDespues.setDate(ultimoDiaMesActual.getDate() + 2);
 
             // Formatear fecha en yyyy-MM-dd
             const formatoFecha = (fecha) => {
@@ -516,7 +527,7 @@
 
         // 5 días después del último día del mes
         const cincoDiasDespuesUltimoDia = new Date(ultimoDiaMes);
-        cincoDiasDespuesUltimoDia.setDate(ultimoDiaMes.getDate() + 5);
+        cincoDiasDespuesUltimoDia.setDate(ultimoDiaMes.getDate() + 2);
 
         // Normalizar para comparar fechas (sin hora)
         const fechaEventoSimple = new Date(fechaEvento.getFullYear(), fechaEvento.getMonth(), fechaEvento.getDate());
@@ -646,6 +657,86 @@
     });
 
 
+    document.getElementById('validateEdit').addEventListener('click', function () {
+     const paroId = document.getElementById('paroIdhidden').value;
+
+        const data = {
+            _paroId: parseInt(paroId),
+            _equipoId: parseInt(document.getElementById('_equipoIdedit').value),
+            _subEquipoId: parseInt(document.getElementById('_subEquipoIdedit').value),
+            _componenteEquipoId: parseInt(document.getElementById('_componenteEquipoIdedit').value),
+            _clasificacionId: parseInt(document.getElementById('_clasificacionIdedit').value),
+            _tipoFallaId: parseInt(document.getElementById('_tipoFallaIdedit').value),
+            _comment: document.getElementById('_commentedit').value,
+            _fechaEvento: getFechaHoraISO() // Formato ISO yyyy-MM-ddTHH:mm:ss
+        };
+
+        fetch('@Url.Action("UpdateDowntime", "Downtime")', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert("Paro actualizado correctamente.");
+
+                // Cerrar modal y recargar
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
+                modal.hide();
+
+                // Recargar lista o la página completa
+                location.reload();
+            } else {
+                alert("Error: " + result.message);
+            }
+        })
+        .catch(error => {
+            console.error("Error al actualizar el paro:", error);
+            alert("Error al enviar datos.");
+        });
+    });
+
+
+    document.getElementById('pendingEdit').addEventListener('click', function () {
+        const paroId = parseInt(document.getElementById('paroIdhidden').value);
+
+        if (isNaN(paroId) || paroId <= 0) {
+            alert("ID de paro inválido.");
+            return;
+        }
+
+        const data = { _paroId: paroId };
+
+        fetch('@Url.Action("UpdatePending", "Downtime")', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert("¿Seguro que desea marcar como pendiente?");
+
+                // Cierra el modal (si es necesario) y actualiza la página
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
+                if (modal) modal.hide();
+
+                location.reload();
+            } else {
+                alert("Error: " + result.message);
+            }
+        })
+        .catch(error => {
+            console.error("Error al actualizar a pendiente:", error);
+            alert("Error al enviar datos.");
+        });
+    });
+
 
 
 
@@ -661,6 +752,8 @@
     };
 
 
+
+//*************************************************** Estas funciones rellenan el datatable ********************************************/
     function filtrarPorEquipo(equipoId) {
         const fechaSeleccionada = document.getElementById('fechaReporte').value; // formato: yyyy-MM-dd
         const filas = document.querySelectorAll('#downtimeTableBody tr');
@@ -723,7 +816,6 @@
     }
 
 
-
     function filtrarPorFecha() {
         const fechaSeleccionada = document.getElementById('fechaReporte').value; // formato: yyyy-MM-dd
         const tbody = document.getElementById('downtimeTableBody');
@@ -768,6 +860,24 @@
     }
 
 
+ //*************************************************** Estas funciones rellenan el datatable ********************************************/
+
+
+
+
+
+
+
+    //*************************************************** Funciones para el editar paros ********************************************/
+
+
+    function getFechaHoraISO() {
+        const fecha = document.getElementById('_fechaEventoedit').value;
+        const hora = document.getElementById('_horaEventoedit').value;
+        return `${fecha}T${hora}`;
+    }
+
+
     function openEditModal(paroId) {
         var myModal = new bootstrap.Modal(document.getElementById('editModal'));
         myModal.show();
@@ -785,6 +895,24 @@
                 // Set campos base
                 document.getElementById('_equipoIdedit').value = paro._equipoId;
                 document.getElementById('paroIdhidden').value = paro._paroId;
+                document.getElementById('_commentedit').value = paro._comment;
+
+                // Fecha y Hora
+                if (paro._fechaEvento) {
+                    const match = paro._fechaEvento.match(/\/Date\((\d+)\)\//);
+                    if (match) {
+                        const timestamp = parseInt(match[1]);
+                        const fechaObj = new Date(timestamp);
+
+                        const fechaFormateada = fechaObj.toISOString().split('T')[0]; // yyyy-MM-dd
+                        const horaFormateada = fechaObj.toTimeString().split(' ')[0]; // HH:mm:ss
+
+                        document.getElementById('_fechaEventoedit').value = fechaFormateada;
+                        document.getElementById('_horaEventoedit').value = horaFormateada;
+                    } else {
+                        console.warn("Formato de fecha no reconocido:", paro._fechaEvento);
+                    }
+                }
 
                 // Clasificación
                 const clasificacionSelect = document.getElementById('_clasificacionIdedit');
@@ -805,8 +933,6 @@
                 console.error("Error al cargar el paro:", error);
             });
     }
-
-
 
 
 

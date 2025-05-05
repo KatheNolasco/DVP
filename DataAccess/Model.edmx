@@ -140,7 +140,7 @@
           </Key>
           <Property Name="ParosID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="FechaCreacion" Type="datetime" />
-          <Property Name="FechaInicio" Type="datetime" />
+          <Property Name="FechaModificacion" Type="datetime" />
           <Property Name="FechaEvento" Type="datetime" />
           <Property Name="Comentario" Type="nvarchar(max)" />
           <Property Name="EquipoID" Type="int" />
@@ -960,8 +960,8 @@
           <Property Name="ValidacionReportesID" Type="Int32" />
           <Property Name="ParosID" Type="Int32" />
           <Property Name="Cerrado" Type="Boolean" />
-          <NavigationProperty Name="Paros" Relationship="Self.FK_Paros_CierreStatus" FromRole="CierreStatus" ToRole="Paros" />
           <NavigationProperty Name="ValidacionReportes" Relationship="Self.FK_ValidacionReportes_CierreStatus" FromRole="CierreStatus" ToRole="ValidacionReportes" />
+          <NavigationProperty Name="Paros" Relationship="DVPModel.FK_Paros_CierreStatus" FromRole="CierreStatus" ToRole="Paros" />
         </EntityType>
         <EntityType Name="Clasificacion">
           <Key>
@@ -971,8 +971,8 @@
           <Property Name="Descripcion" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="Ajeno" Type="Boolean" />
           <Property Name="AfectaTMEF" Type="Boolean" />
-          <NavigationProperty Name="Paros" Relationship="Self.FK_Clasificacion_Paros" FromRole="Clasificacion" ToRole="Paros" />
           <NavigationProperty Name="TipoFalla" Relationship="Self.FK_Clasificacion_TipoFalla" FromRole="Clasificacion" ToRole="TipoFalla" />
+          <NavigationProperty Name="Paros" Relationship="DVPModel.FK_Clasificacion_Paros" FromRole="Clasificacion" ToRole="Paros" />
         </EntityType>
         <EntityType Name="ClasificacionMaterial">
           <Key>
@@ -989,9 +989,9 @@
           <Property Name="ComponenteEquipoID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Name="Descripcion" Type="String" MaxLength="200" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="SubEquipoID" Type="Int32" />
-          <NavigationProperty Name="Paros" Relationship="Self.FK_ComponenteEquipo_Paros" FromRole="ComponenteEquipo" ToRole="Paros" />
           <NavigationProperty Name="TipoFalla" Relationship="Self.FK_ComponenteEquipo_TipoFalla" FromRole="ComponenteEquipo" ToRole="TipoFalla" />
           <NavigationProperty Name="SubEquipo" Relationship="Self.FK_SubEquipo_ComponenteEquipo" FromRole="ComponenteEquipo" ToRole="SubEquipo" />
+          <NavigationProperty Name="Paros" Relationship="DVPModel.FK_ComponenteEquipo_Paros" FromRole="ComponenteEquipo" ToRole="Paros" />
         </EntityType>
         <EntityType Name="DataOperacion">
           <Key>
@@ -1040,13 +1040,13 @@
           <Property Name="BuscarParo" Type="Boolean" />
           <Property Name="Active" Type="Boolean" />
           <NavigationProperty Name="DataOperacion" Relationship="Self.FK_Equipo_DataOperacion" FromRole="Equipo" ToRole="DataOperacion" />
-          <NavigationProperty Name="Paros" Relationship="Self.FK_Equipo_Paros" FromRole="Equipo" ToRole="Paros" />
           <NavigationProperty Name="SubEquipo" Relationship="Self.FK_Equipo_SeccionEquipo" FromRole="Equipo" ToRole="SubEquipo" />
           <NavigationProperty Name="TagEquipo" Relationship="Self.FK_Equipo_TagEquipo" FromRole="Equipo" ToRole="TagEquipo" />
           <NavigationProperty Name="Pais" Relationship="Self.FK_Pais_Equipo" FromRole="Equipo" ToRole="Pais" />
           <NavigationProperty Name="Planta" Relationship="Self.FK_Planta_Equipo" FromRole="Equipo" ToRole="Planta" />
           <NavigationProperty Name="Proceso" Relationship="Self.FK_Proceso_Equipo" FromRole="Equipo" ToRole="Proceso" />
           <NavigationProperty Name="UnidadOperativa" Relationship="Self.FK_UnidadOperativa_Equipo" FromRole="Equipo" ToRole="UnidadOperativa" />
+          <NavigationProperty Name="Paros" Relationship="DVPModel.FK_Equipo_Paros" FromRole="Equipo" ToRole="Paros" />
         </EntityType>
         <EntityType Name="Gerencia">
           <Key>
@@ -1099,34 +1099,6 @@
           <NavigationProperty Name="Equipo" Relationship="Self.FK_Pais_Equipo" FromRole="Pais" ToRole="Equipo" />
           <NavigationProperty Name="Usuario" Relationship="Self.FK_Pais_Usuario" FromRole="Pais" ToRole="Usuario" />
         </EntityType>
-        <EntityType Name="Paros">
-          <Key>
-            <PropertyRef Name="ParosID" />
-          </Key>
-          <Property Name="ParosID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="FechaCreacion" Type="DateTime" Precision="3" />
-          <Property Name="FechaInicio" Type="DateTime" Precision="3" />
-          <Property Name="FechaEvento" Type="DateTime" Precision="3" />
-          <Property Name="Comentario" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
-          <Property Name="EquipoID" Type="Int32" />
-          <Property Name="SubEquipoID" Type="Int32" />
-          <Property Name="ComponenteEquipoID" Type="Int32" />
-          <Property Name="ClasificacionID" Type="Int32" />
-          <Property Name="TipoFallaID" Type="Int32" />
-          <Property Name="StatusValidate" Type="Boolean" />
-          <Property Name="StatusDelete" Type="Boolean" />
-          <Property Name="TipoEventoID" Type="Int32" />
-          <Property Name="UsuarioCreadorID" Type="Int32" />
-          <NavigationProperty Name="CierreStatus" Relationship="Self.FK_Paros_CierreStatus" FromRole="Paros" ToRole="CierreStatus" />
-          <NavigationProperty Name="Clasificacion" Relationship="Self.FK_Clasificacion_Paros" FromRole="Paros" ToRole="Clasificacion" />
-          <NavigationProperty Name="ComponenteEquipo" Relationship="Self.FK_ComponenteEquipo_Paros" FromRole="Paros" ToRole="ComponenteEquipo" />
-          <NavigationProperty Name="Equipo" Relationship="Self.FK_Equipo_Paros" FromRole="Paros" ToRole="Equipo" />
-          <NavigationProperty Name="SubEquipo" Relationship="Self.FK_SubEquipo_Paros" FromRole="Paros" ToRole="SubEquipo" />
-          <NavigationProperty Name="TipoEvento" Relationship="Self.FK_TipoEvento_Paros" FromRole="Paros" ToRole="TipoEvento" />
-          <NavigationProperty Name="TipoFalla" Relationship="Self.FK_TipoFalla_Paros" FromRole="Paros" ToRole="TipoFalla" />
-          <NavigationProperty Name="Usuario" Relationship="Self.FK_UsuarioValidador_Paros" FromRole="Paros" ToRole="Usuario" />
-          <Property Name="ParoRelacionadoID" Type="Int32" />
-        </EntityType>
         <EntityType Name="Planta">
           <Key>
             <PropertyRef Name="PlantaID" />
@@ -1178,7 +1150,7 @@
           <Property Name="EquipoID" Type="Int32" />
           <NavigationProperty Name="ComponenteEquipo" Relationship="Self.FK_SubEquipo_ComponenteEquipo" FromRole="SubEquipo" ToRole="ComponenteEquipo" />
           <NavigationProperty Name="Equipo" Relationship="Self.FK_Equipo_SeccionEquipo" FromRole="SubEquipo" ToRole="Equipo" />
-          <NavigationProperty Name="Paros" Relationship="Self.FK_SubEquipo_Paros" FromRole="SubEquipo" ToRole="Paros" />
+          <NavigationProperty Name="Paros" Relationship="DVPModel.FK_SubEquipo_Paros" FromRole="SubEquipo" ToRole="Paros" />
         </EntityType>
         <EntityType Name="sysdiagrams">
           <Key>
@@ -1207,7 +1179,7 @@
           </Key>
           <Property Name="TipoEventoID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Name="Descripcion" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
-          <NavigationProperty Name="Paros" Relationship="Self.FK_TipoEvento_Paros" FromRole="TipoEvento" ToRole="Paros" />
+          <NavigationProperty Name="Paros" Relationship="DVPModel.FK_TipoEvento_Paros" FromRole="TipoEvento" ToRole="Paros" />
         </EntityType>
         <EntityType Name="TipoFalla">
           <Key>
@@ -1219,7 +1191,7 @@
           <Property Name="ComponenteEquipoID" Type="Int32" />
           <NavigationProperty Name="Clasificacion" Relationship="Self.FK_Clasificacion_TipoFalla" FromRole="TipoFalla" ToRole="Clasificacion" />
           <NavigationProperty Name="ComponenteEquipo" Relationship="Self.FK_ComponenteEquipo_TipoFalla" FromRole="TipoFalla" ToRole="ComponenteEquipo" />
-          <NavigationProperty Name="Paros" Relationship="Self.FK_TipoFalla_Paros" FromRole="TipoFalla" ToRole="Paros" />
+          <NavigationProperty Name="Paros" Relationship="DVPModel.FK_TipoFalla_Paros" FromRole="TipoFalla" ToRole="Paros" />
         </EntityType>
         <EntityType Name="TipoMovimientoSAP">
           <Key>
@@ -1290,11 +1262,11 @@
           <Property Name="Active" Type="Boolean" Nullable="false" />
           <NavigationProperty Name="Gerencia" Relationship="Self.FK_Gerencia_Usuario" FromRole="Usuario" ToRole="Gerencia" />
           <NavigationProperty Name="Pais" Relationship="Self.FK_Pais_Usuario" FromRole="Usuario" ToRole="Pais" />
-          <NavigationProperty Name="Paros" Relationship="Self.FK_UsuarioValidador_Paros" FromRole="Usuario" ToRole="Paros" />
           <NavigationProperty Name="Planta" Relationship="Self.FK_Planta_Usuario" FromRole="Usuario" ToRole="Planta" />
           <NavigationProperty Name="TokenRegistro" Relationship="Self.FK__TokenRegi__Usuar__6754599E" FromRole="Usuario" ToRole="TokenRegistro" />
           <NavigationProperty Name="UnidadOperativa" Relationship="Self.FK_UnidadOperativa_Usuario" FromRole="Usuario" ToRole="UnidadOperativa" />
           <NavigationProperty Name="UsuarioRol" Relationship="Self.FK__UsuarioRo__Usuar__6383C8BA" FromRole="Usuario" ToRole="UsuarioRol" />
+          <NavigationProperty Name="Paros" Relationship="DVPModel.FK_UsuarioValidador_Paros" FromRole="Usuario" ToRole="Paros" />
         </EntityType>
         <EntityType Name="UsuarioRol">
           <Key>
@@ -1350,18 +1322,6 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK_Paros_CierreStatus">
-          <End Role="Paros" Type="Self.Paros" Multiplicity="0..1" />
-          <End Role="CierreStatus" Type="Self.CierreStatus" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Paros">
-              <PropertyRef Name="ParosID" />
-            </Principal>
-            <Dependent Role="CierreStatus">
-              <PropertyRef Name="ParosID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK_ValidacionReportes_CierreStatus">
           <End Role="ValidacionReportes" Type="Self.ValidacionReportes" Multiplicity="0..1" />
           <End Role="CierreStatus" Type="Self.CierreStatus" Multiplicity="*" />
@@ -1371,18 +1331,6 @@
             </Principal>
             <Dependent Role="CierreStatus">
               <PropertyRef Name="ValidacionReportesID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_Clasificacion_Paros">
-          <End Role="Clasificacion" Type="Self.Clasificacion" Multiplicity="0..1" />
-          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Clasificacion">
-              <PropertyRef Name="ClasificacionID" />
-            </Principal>
-            <Dependent Role="Paros">
-              <PropertyRef Name="ClasificacionID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -1407,18 +1355,6 @@
             </Principal>
             <Dependent Role="Material">
               <PropertyRef Name="ClasificacionMaterialID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_ComponenteEquipo_Paros">
-          <End Role="ComponenteEquipo" Type="Self.ComponenteEquipo" Multiplicity="0..1" />
-          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="ComponenteEquipo">
-              <PropertyRef Name="ComponenteEquipoID" />
-            </Principal>
-            <Dependent Role="Paros">
-              <PropertyRef Name="ComponenteEquipoID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -1518,18 +1454,6 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK_Equipo_Paros">
-          <End Role="Equipo" Type="Self.Equipo" Multiplicity="0..1" />
-          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Equipo">
-              <PropertyRef Name="EquipoID" />
-            </Principal>
-            <Dependent Role="Paros">
-              <PropertyRef Name="EquipoID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK_Equipo_SeccionEquipo">
           <End Role="Equipo" Type="Self.Equipo" Multiplicity="0..1" />
           <End Role="SubEquipo" Type="Self.SubEquipo" Multiplicity="*" />
@@ -1626,54 +1550,6 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK_SubEquipo_Paros">
-          <End Role="SubEquipo" Type="Self.SubEquipo" Multiplicity="0..1" />
-          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="SubEquipo">
-              <PropertyRef Name="SubEquipoID" />
-            </Principal>
-            <Dependent Role="Paros">
-              <PropertyRef Name="SubEquipoID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_TipoEvento_Paros">
-          <End Role="TipoEvento" Type="Self.TipoEvento" Multiplicity="0..1" />
-          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="TipoEvento">
-              <PropertyRef Name="TipoEventoID" />
-            </Principal>
-            <Dependent Role="Paros">
-              <PropertyRef Name="TipoEventoID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_TipoFalla_Paros">
-          <End Role="TipoFalla" Type="Self.TipoFalla" Multiplicity="0..1" />
-          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="TipoFalla">
-              <PropertyRef Name="TipoFallaID" />
-            </Principal>
-            <Dependent Role="Paros">
-              <PropertyRef Name="TipoFallaID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_UsuarioValidador_Paros">
-          <End Role="Usuario" Type="Self.Usuario" Multiplicity="0..1" />
-          <End Role="Paros" Type="Self.Paros" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Usuario">
-              <PropertyRef Name="UsuarioID" />
-            </Principal>
-            <Dependent Role="Paros">
-              <PropertyRef Name="UsuarioCreadorID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK_Planta_Usuario">
           <End Role="Planta" Type="Self.Planta" Multiplicity="0..1" />
           <End Role="Usuario" Type="Self.Usuario" Multiplicity="*" />
@@ -1747,7 +1623,6 @@
           <EntitySet Name="Inventarios" EntityType="Self.Inventarios" />
           <EntitySet Name="Material" EntityType="Self.Material" />
           <EntitySet Name="Pais" EntityType="Self.Pais" />
-          <EntitySet Name="Paros" EntityType="Self.Paros" />
           <EntitySet Name="Planta" EntityType="Self.Planta" />
           <EntitySet Name="Proceso" EntityType="Self.Proceso" />
           <EntitySet Name="Rol" EntityType="Self.Rol" />
@@ -1777,17 +1652,9 @@
             <End Role="TipoOperacion" EntitySet="TipoOperacion" />
             <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
           </AssociationSet>
-          <AssociationSet Name="FK_Paros_CierreStatus" Association="Self.FK_Paros_CierreStatus">
-            <End Role="Paros" EntitySet="Paros" />
-            <End Role="CierreStatus" EntitySet="CierreStatus" />
-          </AssociationSet>
           <AssociationSet Name="FK_ValidacionReportes_CierreStatus" Association="Self.FK_ValidacionReportes_CierreStatus">
             <End Role="ValidacionReportes" EntitySet="ValidacionReportes" />
             <End Role="CierreStatus" EntitySet="CierreStatus" />
-          </AssociationSet>
-          <AssociationSet Name="FK_Clasificacion_Paros" Association="Self.FK_Clasificacion_Paros">
-            <End Role="Clasificacion" EntitySet="Clasificacion" />
-            <End Role="Paros" EntitySet="Paros" />
           </AssociationSet>
           <AssociationSet Name="FK_Clasificacion_TipoFalla" Association="Self.FK_Clasificacion_TipoFalla">
             <End Role="Clasificacion" EntitySet="Clasificacion" />
@@ -1796,10 +1663,6 @@
           <AssociationSet Name="FK_ClasificacionMaterial_Material" Association="Self.FK_ClasificacionMaterial_Material">
             <End Role="ClasificacionMaterial" EntitySet="ClasificacionMaterial" />
             <End Role="Material" EntitySet="Material" />
-          </AssociationSet>
-          <AssociationSet Name="FK_ComponenteEquipo_Paros" Association="Self.FK_ComponenteEquipo_Paros">
-            <End Role="ComponenteEquipo" EntitySet="ComponenteEquipo" />
-            <End Role="Paros" EntitySet="Paros" />
           </AssociationSet>
           <AssociationSet Name="FK_ComponenteEquipo_TipoFalla" Association="Self.FK_ComponenteEquipo_TipoFalla">
             <End Role="ComponenteEquipo" EntitySet="ComponenteEquipo" />
@@ -1833,10 +1696,6 @@
             <End Role="UnidadMedida" EntitySet="UnidadMedida" />
             <End Role="DataOperacion" EntitySet="DataOperacion" />
           </AssociationSet>
-          <AssociationSet Name="FK_Equipo_Paros" Association="Self.FK_Equipo_Paros">
-            <End Role="Equipo" EntitySet="Equipo" />
-            <End Role="Paros" EntitySet="Paros" />
-          </AssociationSet>
           <AssociationSet Name="FK_Equipo_SeccionEquipo" Association="Self.FK_Equipo_SeccionEquipo">
             <End Role="Equipo" EntitySet="Equipo" />
             <End Role="SubEquipo" EntitySet="SubEquipo" />
@@ -1868,22 +1727,6 @@
           <AssociationSet Name="FK_Pais_Usuario" Association="Self.FK_Pais_Usuario">
             <End Role="Pais" EntitySet="Pais" />
             <End Role="Usuario" EntitySet="Usuario" />
-          </AssociationSet>
-          <AssociationSet Name="FK_SubEquipo_Paros" Association="Self.FK_SubEquipo_Paros">
-            <End Role="SubEquipo" EntitySet="SubEquipo" />
-            <End Role="Paros" EntitySet="Paros" />
-          </AssociationSet>
-          <AssociationSet Name="FK_TipoEvento_Paros" Association="Self.FK_TipoEvento_Paros">
-            <End Role="TipoEvento" EntitySet="TipoEvento" />
-            <End Role="Paros" EntitySet="Paros" />
-          </AssociationSet>
-          <AssociationSet Name="FK_TipoFalla_Paros" Association="Self.FK_TipoFalla_Paros">
-            <End Role="TipoFalla" EntitySet="TipoFalla" />
-            <End Role="Paros" EntitySet="Paros" />
-          </AssociationSet>
-          <AssociationSet Name="FK_UsuarioValidador_Paros" Association="Self.FK_UsuarioValidador_Paros">
-            <End Role="Usuario" EntitySet="Usuario" />
-            <End Role="Paros" EntitySet="Paros" />
           </AssociationSet>
           <AssociationSet Name="FK_Planta_Usuario" Association="Self.FK_Planta_Usuario">
             <End Role="Planta" EntitySet="Planta" />
@@ -1935,6 +1778,39 @@
             <Parameter Name="new_diagramname" Mode="In" Type="String" />
           </FunctionImport>
           <FunctionImport Name="sp_upgraddiagrams" />
+          <EntitySet Name="Paros" EntityType="DVPModel.Paros" />
+          <AssociationSet Name="FK_Paros_CierreStatus" Association="DVPModel.FK_Paros_CierreStatus">
+            <End Role="Paros" EntitySet="Paros" />
+            <End Role="CierreStatus" EntitySet="CierreStatus" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Clasificacion_Paros" Association="DVPModel.FK_Clasificacion_Paros">
+            <End Role="Clasificacion" EntitySet="Clasificacion" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_ComponenteEquipo_Paros" Association="DVPModel.FK_ComponenteEquipo_Paros">
+            <End Role="ComponenteEquipo" EntitySet="ComponenteEquipo" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Equipo_Paros" Association="DVPModel.FK_Equipo_Paros">
+            <End Role="Equipo" EntitySet="Equipo" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_SubEquipo_Paros" Association="DVPModel.FK_SubEquipo_Paros">
+            <End Role="SubEquipo" EntitySet="SubEquipo" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TipoEvento_Paros" Association="DVPModel.FK_TipoEvento_Paros">
+            <End Role="TipoEvento" EntitySet="TipoEvento" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TipoFalla_Paros" Association="DVPModel.FK_TipoFalla_Paros">
+            <End Role="TipoFalla" EntitySet="TipoFalla" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_UsuarioValidador_Paros" Association="DVPModel.FK_UsuarioValidador_Paros">
+            <End Role="Usuario" EntitySet="Usuario" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
         </EntityContainer>
         <ComplexType Name="sp_helpdiagramdefinition_Result">
           <Property Type="Int32" Name="version" Nullable="true" />
@@ -1947,6 +1823,130 @@
           <Property Type="String" Name="Owner" Nullable="true" MaxLength="128" />
           <Property Type="Int32" Name="OwnerID" Nullable="false" />
         </ComplexType>
+        <EntityType Name="Paros">
+          <Key>
+            <PropertyRef Name="ParosID" />
+          </Key>
+          <Property Name="ParosID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="FechaCreacion" Type="DateTime" Precision="3" />
+          <Property Name="FechaModificacion" Type="DateTime" Precision="3" />
+          <Property Name="FechaEvento" Type="DateTime" Precision="3" />
+          <Property Name="Comentario" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
+          <Property Name="EquipoID" Type="Int32" />
+          <Property Name="SubEquipoID" Type="Int32" />
+          <Property Name="ComponenteEquipoID" Type="Int32" />
+          <Property Name="ClasificacionID" Type="Int32" />
+          <Property Name="TipoFallaID" Type="Int32" />
+          <Property Name="StatusValidate" Type="Boolean" />
+          <Property Name="StatusDelete" Type="Boolean" />
+          <Property Name="TipoEventoID" Type="Int32" />
+          <Property Name="UsuarioCreadorID" Type="Int32" />
+          <Property Name="ParoRelacionadoID" Type="Int32" />
+          <NavigationProperty Name="CierreStatus" Relationship="DVPModel.FK_Paros_CierreStatus" FromRole="Paros" ToRole="CierreStatus" />
+          <NavigationProperty Name="Clasificacion" Relationship="DVPModel.FK_Clasificacion_Paros" FromRole="Paros" ToRole="Clasificacion" />
+          <NavigationProperty Name="ComponenteEquipo" Relationship="DVPModel.FK_ComponenteEquipo_Paros" FromRole="Paros" ToRole="ComponenteEquipo" />
+          <NavigationProperty Name="Equipo" Relationship="DVPModel.FK_Equipo_Paros" FromRole="Paros" ToRole="Equipo" />
+          <NavigationProperty Name="SubEquipo" Relationship="DVPModel.FK_SubEquipo_Paros" FromRole="Paros" ToRole="SubEquipo" />
+          <NavigationProperty Name="TipoEvento" Relationship="DVPModel.FK_TipoEvento_Paros" FromRole="Paros" ToRole="TipoEvento" />
+          <NavigationProperty Name="TipoFalla" Relationship="DVPModel.FK_TipoFalla_Paros" FromRole="Paros" ToRole="TipoFalla" />
+          <NavigationProperty Name="Usuario" Relationship="DVPModel.FK_UsuarioValidador_Paros" FromRole="Paros" ToRole="Usuario" />
+        </EntityType>
+        <Association Name="FK_Paros_CierreStatus">
+          <End Type="DVPModel.Paros" Role="Paros" Multiplicity="0..1" />
+          <End Type="DVPModel.CierreStatus" Role="CierreStatus" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Paros">
+              <PropertyRef Name="ParosID" />
+            </Principal>
+            <Dependent Role="CierreStatus">
+              <PropertyRef Name="ParosID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Clasificacion_Paros">
+          <End Type="DVPModel.Clasificacion" Role="Clasificacion" Multiplicity="0..1" />
+          <End Type="DVPModel.Paros" Role="Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Clasificacion">
+              <PropertyRef Name="ClasificacionID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="ClasificacionID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_ComponenteEquipo_Paros">
+          <End Type="DVPModel.ComponenteEquipo" Role="ComponenteEquipo" Multiplicity="0..1" />
+          <End Type="DVPModel.Paros" Role="Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="ComponenteEquipo">
+              <PropertyRef Name="ComponenteEquipoID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="ComponenteEquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Equipo_Paros">
+          <End Type="DVPModel.Equipo" Role="Equipo" Multiplicity="0..1" />
+          <End Type="DVPModel.Paros" Role="Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Equipo">
+              <PropertyRef Name="EquipoID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="EquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_SubEquipo_Paros">
+          <End Type="DVPModel.SubEquipo" Role="SubEquipo" Multiplicity="0..1" />
+          <End Type="DVPModel.Paros" Role="Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="SubEquipo">
+              <PropertyRef Name="SubEquipoID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="SubEquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TipoEvento_Paros">
+          <End Type="DVPModel.TipoEvento" Role="TipoEvento" Multiplicity="0..1" />
+          <End Type="DVPModel.Paros" Role="Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoEvento">
+              <PropertyRef Name="TipoEventoID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="TipoEventoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TipoFalla_Paros">
+          <End Type="DVPModel.TipoFalla" Role="TipoFalla" Multiplicity="0..1" />
+          <End Type="DVPModel.Paros" Role="Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoFalla">
+              <PropertyRef Name="TipoFallaID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="TipoFallaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_UsuarioValidador_Paros">
+          <End Type="DVPModel.Usuario" Role="Usuario" Multiplicity="0..1" />
+          <End Type="DVPModel.Paros" Role="Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Usuario">
+              <PropertyRef Name="UsuarioID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="UsuarioCreadorID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -2091,27 +2091,6 @@
                 <ScalarProperty Name="CodigoSAP" ColumnName="CodigoSAP" />
                 <ScalarProperty Name="CodigoSAPNuevo" ColumnName="CodigoSAPNuevo" />
                 <ScalarProperty Name="Active" ColumnName="Active" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="Paros">
-            <EntityTypeMapping TypeName="DVPModel.Paros">
-              <MappingFragment StoreEntitySet="Paros">
-                <ScalarProperty Name="ParoRelacionadoID" ColumnName="ParoRelacionadoID" />
-                <ScalarProperty Name="ParosID" ColumnName="ParosID" />
-                <ScalarProperty Name="FechaCreacion" ColumnName="FechaCreacion" />
-                <ScalarProperty Name="FechaInicio" ColumnName="FechaInicio" />
-                <ScalarProperty Name="FechaEvento" ColumnName="FechaEvento" />
-                <ScalarProperty Name="Comentario" ColumnName="Comentario" />
-                <ScalarProperty Name="EquipoID" ColumnName="EquipoID" />
-                <ScalarProperty Name="SubEquipoID" ColumnName="SubEquipoID" />
-                <ScalarProperty Name="ComponenteEquipoID" ColumnName="ComponenteEquipoID" />
-                <ScalarProperty Name="ClasificacionID" ColumnName="ClasificacionID" />
-                <ScalarProperty Name="TipoFallaID" ColumnName="TipoFallaID" />
-                <ScalarProperty Name="StatusValidate" ColumnName="StatusValidate" />
-                <ScalarProperty Name="StatusDelete" ColumnName="StatusDelete" />
-                <ScalarProperty Name="TipoEventoID" ColumnName="TipoEventoID" />
-                <ScalarProperty Name="UsuarioCreadorID" ColumnName="UsuarioCreadorID" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -2313,6 +2292,27 @@
           </FunctionImportMapping>
           <FunctionImportMapping FunctionImportName="sp_renamediagram" FunctionName="DVPModel.Store.sp_renamediagram" />
           <FunctionImportMapping FunctionImportName="sp_upgraddiagrams" FunctionName="DVPModel.Store.sp_upgraddiagrams" />
+          <EntitySetMapping Name="Paros">
+            <EntityTypeMapping TypeName="DVPModel.Paros">
+              <MappingFragment StoreEntitySet="Paros">
+                <ScalarProperty Name="ParoRelacionadoID" ColumnName="ParoRelacionadoID" />
+                <ScalarProperty Name="UsuarioCreadorID" ColumnName="UsuarioCreadorID" />
+                <ScalarProperty Name="TipoEventoID" ColumnName="TipoEventoID" />
+                <ScalarProperty Name="StatusDelete" ColumnName="StatusDelete" />
+                <ScalarProperty Name="StatusValidate" ColumnName="StatusValidate" />
+                <ScalarProperty Name="TipoFallaID" ColumnName="TipoFallaID" />
+                <ScalarProperty Name="ClasificacionID" ColumnName="ClasificacionID" />
+                <ScalarProperty Name="ComponenteEquipoID" ColumnName="ComponenteEquipoID" />
+                <ScalarProperty Name="SubEquipoID" ColumnName="SubEquipoID" />
+                <ScalarProperty Name="EquipoID" ColumnName="EquipoID" />
+                <ScalarProperty Name="Comentario" ColumnName="Comentario" />
+                <ScalarProperty Name="FechaEvento" ColumnName="FechaEvento" />
+                <ScalarProperty Name="FechaModificacion" ColumnName="FechaModificacion" />
+                <ScalarProperty Name="FechaCreacion" ColumnName="FechaCreacion" />
+                <ScalarProperty Name="ParosID" ColumnName="ParosID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>

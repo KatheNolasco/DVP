@@ -17,8 +17,8 @@ namespace DataAccess
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         public Clasificacion()
         {
-            this.Paros = new HashSet<Paros>();
             this.TipoFalla = new HashSet<TipoFalla>();
+            this.Paros = new HashSet<Paros>();
         }
     
         public int ClasificacionID { get; set; }
@@ -27,8 +27,8 @@ namespace DataAccess
         public Nullable<bool> AfectaTMEF { get; set; }
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<Paros> Paros { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<TipoFalla> TipoFalla { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<Paros> Paros { get; set; }
     }
 }
