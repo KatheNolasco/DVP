@@ -153,6 +153,8 @@
           <Property Name="TipoEventoID" Type="int" />
           <Property Name="UsuarioCreadorID" Type="int" />
           <Property Name="ParoRelacionadoID" Type="int" />
+          <Property Name="Cerrado" Type="bit" />
+          <Property Name="FechaCierre" Type="datetime" />
         </EntityType>
         <EntityType Name="Planta">
           <Key>
@@ -1850,6 +1852,8 @@
           <NavigationProperty Name="TipoEvento" Relationship="DVPModel.FK_TipoEvento_Paros" FromRole="Paros" ToRole="TipoEvento" />
           <NavigationProperty Name="TipoFalla" Relationship="DVPModel.FK_TipoFalla_Paros" FromRole="Paros" ToRole="TipoFalla" />
           <NavigationProperty Name="Usuario" Relationship="DVPModel.FK_UsuarioValidador_Paros" FromRole="Paros" ToRole="Usuario" />
+          <Property Name="Cerrado" Type="Boolean" />
+          <Property Name="FechaCierre" Type="DateTime" Precision="3" />
         </EntityType>
         <Association Name="FK_Paros_CierreStatus">
           <End Type="DVPModel.Paros" Role="Paros" Multiplicity="0..1" />
@@ -2295,6 +2299,8 @@
           <EntitySetMapping Name="Paros">
             <EntityTypeMapping TypeName="DVPModel.Paros">
               <MappingFragment StoreEntitySet="Paros">
+                <ScalarProperty Name="FechaCierre" ColumnName="FechaCierre" />
+                <ScalarProperty Name="Cerrado" ColumnName="Cerrado" />
                 <ScalarProperty Name="ParoRelacionadoID" ColumnName="ParoRelacionadoID" />
                 <ScalarProperty Name="UsuarioCreadorID" ColumnName="UsuarioCreadorID" />
                 <ScalarProperty Name="TipoEventoID" ColumnName="TipoEventoID" />

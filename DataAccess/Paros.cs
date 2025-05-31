@@ -35,6 +35,8 @@ namespace DataAccess
         public Nullable<int> TipoEventoID { get; set; }
         public Nullable<int> UsuarioCreadorID { get; set; }
         public Nullable<int> ParoRelacionadoID { get; set; }
+        public Nullable<bool> Cerrado { get; set; }
+        public Nullable<System.DateTime> FechaCierre { get; set; }
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<CierreStatus> CierreStatus { get; set; }

@@ -66,91 +66,76 @@
                 <div class="container-fluid">
                     <div class="card">
                         <div class="card-body">
+                            <!-- Fecha de validación -->
                             <h5 class="card-title fw-semibold mb-4 text-end">
-                                <i class="bi bi-unlock-fill text-warning ms-2"></i>
-                                @*<i class="bi bi-lock-fill text-warning ms-2"></i>*@
+                                <span id="candado">
+                                    <button onclick="cerrarReporte()" class="btn btn-link p-0 m-0 align-baseline">
+                                        <i class="bi bi-unlock-fill text-warning ms-2"></i>
+                                    </button>
+                                </span>
                                 Downtime Validation Date:
                                 <input type="date" id="fechaReporte" onchange="filtrarPorFecha()">
                             </h5>
+                            <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
+                                Paros cerrados correctamente!
+                            </div>
+                            <!-- Equipos -->
                             <h5 class="card-title fw-semibold mb-4">Equipments - Planta San Pedro</h5>
                             <div class="card">
                                 <div class="card-body p-4">
-                                    <!-- Botones de equipos -->
                                     @foreach (var equipo in Model.GetEquipos())
                                     {
                                         <button type="button"
                                                 value="@equipo.EquipoID"
-                                                onclick="filtrarPorEquipo('@equipo.EquipoID')"
-                                                class="btn btn-outline-dark m-1">
+                                                onclick="filtrarPorEquipo(@equipo.EquipoID)"
+                                                class="btn btn-outline-dark m-1 equipo-btn">
                                             @equipo.Descripcion
                                         </button>
                                     }
                                 </div>
-                                <!-- Botón para mostrar todos -->
-                                <button type="button" onclick="mostrarTodos()" class="btn btn-outline-light-info m-1">Ver Todos</button>
+
+                                <div class="text-end mb-3">
+                                    <button type="button" onclick="newdowntime()" class="btn btn-outline-dark m-1">
+                                        New Downtime
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="">
-                            <div class="card w-500">
-                                <div class="card-body p-4">
-                                    <div class="text-end">
-                                        <button type="button" onclick="newdowntime()" class="btn btn-outline-dark m-1"> 
-                                            New Downtime
-                                        </button>
-                                    </div>
+                        <!-- Sección de Listas -->
+                        <div class="card w-100">
+                            <div class="card-body p-4">
+                                <h5 class="card-title fw-semibold mb-4">Downtime List</h5>
+                                <div class="d-flex gap-3">
 
-                                    <h5 class="card-title fw-semibold mb-4">Downtime List</h5>
-
-                                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto; background-color: #ffffff; padding: 10px; border-radius: 10px;">
+                                    <!-- Tabla izquierda (downtimes inactivos) -->
+                                    <div class="table-responsive w-25" style="max-height: 400px; overflow-y: auto; background-color: #ffffff; padding: 10px; border-radius: 10px;">
                                         <table class="table table-bordered mb-0" style="background-color: #ffffff;">
                                             <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
                                                 <tr>
-                                                    <th style="text-align: center;">St</th>
-                                                    <th style="text-align: center;">Equipo</th>
-                                                    <th style="text-align: center;">Fecha Evento</th>
-                                                    <th style="text-align: center;">Clasificación</th>
-                                                    <th style="text-align: center;">Tipo Evento</th>
-                                                    <th style="text-align: center;">Acciones</th>
+                                                    <th class="text-center">Downtime</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="downtimeTableBodyInactiveList">
+
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Tabla derecha (downtimes activos) -->
+                                    <div class="table-responsive w-75" style="max-height: 400px; overflow-y: auto; background-color: #ffffff; padding: 10px; border-radius: 10px;">
+                                        <table class="table table-bordered mb-0" style="background-color: #ffffff;">
+                                            <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
+                                                <tr>
+                                                    <th class="text-center">St</th>
+                                                    <th class="text-center">Tipo Evento</th>
+                                                    <th class="text-center">Fecha Evento</th>
+                                                    <th class="text-center">Clasificación</th>
+                                                    <th class="text-center">Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="downtimeTableBody">
-                                                @foreach (var item in Model.GetdowntimeListCurrentMonth())
-                                                {
-                                                    <tr data-equipo-id="@item._equipoId">
-                                                        @if (item._statusValidate == true)
-                                                        {
-                                                            <td class="text-center bg-white"><span class="text-success">&#10004;</span></td>
-                                                        }
-                                                        else
-                                                        {
-                                                            <td class="text-center bg-white"><span class="text-danger">&#10060;</span></td>
-                                                        }
-                                                        <td class="text-center bg-white"><strong>@item._equipoName</strong></td>
-                                                        <td class="text-center bg-white">@item._fechaEvento.ToString("dd-MM-yyyy HH:mm:ss")</td>
-                                                        <td class="text-center bg-white">
-                                                            <span class="badge bg-success rounded-pill px-3 py-2">@item._clasificacionName</span>
-                                                        </td>
-                                                        <td class="text-center bg-white"><strong>@item._tipoEventoName</strong></td>
-                                                        <td class="text-center bg-white">
-                                                            <div class="dropdown">
-                                                                <button class="btn btn-outline-dark dropdown-toggle" type="button"
-                                                                        id="dropdownMenuButton-@item._paroId"
-                                                                        data-bs-toggle="dropdown" aria-expanded="false"
-                                                                        data-id="@item._paroId">
-                                                                    <i class="fas fa-bars"></i>
-                                                                </button>
-                                                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton-@item._paroId">
-                                                                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="openEditModal(@item._paroId)"><i class="bi bi-pencil me-2"></i> Editar evento</a></li>
-                                                                    <li><a class="dropdown-item" href="javascript:void(0)"><i class="ti ti-calendar me-2"></i> Agregar evento activo</a></li>
-                                                                    <li><a class="dropdown-item" href="javascript:void(0)"><i class="ti ti-exchange me-2"></i> Reclasificar evento</a></li>
-                                                                    <li><a class="dropdown-item text-danger" href="javascript:void(0)"><i class="ti ti-trash me-2"></i> Eliminar evento</a></li>
-                                                                    <li><a class="dropdown-item" href="javascript:void(0)"><i class="ti ti-hourglass-empty me-2"></i> Agregar retraso</a></li>
-                                                                </ul>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                }
+
                                             </tbody>
                                         </table>
                                     </div>
@@ -160,82 +145,107 @@
                         </div>
                     </div>
 
+
                 </div>
 
 
             </div>
-            @*___________________________________________________________________Modal Edit Downtime__________________________________________________*@
-                <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            @*___________________________________________________________________Modal Delete Paro__________________________________________________*@
+            <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="card-body">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <form>
+                                            <h4 class="card-title fw-semibold mb-2">¿Desea eliminar este evento?</h4>
+                                            <input type="hidden" id="paroIdtoDeleteEventHidden" value="" />
+                                            <br />
+                                            <div class="d-flex justify-content-end">
+                                                <button type="button" id="deleteParo" class="btn btn-outline-danger m-1">
+                                                    Delete <i class="ti ti-trash me-2"></i>
+                                                </button>
+                                            </div>
+                                            <div id="alertdeleteEvent" class="alert alert-danger" role="alert" style="display: none;">
+                                                Eliminado
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="modal-body">
-                                <div class="card-body">
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <form>
-                                                <h4 class="card-title fw-semibold mb-2">Downtime Validation</h4>
-                                                <input type="hidden" id="paroIdhidden" value="" />
-                                                <br />
-                                                <select class="form-select" id="_equipoIdedit">
-                                                    @foreach (var item in Model.GetEquipos())
-                                                    {
-                                                        <option value="@item.EquipoID">@item.Descripcion</option>
-                                                    }
-                                                </select>
-                                                <br />
-                                                <select class="form-select" id="_tipoeventoIdedit">
-                                                    @foreach (var item in Model.GetTipoEvento())
-                                                    {
-                                                        <option value="@item.TipoEventoID">@item.Descripcion</option>
-                                                    }
-                                                </select>
-                                                <br />
-                                                <select class="form-select" id="_subEquipoIdedit">
-                                                    <option value="">Seleccione un sub equipo</option>
-                                                </select>
-                                                <br />
-                                                <select class="form-select" id="_componenteEquipoIdedit">
-                                                    <option value="">Seleccione un componente</option>
-                                                </select>
-                                                <br />
-                                                <select class="form-select" id="_clasificacionIdedit">
-                                                    <option value="" selected disabled>Seleccione una clasificación</option>
-                                                    @foreach (var evento in Model.GetClasificacionFalla())
-                                                    {
-                                                        <option value="@evento.ClasificacionID">@evento.Descripcion</option>
-                                                    }
-                                                </select>
-                                                <br />
-                                                <select class="form-select" id="_tipoFallaIdedit">
-                                                    <option value="">La falla para este paro es:</option>
-                                                </select>
-                                                <br />
-                                                <div class="mb-3">
-                                                    <label class="form-label">Comment</label>
-                                                    <textarea type="text" class="form-control" id="_commentedit" required></textarea>
-                                                </div>
-                                                <br />
-                                                <div>
-                                                    <label for="fecha">Fecha:</label>
-                                                    <input type="date" id="_fechaEventoedit" required>
-                                                    <label for="hora">Hora:</label>
-                                                    <input type="time" id="_horaEventoedit" step="1" required>
-                                                </div>
-                                                <br />
-                                                <br />
-                                                <div class="d-flex justify-content-end">
-                                                    <button type="button" id="pendingEdit"  class="btn btn-outline-danger m-1">
-                                                        Pending <span class="text-danger ms-2">&#10060;</span>
-                                                    </button>
-                                                    <button type="button" id="validateEdit" class="btn btn-outline-success m-1">
-                                                        Validate <span class="text-success ms-2">&#10004;</span>
-                                                    </button>
-                                                </div>
-                                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @*___________________________________________________________________Modal Day Delay__________________________________________________*@
+            <div class="modal fade" id="daydelayModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="card-body">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <form>
+                                            <h4 class="card-title fw-semibold mb-2">Day Delay Validation</h4>
+                                            <input type="hidden" id="paroIdhidden" value="" />
+                                            <br />
+                                            <select class="form-select" id="_equipoIddaydelay">
+                                                @foreach (var item in Model.GetEquipos())
+                                                {
+                                                    <option value="@item.EquipoID">@item.Descripcion</option>
+                                                }
+                                            </select>
+                                            <br />
+                                            <select class="form-select" id="_subEquipoIddaydelay">
+                                                <option value="">Seleccione un sub equipo</option>
+                                            </select>
+                                            <br />
+                                            <select class="form-select" id="_componenteEquipoIddaydelay">
+                                                <option value="">Seleccione un componente</option>
+                                            </select>
+                                            <br />
+                                            <select class="form-select" id="_clasificacionIddaydelay">
+                                                <option value="" selected disabled>Seleccione una clasificación</option>
+                                                @foreach (var evento in Model.GetClasificacionFalla())
+                                                {
+                                                    <option value="@evento.ClasificacionID">@evento.Descripcion</option>
+                                                }
+                                            </select>
+                                            <br />
+                                            <select class="form-select" id="_tipoFallaIddaydelay">
+                                                <option value="">La falla para este paro es:</option>
+                                            </select>
+                                            <br />
+                                            <div class="mb-3">
+                                                <label class="form-label">Comment</label>
+                                                <textarea type="text" class="form-control" id="_commentdaydelay" required></textarea>
+                                            </div>
+                                            <br />
+                                            <div>
+                                                <label for="fecha">Fecha:</label>
+                                                <input type="date" id="_fechaEventodaydelay" required>
+                                                <label for="hora">Hora:</label>
+                                                <input type="time" id="_horaEventodaydelay" step="1" disabled>
+                                            </div>
+                                            <br />
+                                            <br />
+                                            <div class="d-flex justify-content-end">
+                                                <button type="button" id="validatedaydelay" class="btn btn-outline-success m-1">
+                                                    Validate <span class="text-success ms-2">&#10004;</span>
+                                                </button>
+                                            </div>
+                                        </form>
+                                        <div id="alertValidatereclasification" class="alert alert-success" role="alert" style="display: none;">
+                                            ¡Validado!
                                         </div>
                                     </div>
                                 </div>
@@ -243,6 +253,207 @@
                         </div>
                     </div>
                 </div>
+            </div>
+            @*___________________________________________________________________Modal Reclasification__________________________________________________*@
+            <div class="modal fade" id="reclasificationModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="card-body">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <form>
+                                            <h4 class="card-title fw-semibold mb-2">Reclasification Validation</h4>
+                                            <input type="hidden" id="paroIdhidden" value="" />
+                                            <br />
+                                            <select class="form-select" id="_equipoIdreclasification">
+                                                @foreach (var item in Model.GetEquipos())
+                                                {
+                                                    <option value="@item.EquipoID">@item.Descripcion</option>
+                                                }
+                                            </select>
+                                            <br />
+                                            <select class="form-select" id="_subEquipoIdreclasification">
+                                                <option value="">Seleccione un sub equipo</option>
+                                            </select>
+                                            <br />
+                                            <select class="form-select" id="_componenteEquipoIdreclasification">
+                                                <option value="">Seleccione un componente</option>
+                                            </select>
+                                            <br />
+                                            <select class="form-select" id="_clasificacionIdreclasification">
+                                                <option value="" selected disabled>Seleccione una clasificación</option>
+                                                @foreach (var evento in Model.GetClasificacionFalla())
+                                                {
+                                                    <option value="@evento.ClasificacionID">@evento.Descripcion</option>
+                                                }
+                                            </select>
+                                            <br />
+                                            <select class="form-select" id="_tipoFallaIdreclasification">
+                                                <option value="">La falla para este paro es:</option>
+                                            </select>
+                                            <br />
+                                            <div class="mb-3">
+                                                <label class="form-label">Comment</label>
+                                                <textarea type="text" class="form-control" id="_commentreclasification" required></textarea>
+                                            </div>
+                                            <br />
+                                            <div>
+                                                <label for="fecha">Fecha:</label>
+                                                <input type="date" id="_fechaEventoreclasification" required>
+                                                <label for="hora">Hora:</label>
+                                                <input type="time" id="_horaEventoreclasification" step="1" required>
+                                            </div>
+                                            <br />
+                                            <br />
+                                            <div class="d-flex justify-content-end">
+                                                <button type="button" id="validatereclasification" class="btn btn-outline-success m-1">
+                                                    Validate <span class="text-success ms-2">&#10004;</span>
+                                                </button>
+                                            </div>
+                                        </form>
+                                        <div id="alertValidatereclasification" class="alert alert-success" role="alert" style="display: none;">
+                                            ¡Validado!
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @*___________________________________________________________________Modal Active Event__________________________________________________*@
+            <div class="modal fade" id="activeModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="card-body">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <form>
+                                            <h4 class="card-title fw-semibold mb-2">Active Event</h4>
+                                            <input type="hidden" id="paroIdtoAddActiveEventHidden" value="" />
+                                            <br />
+                                            <div class="mb-3">
+                                                <label class="form-label">Comment</label>
+                                                <textarea type="text" class="form-control" id="_commentActiveEvent" required></textarea>
+                                            </div>
+                                            <br />
+                                            <div>
+                                                <label for="fecha">Fecha:</label>
+                                                <input type="date" id="_fechaActiveEvent">
+                                                <label for="hora">Hora:</label>
+                                                <input type="time" id="_horaActiveEvent" step="1" required>
+                                            </div>
+                                            <br />
+                                            <br />
+                                            <div class="d-flex justify-content-end">
+                                                <button type="button" id="createActiveEvent" class="btn btn-outline-success m-1">
+                                                    Create <span class="text-success ms-2">&#10004;</span>
+                                                </button>
+                                            </div>
+                                            <div id="alertValidateactiveEvent" class="alert alert-success" role="alert" style="display: none;">
+                                                ¡Validado!
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @*___________________________________________________________________Modal Edit Downtime__________________________________________________*@
+            <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="card-body">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <form>
+                                            <h4 class="card-title fw-semibold mb-2">Edit Downtime Validation</h4>
+                                            <input type="hidden" id="paroIdhidden" value="" />
+                                            <br />
+                                            <select class="form-select" id="_equipoIdedit">
+                                                @foreach (var item in Model.GetEquipos())
+                                                {
+                                                    <option value="@item.EquipoID">@item.Descripcion</option>
+                                                }
+                                            </select>
+                                            <br />
+                                            <select class="form-select" id="_tipoeventoIdedit">
+                                                @foreach (var item in Model.GetTipoEvento())
+                                                {
+                                                    <option value="@item.TipoEventoID">@item.Descripcion</option>
+                                                }
+                                            </select>
+                                            <br />
+                                            <select class="form-select" id="_subEquipoIdedit">
+                                                <option value="">Seleccione un sub equipo</option>
+                                            </select>
+                                            <br />
+                                            <select class="form-select" id="_componenteEquipoIdedit">
+                                                <option value="">Seleccione un componente</option>
+                                            </select>
+                                            <br />
+                                            <select class="form-select" id="_clasificacionIdedit">
+                                                <option value="" selected disabled>Seleccione una clasificación</option>
+                                                @foreach (var evento in Model.GetClasificacionFalla())
+                                                {
+                                                    <option value="@evento.ClasificacionID">@evento.Descripcion</option>
+                                                }
+                                            </select>
+                                            <br />
+                                            <select class="form-select" id="_tipoFallaIdedit">
+                                                <option value="">La falla para este paro es:</option>
+                                            </select>
+                                            <br />
+                                            <div class="mb-3">
+                                                <label class="form-label">Comment</label>
+                                                <textarea type="text" class="form-control" id="_commentedit" required></textarea>
+                                            </div>
+                                            <br />
+                                            <div>
+                                                <label for="fecha">Fecha:</label>
+                                                <input type="date" id="_fechaEventoedit" required>
+                                                <label for="hora">Hora:</label>
+                                                <input type="time" id="_horaEventoedit" step="1" required>
+                                            </div>
+                                            <br />
+                                            <br />
+                                            <div class="d-flex justify-content-end">
+                                                <button type="button" id="pendingEdit" class="btn btn-outline-danger m-1">
+                                                    Pending <span class="text-danger ms-2">&#10060;</span>
+                                                </button>
+                                                <button type="button" id="validateEdit" class="btn btn-outline-success m-1">
+                                                    Validate <span class="text-success ms-2">&#10004;</span>
+                                                </button>
+                                            </div>
+                                        </form>
+                                        <div id="alertValidateSuccess" class="alert alert-success" role="alert" style="display: none;">
+                                            ¡Validado!
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             @*______________________________________________________________________Modal Creación de Paro__________________________________________*@
             <div class="modal fade" id="newdowntime" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-lg">
@@ -305,7 +516,7 @@
                                             <select class="form-select" id="_tipoFallaId">
                                                 <option value="">La falla para este paro es:</option>
                                             </select>
-                                            </div>
+                                    </div>
                                     <div class="mb-3">
                                         <label class="form-label">Comment</label>
                                         <textarea type="text" class="form-control" id="_comment" required></textarea>
@@ -327,12 +538,12 @@
                                     </div>
                                     </form>
                                 </div>
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
     </div>
 </body>
 
@@ -353,10 +564,9 @@
 
     document.addEventListener("DOMContentLoaded", function () {
         newdowntime();
-        penEditModal(paroId);
     });
 
-    //Calcular fecha del input.
+    //Calcular fecha del input fecha.
     window.addEventListener('DOMContentLoaded', () => {
             const fechaInput = document.getElementById('fechaReporte');
             const hoy = new Date();
@@ -404,8 +614,27 @@
 
             // Escuchar cambios en el input de fecha y volver a ejecutar el filtro automáticamente
             fechaInput.addEventListener('change', filtrarPorFecha);
-        });
+    });
 
+
+    //Calcular fecha para input fecha de creacion de paro
+    window.addEventListener("DOMContentLoaded", () => {
+        const inputFecha = document.getElementById("_fechaEvento");
+        const hoy = new Date();
+        const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+
+        // Formatear a yyyy-MM-dd
+        const formatoFecha = (fecha) => {
+            const año = fecha.getFullYear();
+            const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+            const dia = String(fecha.getDate()).padStart(2, '0');
+            return `${año}-${mes}-${dia}`;
+        };
+
+        inputFecha.min = formatoFecha(inicioMes);
+        inputFecha.max = formatoFecha(finMes);
+    });
 
 
 
@@ -502,6 +731,11 @@
     });
     // Generación de Paro
     document.getElementById("crearparo").addEventListener("click", function () {
+
+        const boton = document.getElementById('crearparo');
+        boton.disabled = true;
+        boton.textContent = "Procesando...";
+
         const url = this.getAttribute("data-url");
 
         const fecha = document.getElementById("_fechaEvento").value;
@@ -509,33 +743,39 @@
 
         if (!fecha || !hora) {
             alert("Debe ingresar la fecha y la hora del evento.");
+            boton.disabled = false;
+            boton.textContent = "Validate ✔";
             return;
+        }
+
+        // Validar segundos
+        const partesHora = hora.split(':');
+        if (partesHora.length === 3) {
+            const segundos = parseInt(partesHora[2], 10);
+            if (segundos > 59) {
+                alert("Los segundos no pueden ser mayores a 59.");
+                boton.disabled = false;
+                boton.textContent = "Validate ✔";
+                return;
+            }
         }
 
         // Combinar fecha y hora
         const fechaHoraEvento = `${fecha} ${hora}`;
-
         const fechaEvento = new Date(`${fecha}T${hora}`);
+
         const hoy = new Date();
 
-        // 5 días antes del día actual
-        const cincoDiasAntes = new Date(hoy);
-        cincoDiasAntes.setDate(hoy.getDate() - 5);
-
-        // Último día del mes actual
+        // Validar que la fecha esté dentro del mes actual
+        const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
         const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
 
-        // 5 días después del último día del mes
-        const cincoDiasDespuesUltimoDia = new Date(ultimoDiaMes);
-        cincoDiasDespuesUltimoDia.setDate(ultimoDiaMes.getDate() + 2);
-
-        // Normalizar para comparar fechas (sin hora)
         const fechaEventoSimple = new Date(fechaEvento.getFullYear(), fechaEvento.getMonth(), fechaEvento.getDate());
-        const fechaInicioSimple = new Date(cincoDiasAntes.getFullYear(), cincoDiasAntes.getMonth(), cincoDiasAntes.getDate());
-        const fechaFinSimple = new Date(cincoDiasDespuesUltimoDia.getFullYear(), cincoDiasDespuesUltimoDia.getMonth(), cincoDiasDespuesUltimoDia.getDate());
 
-        if (fechaEventoSimple < fechaInicioSimple || fechaEventoSimple > fechaFinSimple) {
-            alert(`La fecha del evento debe estar entre ${fechaInicioSimple.toLocaleDateString()} y ${fechaFinSimple.toLocaleDateString()}.`);
+        if (fechaEventoSimple < primerDiaMes || fechaEventoSimple > ultimoDiaMes) {
+            alert(`La fecha del evento debe estar dentro del mes actual (${primerDiaMes.toLocaleDateString()} al ${ultimoDiaMes.toLocaleDateString()}).`);
+            boton.disabled = false;
+            boton.textContent = "Validate ✔";
             return;
         }
 
@@ -553,12 +793,10 @@
         if (!data._equipoId || !data._tipoEventoId || !data._subEquipoId || !data._componenteEquipoId ||
             !data._clasificacionId || !data._tipoFallaId || !data._comment) {
             alert("Por favor, complete todos los campos obligatorios.");
+            boton.disabled = false;
+            boton.textContent = "Validate ✔";
             return;
         }
-
-        const boton = document.getElementById("crearparo");
-        boton.disabled = true;
-        boton.textContent = "¡Done!";
 
         fetch(url, {
             method: "POST",
@@ -576,7 +814,6 @@
             .then(result => {
                 if (result.success) {
                     document.getElementById("alertSuccess").style.display = "block";
-
                     setTimeout(() => {
                         location.reload();
                     }, 1000);
@@ -594,18 +831,7 @@
             });
     });
 
-    //Ocultar y mostrar botón de creación de paros
-    const modal = document.getElementById('newdowntime');
-    modal.addEventListener('shown.bs.modal', function () {
-        const boton = document.getElementById('crearparo');
-        boton.disabled = false;
-        boton.textContent = "Validate ✔";
 
-
-        document.getElementById("alertSuccess").style.display = "none";
-        document.querySelector("form").reset();
-        document.getElementById("_tipoFallaId").innerHTML = '<option value="">La falla para este paro es:</option>';
-    });
 
 
 
@@ -658,46 +884,74 @@
 
 
     document.getElementById('validateEdit').addEventListener('click', function () {
-     const paroId = document.getElementById('paroIdhidden').value;
 
-        const data = {
-            _paroId: parseInt(paroId),
-            _equipoId: parseInt(document.getElementById('_equipoIdedit').value),
-            _subEquipoId: parseInt(document.getElementById('_subEquipoIdedit').value),
-            _componenteEquipoId: parseInt(document.getElementById('_componenteEquipoIdedit').value),
-            _clasificacionId: parseInt(document.getElementById('_clasificacionIdedit').value),
-            _tipoFallaId: parseInt(document.getElementById('_tipoFallaIdedit').value),
-            _comment: document.getElementById('_commentedit').value,
-            _fechaEvento: getFechaHoraISO() // Formato ISO yyyy-MM-ddTHH:mm:ss
-        };
+    const button = document.getElementById('validateEdit');
+    button.disabled = true;
+    button.textContent = "Procesando...";
 
-        fetch('@Url.Action("UpdateDowntime", "Downtime")', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                alert("Paro actualizado correctamente.");
+    const hora = document.getElementById('_horaEventoedit').value;
 
-                // Cerrar modal y recargar
+    // Validar que los segundos no sean mayores a 59
+    const partesHora = hora.split(':');
+    if (partesHora.length === 3) {
+        const segundos = parseInt(partesHora[2], 10);
+        if (segundos > 59) {
+            alert("Los segundos no pueden ser mayores a 59.");
+            button.disabled = false;
+            button.textContent = "Validate ✔";
+            return;
+        }
+    }
+
+    const paroId = document.getElementById('paroIdhidden').value;
+
+    const data = {
+        _paroId: parseInt(paroId),
+        _equipoId: parseInt(document.getElementById('_equipoIdedit').value),
+        _tipoEventoId: parseInt(document.getElementById('_tipoeventoIdedit').value),
+        _subEquipoId: parseInt(document.getElementById('_subEquipoIdedit').value),
+        _componenteEquipoId: parseInt(document.getElementById('_componenteEquipoIdedit').value),
+        _clasificacionId: parseInt(document.getElementById('_clasificacionIdedit').value),
+        _tipoFallaId: parseInt(document.getElementById('_tipoFallaIdedit').value),
+        _comment: document.getElementById('_commentedit').value,
+        _fechaEvento: getFechaHoraISO()
+    };
+
+    fetch('@Url.Action("UpdateDowntime", "Downtime")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            // Mostrar alerta de éxito
+            const alertDiv = document.getElementById('alertValidateSuccess');
+            alertDiv.style.display = 'block';
+
+            setTimeout(() => {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
                 modal.hide();
-
-                // Recargar lista o la página completa
                 location.reload();
-            } else {
-                alert("Error: " + result.message);
-            }
-        })
-        .catch(error => {
-            console.error("Error al actualizar el paro:", error);
-            alert("Error al enviar datos.");
-        });
+            }, 1000);
+        } else {
+            alert("Error: " + result.message);
+            button.disabled = false;
+            button.textContent = "Validate ✔";
+        }
+    })
+    .catch(error => {
+        console.error("Error al actualizar el paro:", error);
+        alert("Error al enviar datos.");
+        button.disabled = false;
+        button.textContent = "Validate ✔";
     });
+});
+
+
+
 
 
     document.getElementById('pendingEdit').addEventListener('click', function () {
@@ -739,136 +993,7 @@
 
 
 
-
-
-
-
-
-
-//_____________________________________________________________________________Functions___________________________________________________________________//
-
-    function newdowntime() {
-        $("#newdowntime").modal("show");
-    };
-
-
-
-//*************************************************** Estas funciones rellenan el datatable ********************************************/
-    function filtrarPorEquipo(equipoId) {
-        const fechaSeleccionada = document.getElementById('fechaReporte').value; // formato: yyyy-MM-dd
-        const filas = document.querySelectorAll('#downtimeTableBody tr');
-
-        // Función para parsear el formato "dd-MM-yyyy HH:mm:ss"
-        function parseFechaCustom(fechaTexto) {
-            const [fecha, hora] = fechaTexto.split(' ');
-            const [dia, mes, anio] = fecha.split('-');
-            const [horaStr, min, seg] = hora.split(':');
-            return new Date(`${anio}-${mes}-${dia}T${horaStr}:${min}:${seg}`);
-        }
-
-        filas.forEach(fila => {
-            const filaEquipoId = fila.getAttribute('data-equipo-id');
-            const fechaEventoTexto = fila.querySelector('td:nth-child(3)').textContent.trim();
-            const fechaEvento = parseFechaCustom(fechaEventoTexto);
-            const fechaEventoFormat = fechaEvento.toISOString().split('T')[0];
-
-            // Mostrar solo si el equipo coincide Y la fecha coincide con la seleccionada
-            if (filaEquipoId === equipoId && fechaEventoFormat === fechaSeleccionada) {
-                fila.style.display = '';
-            } else {
-                fila.style.display = 'none';
-            }
-        });
-    }
-
-    function mostrarTodos() {
-        const fechaSeleccionada = document.getElementById('fechaReporte').value; // formato: yyyy-MM-dd
-        const filas = document.querySelectorAll('#downtimeTableBody tr');
-
-        // Función para parsear "dd-MM-yyyy HH:mm:ss" a Date
-        function parseFechaCustom(fechaTexto) {
-            const [fecha, hora] = fechaTexto.split(' ');
-            const [dia, mes, anio] = fecha.split('-');
-            const [horaStr, min, seg] = hora.split(':');
-            return new Date(anio, mes - 1, dia, horaStr, min, seg);
-        }
-
-        // Formatear fecha local a "yyyy-MM-dd" sin UTC
-        function formatoLocalYMD(fecha) {
-            const año = fecha.getFullYear();
-            const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-            const dia = String(fecha.getDate()).padStart(2, '0');
-            return `${año}-${mes}-${dia}`;
-        }
-
-        filas.forEach(fila => {
-            const fechaEventoTexto = fila.querySelector('td:nth-child(3)').textContent.trim();
-            const fechaEvento = parseFechaCustom(fechaEventoTexto);
-
-            const fechaEventoFormat = formatoLocalYMD(fechaEvento); // ahora en horario local
-
-            if (fechaEventoFormat === fechaSeleccionada) {
-                fila.style.display = '';
-            } else {
-                fila.style.display = 'none';
-            }
-        });
-    }
-
-
-    function filtrarPorFecha() {
-        const fechaSeleccionada = document.getElementById('fechaReporte').value; // formato: yyyy-MM-dd
-        const tbody = document.getElementById('downtimeTableBody');
-        const filas = Array.from(tbody.querySelectorAll('tr'));
-
-        function parseFechaCustom(fechaTexto) {
-            const [fecha, hora] = fechaTexto.split(' ');
-            const [dia, mes, anio] = fecha.split('-');
-            const [horaStr, min, seg] = hora.split(':');
-            return new Date(anio, mes - 1, dia, horaStr, min, seg); // mes es 0-indexado
-        }
-
-        function formatoLocalYMD(fecha) {
-            const año = fecha.getFullYear();
-            const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-            const dia = String(fecha.getDate()).padStart(2, '0');
-            return `${año}-${mes}-${dia}`;
-        }
-
-        // Filtrar filas que coincidan exactamente con la fecha seleccionada
-        const filasFiltradas = filas.filter(fila => {
-            const fechaEventoTexto = fila.querySelector('td:nth-child(3)').textContent.trim();
-            const fechaEvento = parseFechaCustom(fechaEventoTexto);
-
-            const eventoYMD = formatoLocalYMD(fechaEvento); // ahora en local, no en UTC
-            return eventoYMD === fechaSeleccionada;
-        });
-
-        // Ordenar las filas filtradas por fecha y hora
-        filasFiltradas.sort((a, b) => {
-            const fechaA = parseFechaCustom(a.querySelector('td:nth-child(3)').textContent.trim());
-            const fechaB = parseFechaCustom(b.querySelector('td:nth-child(3)').textContent.trim());
-            return fechaA - fechaB;
-        });
-
-        // Mostrar solo las filas filtradas
-        filas.forEach(fila => fila.style.display = 'none');
-        filasFiltradas.forEach(fila => {
-            fila.style.display = '';
-            tbody.appendChild(fila);
-        });
-    }
-
-
- //*************************************************** Estas funciones rellenan el datatable ********************************************/
-
-
-
-
-
-
-
-    //*************************************************** Funciones para el editar paros ********************************************/
+        //*************************************************** Funciones para el editar paros ********************************************/
 
 
     function getFechaHoraISO() {
@@ -892,11 +1017,47 @@
 
                 const paro = result.data;
 
+                // Mostrar u ocultar campos según tipoEventoId
+                const tipoEventoId = paro._tipoEventoId;
+
+                const subEquipo = document.getElementById('_subEquipoIdedit');
+                const componente = document.getElementById('_componenteEquipoIdedit');
+                const clasificacion = document.getElementById('_clasificacionIdedit');
+                const tipoFalla = document.getElementById('_tipoFallaIdedit');
+
+                // Si también tienes etiquetas <label>, ocúltalas así:
+                const subEquipoLabel = document.querySelector("label[for='_subEquipoIdedit']");
+                const componenteLabel = document.querySelector("label[for='_componenteEquipoIdedit']");
+                const clasificacionLabel = document.querySelector("label[for='_clasificacionIdedit']");
+                const tipoFallaLabel = document.querySelector("label[for='_tipoFallaIdedit']");
+
+                if (tipoEventoId === 3) {
+                    subEquipo.setAttribute('hidden', true);
+                    componente.setAttribute('hidden', true);
+                    clasificacion.setAttribute('hidden', true);
+                    tipoFalla.setAttribute('hidden', true);
+
+                    if (subEquipoLabel) subEquipoLabel.setAttribute('hidden', true);
+                    if (componenteLabel) componenteLabel.setAttribute('hidden', true);
+                    if (clasificacionLabel) clasificacionLabel.setAttribute('hidden', true);
+                    if (tipoFallaLabel) tipoFallaLabel.setAttribute('hidden', true);
+                } else {
+                    subEquipo.removeAttribute('hidden');
+                    componente.removeAttribute('hidden');
+                    clasificacion.removeAttribute('hidden');
+                    tipoFalla.removeAttribute('hidden');
+
+                    if (subEquipoLabel) subEquipoLabel.removeAttribute('hidden');
+                    if (componenteLabel) componenteLabel.removeAttribute('hidden');
+                    if (clasificacionLabel) clasificacionLabel.removeAttribute('hidden');
+                    if (tipoFallaLabel) tipoFallaLabel.removeAttribute('hidden');
+                }
+
                 // Set campos base
                 document.getElementById('_equipoIdedit').value = paro._equipoId;
                 document.getElementById('paroIdhidden').value = paro._paroId;
-                document.getElementById('_commentedit').value = paro._comment;
-
+                const comentario = document.getElementById('_commentedit').value = paro._comment;
+                console.log(paro._comment);
                 // Fecha y Hora
                 if (paro._fechaEvento) {
                     const match = paro._fechaEvento.match(/\/Date\((\d+)\)\//);
@@ -918,6 +1079,10 @@
                 const clasificacionSelect = document.getElementById('_clasificacionIdedit');
                 clasificacionSelect.value = paro._clasificacionId;
 
+                // TipoEvento
+                const tipoEventoSelect = document.getElementById('_tipoeventoIdedit');
+                tipoEventoSelect.value = paro._tipoEventoId;
+
                 // Paso 1: cargar subequipos
                 cargarSubEquiposEdit(paro._equipoId, paro._subEquipoId, function () {
 
@@ -933,6 +1098,7 @@
                 console.error("Error al cargar el paro:", error);
             });
     }
+
 
 
 
@@ -1058,6 +1224,923 @@
    }
 
 
+
+
+
+
+//_____________________________________________________________________________Functions___________________________________________________________________//
+
+    function newdowntime() {
+        $("#newdowntime").modal("show");
+    };
+
+
+
+    //*************************************************** Estas funciones rellenan el datatable ********************************************/
+
+
+
+    function formatearFecha(fechaDotNet) {
+        const timestamp = parseInt(fechaDotNet.match(/\d+/)[0]);
+        const fecha = new Date(timestamp);
+        const opciones = {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        };
+        return fecha.toLocaleString('es-ES', opciones).replace(',', '');
+    }
+
+
+function filtrarPorFecha() {
+    const fecha = document.getElementById("fechaReporte").value;
+
+    if (fecha) {
+        fetch('@Url.Action("GetDowntimesByDate", "Downtime")?fecha=' + fecha)
+            .then(response => response.json())
+            .then(data => {
+                const activeTbody = document.getElementById("downtimeTableBody");
+                const inactiveTbody = document.getElementById("downtimeTableBodyInactiveList");
+
+                if (!activeTbody || !inactiveTbody) {
+                    console.error("No se encontraron los TBODYs en el DOM.");
+                    return;
+                }
+
+                // Limpiar ambos TBODYs
+                activeTbody.innerHTML = "";
+                inactiveTbody.innerHTML = "";
+
+                data.forEach(item => {
+                    // Solo llenar la tabla de inactivos si el tipoEventoId === 1
+                    if (item._tipoEventoId === 1) {
+                        const rowHtmlInactivo = `
+                            <tr data-equipo-id="${item._equipoId}">
+                                <td>
+                                    <button type="button"
+                                            class="btn btn-outline-dark m-1 tipo-evento-btn"
+                                            onclick="loadRelatedDowntimes(${item._paroId})"
+                                            data-paro-id="${item._paroId}"
+                                            data-paro-rel="${item._paroRelacionadoId}">
+                                            Downtime ${item._paroId}
+                                    </button>
+                                </td>
+                            </tr>`;
+                        inactiveTbody.insertAdjacentHTML("beforeend", rowHtmlInactivo);
+                    }
+                });
+            })
+            .catch(error => {
+                console.error("Error al obtener los paros:", error);
+            });
+    }
+}
+
+
+
+
+    let equipoSeleccionadoId = null;
+
+
+
+    function filtrarPorEquipo(equipoId) {
+        equipoSeleccionadoId = equipoId;
+
+        // Filtrar filas por equipo
+        const todasFilas = document.querySelectorAll('#downtimeTableBody tr, #downtimeTableBodyInactiveList tr');
+        todasFilas.forEach(fila => {
+            const filaEquipoId = fila.getAttribute('data-equipo-id');
+            fila.style.display = filaEquipoId === equipoId.toString() ? '' : 'none';
+        });
+
+        // Restaurar estilos originales a todos los botones
+        const botonesEquipo = document.querySelectorAll('.equipo-btn');
+        botonesEquipo.forEach(btn => {
+            btn.className = 'btn btn-outline-dark m-1 equipo-btn';
+        });
+
+        // Aplicar estilo sombreado al botón seleccionado
+        const botonSeleccionado = document.querySelector(`.equipo-btn[value="${equipoId}"]`);
+        if (botonSeleccionado) {
+            botonSeleccionado.className = 'btn btn-dark m-1 equipo-btn';
+        }
+    }
+
+
+
+
+    function loadRelatedDowntimes(paroId) {
+    if (!equipoSeleccionadoId) {
+        alert("Debe seleccionar un equipo antes de continuar.");
+        return;
+    }
+
+    fetch('@Url.Action("GetDowntimesByInactive", "Downtime")?paroId=' + paroId)
+        .then(response => {
+            if (!response.ok) throw new Error("Error al obtener eventos.");
+            return response.json();
+        })
+        .then(data => {
+            const downtimeTbody = document.getElementById('downtimeTableBody');
+            downtimeTbody.innerHTML = ''; // Limpiar tabla
+
+            // Ordenar por fecha usando los ticks de .NET
+            const eventosValidos = data
+                .filter(item => item._statusDelete !== true)
+                .sort((a, b) => {
+                    const aTicks = parseInt(a._fechaEvento.match(/\d+/)[0]);
+                    const bTicks = parseInt(b._fechaEvento.match(/\d+/)[0]);
+                    return aTicks - bTicks;
+                });
+
+            eventosValidos.forEach(item => {
+                const rowHtmlActivo = `
+                <tr data-equipo-id="${item._equipoId}">
+                    <td class="text-center bg-white">${item._statusValidate ? '✅' : '❌'}</td>
+                    <td class="text-center bg-white"><strong>${item._tipoEventoName}</strong></td>
+                    <td class="text-center bg-white">${formatearFecha(item._fechaEvento)}</td>
+                    <td class="text-center bg-white">
+                        <span class="badge rounded-pill px-3 py-2 ${!item._clasificacionName?.trim() ? 'bg-warning' : 'bg-success'}">
+                            ${item._clasificacionName?.trim() || 'Evento Activo'}
+                        </span>
+                    </td>
+                    <td class="text-center bg-white">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-dark dropdown-toggle"
+                                    type="button"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false"
+                                    data-id="${item._paroId}">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="openEditModal(${item._paroId})"><i class="bi bi-pencil me-2"></i> Editar evento</a></li>
+                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="newActiveEvent(${item._paroId})"><i class="ti ti-calendar me-2"></i> Agregar evento activo</a></li>
+                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="openReclasificationModal(${item._paroId})"><i class="ti ti-exchange me-2"></i> Reclasificar evento</a></li>
+                                <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="opendeleteDowntime(${item._paroId})"><i class="ti ti-trash me-2"></i> Eliminar evento</a></li>
+                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="openDaydelayModal(${item._paroId})"><i class="ti ti-hourglass-empty me-2"></i> Agregar retraso</a></li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>`;
+                downtimeTbody.insertAdjacentHTML('beforeend', rowHtmlActivo);
+            });
+
+            // Sombrear el botón clickeado:
+            const botonesDowntime = document.querySelectorAll('.tipo-evento-btn');
+            botonesDowntime.forEach(btn => {
+                btn.className = 'btn btn-outline-dark m-1 tipo-evento-btn';
+            });
+
+            const botonActivo = Array.from(botonesDowntime).find(b => b.getAttribute('data-paro-id') == paroId);
+            if (botonActivo) {
+                botonActivo.className = 'btn btn-dark m-1 tipo-evento-btn';
+            }
+        })
+        .catch(error => console.error('Error al cargar eventos relacionados:', error));
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //****************************************************** Funciones para crear active event ****************************************/
+
+
+    function newActiveEvent(paroId) {
+        fetch(`${getParoByIdUrl}?paroId=${paroId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const paro = data.data;
+
+                    // Convertir fecha .NET a objeto Date
+                    const match = paro._fechaEvento.match(/\/Date\((\d+)\)\//);
+                    const timestamp = match ? parseInt(match[1], 10) : null;
+
+                    if (!timestamp) {
+                        alert("Fecha del paro inválida.");
+                        return;
+                    }
+
+                    const fecha = new Date(timestamp);
+                    const fechaStr = fecha.toISOString().split('T')[0]; // yyyy-MM-dd
+                    const horaStr = fecha.toTimeString().split(' ')[0]; // HH:mm:ss
+
+                    // Asignar valores al formulario del modal
+                    document.getElementById('paroIdtoAddActiveEventHidden').value = paro._paroId;
+                    document.getElementById('_fechaActiveEvent').value = fechaStr;
+
+                    // Mostrar modal
+                    const modal = new bootstrap.Modal(document.getElementById('activeModal'));
+                    modal.show();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Error al obtener el paro:", error);
+                alert("Ocurrió un error al obtener el paro.");
+            });
+    }
+
+
+    document.getElementById('createActiveEvent').addEventListener('click', () => {
+
+    const button = document.getElementById('createActiveEvent');
+    button.disabled = true;
+    button.textContent = "Procesando...";
+
+    const paroId = document.getElementById('paroIdtoAddActiveEventHidden').value;
+    const _commentActiveEvent = document.getElementById('_commentActiveEvent').value;
+    const fecha = document.getElementById('_fechaActiveEvent').value;
+    const hora = document.getElementById('_horaActiveEvent').value;
+
+    if (!fecha || !hora) {
+        alert("Todos los campos son obligatorios.");
+        button.disabled = false;
+        button.textContent = "Validate ✔";
+        return;
+    }
+
+    // Validar segundos
+    const partesHora = hora.split(':');
+    if (partesHora.length === 3) {
+        const segundos = parseInt(partesHora[2], 10);
+        if (segundos > 59) {
+            alert("Los segundos no pueden ser mayores a 59.");
+            button.disabled = false;
+            button.textContent = "Validate ✔";
+            return;
+        }
+    }
+
+    const fechaEvento = new Date(`${fecha}T${hora}`);
+
+    const payload = {
+        _paroId: parseInt(paroId),
+        _fechaEvento: fechaEvento.toISOString(),
+        _comment: _commentActiveEvent
+    };
+
+    fetch('@Url.Action("AddActiveEvent", "Downtime")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            document.getElementById('alertValidateactiveEvent').style.display = 'block';
+            const modal = bootstrap.Modal.getInstance(document.getElementById('activeModal'));
+            modal.hide();
+
+            setTimeout(() => {
+                location.reload();
+            }, 3000);
+        } else {
+            alert(result.message || "Ocurrió un error.");
+            button.disabled = false;
+            button.textContent = "Validate ✔";
+        }
+    })
+    .catch(error => {
+        console.error("Error al enviar el paro activo:", error);
+        alert("Ocurrió un error al enviar el paro activo.");
+        button.disabled = false;
+        button.textContent = "Validate ✔";
+    });
+});
+
+
+
+
+
+
+
+
+
+    //________________________________________________________________________Reclasificar Paro_________________________________________________________________//
+
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const editarParoLinks = document.querySelectorAll('.btn-editar-paro');
+
+        editarParoLinks.forEach(link => {
+            link.addEventListener('click', function () {
+                const paroId = this.getAttribute('data-paro-id');
+                openReclasificationModal(paroId);
+            });
+        });
+    });
+
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const equipoSelect = document.getElementById('_equipoIdreclasification');
+        equipoSelect.addEventListener('change', function () {
+            const nuevoEquipoId = this.value;
+            cargarSubEquiposReclasification(nuevoEquipoId, null, function () {
+                const componenteSelect = document.getElementById('_componenteEquipoIdreclasification');
+                componenteSelect.innerHTML = '<option value="">Seleccione un componente</option>';
+            });
+        });
+
+        const subEquipoSelect = document.getElementById('_subEquipoIdreclasification');
+        subEquipoSelect.addEventListener('change', function () {
+            const nuevoSubEquipoId = this.value;
+            cargarComponentesReclasification(nuevoSubEquipoId);
+        });
+
+        const clasificacionSelect = document.getElementById('_clasificacionIdreclasification');
+        const componenteSelect = document.getElementById('_componenteEquipoIdreclasification');
+
+        clasificacionSelect.addEventListener('click', function () {
+            cargarTiposFallaReclasification(this.value, componenteSelect.value);
+        });
+
+        componenteSelect.addEventListener('click', function () {
+            cargarTiposFallaReclasification(clasificacionSelect.value, this.value);
+        });
+    });
+
+
+
+    document.getElementById('validatereclasification').addEventListener('click', function () {
+    const button = document.getElementById('validatereclasification');
+    button.disabled = true;
+    button.textContent = "Procesando...";
+
+    const hora = document.getElementById('_horaEventoreclasification').value;
+    const fecha = document.getElementById('_fechaEventoreclasification').value;
+
+    if (!fecha || !hora) {
+        alert("Debe ingresar la fecha y la hora del evento.");
+        button.disabled = false;
+        button.textContent = "Validate ✔";
+        return;
+    }
+
+    const partesHora = hora.split(':');
+    if (partesHora.length === 3) {
+        const segundos = parseInt(partesHora[2], 10);
+        if (segundos > 59) {
+            alert("Los segundos no pueden ser mayores a 59.");
+            button.disabled = false;
+            button.textContent = "Validate ✔";
+            return;
+        }
+    }
+
+    const paroId = document.getElementById('paroIdhidden').value;
+
+    const data = {
+        _paroId: parseInt(paroId),
+        _equipoId: parseInt(document.getElementById('_equipoIdreclasification').value),
+        _subEquipoId: parseInt(document.getElementById('_subEquipoIdreclasification').value),
+        _componenteEquipoId: parseInt(document.getElementById('_componenteEquipoIdreclasification').value),
+        _clasificacionId: parseInt(document.getElementById('_clasificacionIdreclasification').value),
+        _tipoFallaId: parseInt(document.getElementById('_tipoFallaIdreclasification').value),
+        _comment: document.getElementById('_commentreclasification').value,
+        _fechaEvento: getFechaHoraISOReclasification()
+    };
+
+    fetch('@Url.Action("AddReclasificationEvent", "Downtime")', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            document.getElementById('alertValidatereclasification').style.display = 'block';
+            setTimeout(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('reclasificationModal'));
+                modal.hide();
+                location.reload();
+            }, 1000);
+        } else {
+            alert("Error: " + result.message);
+            button.disabled = false;
+            button.textContent = "Validate ✔";
+        }
+    })
+    .catch(error => {
+        console.error("Error al actualizar el paro:", error);
+        alert("Error al enviar datos.");
+        button.disabled = false;
+        button.textContent = "Validate ✔";
+    });
+});
+
+
+
+
+
+function getFechaHoraISOReclasification() {
+    const fecha = document.getElementById('_fechaEventoreclasification').value;
+    const hora = document.getElementById('_horaEventoreclasification').value;
+    return `${fecha}T${hora}`;
+}
+
+function openReclasificationModal(paroId) {
+    var myModal = new bootstrap.Modal(document.getElementById('reclasificationModal'));
+    myModal.show();
+
+    fetch(`${getParoByIdUrl}?paroId=${paroId}`)
+        .then(response => response.json())
+        .then(result => {
+            if (!result.success) {
+                alert("Error: " + result.message);
+                return;
+            }
+
+            const paro = result.data;
+
+            document.getElementById('_equipoIdreclasification').value = paro._equipoId;
+            document.getElementById('paroIdhidden').value = paro._paroId;
+
+            if (paro._fechaEvento) {
+                const match = paro._fechaEvento.match(/\/Date\((\d+)\)\//);
+                if (match) {
+                    const fechaObj = new Date(parseInt(match[1]));
+                    document.getElementById('_fechaEventoreclasification').value = fechaObj.toISOString().split('T')[0];
+                    document.getElementById('_horaEventoreclasification').value = fechaObj.toTimeString().split(' ')[0];
+                }
+            }
+
+            document.getElementById('_clasificacionIdreclasification').value = paro._clasificacionId;
+
+            cargarSubEquiposReclasification(paro._equipoId, paro._subEquipoId, function () {
+                cargarComponentesReclasification(paro._subEquipoId, paro._componenteEquipoId, function () {
+                    cargarTiposFallaReclasification(paro._clasificacionId, paro._componenteEquipoId, paro._tipoFallaId);
+                });
+            });
+        })
+        .catch(error => console.error("Error al cargar el paro:", error));
+}
+
+function cargarSubEquiposReclasification(equipoId, subEquipoSeleccionadoId = null, callback = null) {
+    const subEquipoSelect = document.getElementById('_subEquipoIdreclasification');
+    subEquipoSelect.innerHTML = '<option value="">Seleccione un sub equipo</option>';
+
+    if (!equipoId) return;
+
+    const url = "@Url.Action("GetSubEquipos", "Downtime")" + "?_equipoId=" + equipoId;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(item => {
+                const option = document.createElement("option");
+                option.value = item.SubEquipoID;
+                option.textContent = item.Descripcion;
+                if (subEquipoSeleccionadoId && item.SubEquipoID === subEquipoSeleccionadoId) {
+                    option.selected = true;
+                }
+                subEquipoSelect.appendChild(option);
+            });
+            if (callback) callback();
+        })
+        .catch(error => console.error("Error al cargar subequipos:", error));
+}
+
+function cargarComponentesReclasification(subEquipoId, componenteSeleccionadoId = null, callback = null) {
+    const componenteSelect = document.getElementById('_componenteEquipoIdreclasification');
+    componenteSelect.innerHTML = '<option value="">Seleccione un componente</option>';
+
+    if (!subEquipoId) {
+        if (callback) callback();
+        return;
+    }
+
+    const url = "@Url.Action("GetComponenteEquipo", "Downtime")" + "?_subEquipoId=" + subEquipoId;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(item => {
+                const option = document.createElement("option");
+                option.value = item.ComponenteEquipoID;
+                option.textContent = item.Descripcion;
+                if (componenteSeleccionadoId && String(item.ComponenteEquipoID) === String(componenteSeleccionadoId)) {
+                    option.selected = true;
+                }
+                componenteSelect.appendChild(option);
+            });
+            if (componenteSeleccionadoId) {
+                componenteSelect.value = componenteSeleccionadoId;
+            }
+            if (callback) callback();
+        })
+        .catch(error => {
+            console.error("Error al cargar componentes:", error);
+            if (callback) callback();
+        });
+}
+
+function cargarTiposFallaReclasification(clasificacionId, componenteEquipoId, tipoFallaSeleccionada = null) {
+    const tipoFallaSelect = document.getElementById('_tipoFallaIdreclasification');
+    tipoFallaSelect.innerHTML = '<option value="">La falla para este paro es:</option>';
+
+    if (!clasificacionId || !componenteEquipoId) return;
+
+    const url = "@Url.Action("GetTiposFalla", "Downtime")" + "?_clasificacionId=" + clasificacionId + "&_componenteEquipoId=" + componenteEquipoId;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(falla => {
+                const option = document.createElement('option');
+                option.value = falla.TipoFallaID;
+                option.textContent = falla.Descripcion;
+
+                if (tipoFallaSeleccionada && String(falla.TipoFallaID) === String(tipoFallaSeleccionada)) {
+                    option.selected = true;
+                }
+
+                tipoFallaSelect.appendChild(option);
+            });
+
+            if (tipoFallaSeleccionada) {
+                tipoFallaSelect.value = tipoFallaSeleccionada;
+            }
+        })
+        .catch(error => console.error('Error al cargar tipos de falla:', error));
+}
+
+
+
+    //________________________________________________________________________Añadir Daydelay Paro_________________________________________________________________//
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    const editarParoLinks = document.querySelectorAll('.btn-editar-paro');
+
+    editarParoLinks.forEach(link => {
+        link.addEventListener('click', function () {
+            const paroId = this.getAttribute('data-paro-id');
+            openDaydelayModal(paroId);
+        });
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    const equipoSelect = document.getElementById('_equipoIddaydelay');
+    equipoSelect.addEventListener('change', function () {
+        const nuevoEquipoId = this.value;
+        cargarSubEquiposDaydelay(nuevoEquipoId, null, function () {
+            const componenteSelect = document.getElementById('_componenteEquipoIddaydelay');
+            componenteSelect.innerHTML = '<option value="">Seleccione un componente</option>';
+        });
+    });
+
+    const subEquipoSelect = document.getElementById('_subEquipoIddaydelay');
+    subEquipoSelect.addEventListener('change', function () {
+        const nuevoSubEquipoId = this.value;
+        cargarComponentesDaydelay(nuevoSubEquipoId);
+    });
+
+    const clasificacionSelect = document.getElementById('_clasificacionIddaydelay');
+    const componenteSelect = document.getElementById('_componenteEquipoIddaydelay');
+
+    clasificacionSelect.addEventListener('click', function () {
+        cargarTiposFallaDaydelay(this.value, componenteSelect.value);
+    });
+
+    componenteSelect.addEventListener('click', function () {
+        cargarTiposFallaDaydelay(clasificacionSelect.value, this.value);
+    });
+});
+
+ document.getElementById('validatedaydelay').addEventListener('click', function () {
+
+    const button = document.getElementById('validatedaydelay');
+    button.disabled = true;
+    button.textContent = "Procesando...";
+
+    const paroId = document.getElementById('paroIdhidden').value;
+
+    const data = {
+        _paroId: parseInt(paroId),
+        _equipoId: parseInt(document.getElementById('_equipoIddaydelay').value),
+        _subEquipoId: parseInt(document.getElementById('_subEquipoIddaydelay').value),
+        _componenteEquipoId: parseInt(document.getElementById('_componenteEquipoIddaydelay').value),
+        _clasificacionId: parseInt(document.getElementById('_clasificacionIddaydelay').value),
+        _tipoFallaId: parseInt(document.getElementById('_tipoFallaIddaydelay').value),
+        _comment: document.getElementById('_commentdaydelay').value,
+        _fechaEvento: getFechaHoraISODaydelay()
+    };
+
+    fetch('@Url.Action("AddDayDelayEvent", "Downtime")', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            document.getElementById('alertValidatereclasification').style.display = 'block';
+            setTimeout(() => {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('daydelayModal'));
+                modal.hide();
+                location.reload();
+            }, 1000);
+        } else {
+            alert("Error: " + result.message);
+            button.disabled = false;
+            button.textContent = "Validate ✔";
+        }
+    })
+    .catch(error => {
+        console.error("Error al actualizar el paro:", error);
+        alert("Error al enviar datos.");
+        button.disabled = false;
+        button.textContent = "Validate ✔";
+    });
+});
+
+
+function getFechaHoraISODaydelay() {
+    const fecha = document.getElementById('_fechaEventodaydelay').value;
+    const hora = document.getElementById('_horaEventodaydelay').value;
+    return `${fecha}T${hora}`;
+}
+
+function openDaydelayModal(paroId) {
+        var myModal = new bootstrap.Modal(document.getElementById('daydelayModal'));
+        myModal.show();
+
+        fetch(`${getParoByIdUrl}?paroId=${paroId}`)
+            .then(response => response.json())
+            .then(result => {
+                if (!result.success) {
+                    alert("Error: " + result.message);
+                    return;
+                }
+
+                const paro = result.data;
+
+                document.getElementById('_equipoIddaydelay').value = paro._equipoId;
+                document.getElementById('paroIdhidden').value = paro._paroId;
+
+                const fechaInput = document.getElementById('_fechaEventodaydelay');
+                const horaInput = document.getElementById('_horaEventodaydelay');
+
+                if (paro._fechaEvento) {
+                    const match = paro._fechaEvento.match(/\/Date\((\d+)\)\//);
+                    if (match) {
+                        const fechaObj = new Date(parseInt(match[1]));
+                        fechaInput.value = fechaObj.toISOString().split('T')[0];
+                        horaInput.value = '00:00:00'; // Fuerza hora fija
+                    } else {
+                        fechaInput.value = '';
+                        horaInput.value = '00:00:00';
+                    }
+                } else {
+                    fechaInput.value = '';
+                    horaInput.value = '00:00:00';
+                }
+
+                document.getElementById('_clasificacionIddaydelay').value = paro._clasificacionId;
+
+                cargarSubEquiposDaydelay(paro._equipoId, paro._subEquipoId, function () {
+                    cargarComponentesDaydelay(paro._subEquipoId, paro._componenteEquipoId, function () {
+                        cargarTiposFallaDaydelay(paro._clasificacionId, paro._componenteEquipoId, paro._tipoFallaId);
+                    });
+                });
+            })
+            .catch(error => console.error("Error al cargar el paro:", error));
+    }
+
+
+function cargarSubEquiposDaydelay(equipoId, subEquipoSeleccionadoId = null, callback = null) {
+    const subEquipoSelect = document.getElementById('_subEquipoIddaydelay');
+    subEquipoSelect.innerHTML = '<option value="">Seleccione un sub equipo</option>';
+
+    if (!equipoId) return;
+
+    const url = "@Url.Action("GetSubEquipos", "Downtime")" + "?_equipoId=" + equipoId;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(item => {
+                const option = document.createElement("option");
+                option.value = item.SubEquipoID;
+                option.textContent = item.Descripcion;
+                if (subEquipoSeleccionadoId && item.SubEquipoID === subEquipoSeleccionadoId) {
+                    option.selected = true;
+                }
+                subEquipoSelect.appendChild(option);
+            });
+            if (callback) callback();
+        })
+        .catch(error => console.error("Error al cargar subequipos:", error));
+}
+
+function cargarComponentesDaydelay(subEquipoId, componenteSeleccionadoId = null, callback = null) {
+    const componenteSelect = document.getElementById('_componenteEquipoIddaydelay');
+    componenteSelect.innerHTML = '<option value="">Seleccione un componente</option>';
+
+    if (!subEquipoId) {
+        if (callback) callback();
+        return;
+    }
+
+    const url = "@Url.Action("GetComponenteEquipo", "Downtime")" + "?_subEquipoId=" + subEquipoId;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(item => {
+                const option = document.createElement("option");
+                option.value = item.ComponenteEquipoID;
+                option.textContent = item.Descripcion;
+                if (componenteSeleccionadoId && String(item.ComponenteEquipoID) === String(componenteSeleccionadoId)) {
+                    option.selected = true;
+                }
+                componenteSelect.appendChild(option);
+            });
+            if (componenteSeleccionadoId) {
+                componenteSelect.value = componenteSeleccionadoId;
+            }
+            if (callback) callback();
+        })
+        .catch(error => {
+            console.error("Error al cargar componentes:", error);
+            if (callback) callback();
+        });
+}
+
+function cargarTiposFallaDaydelay(clasificacionId, componenteEquipoId, tipoFallaSeleccionada = null) {
+    const tipoFallaSelect = document.getElementById('_tipoFallaIddaydelay');
+    tipoFallaSelect.innerHTML = '<option value="">La falla para este paro es:</option>';
+
+    if (!clasificacionId || !componenteEquipoId) return;
+
+    const url = "@Url.Action("GetTiposFalla", "Downtime")" + "?_clasificacionId=" + clasificacionId + "&_componenteEquipoId=" + componenteEquipoId;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(falla => {
+                const option = document.createElement('option');
+                option.value = falla.TipoFallaID;
+                option.textContent = falla.Descripcion;
+
+                if (tipoFallaSeleccionada && String(falla.TipoFallaID) === String(tipoFallaSeleccionada)) {
+                    option.selected = true;
+                }
+
+                tipoFallaSelect.appendChild(option);
+            });
+
+            if (tipoFallaSeleccionada) {
+                tipoFallaSelect.value = tipoFallaSeleccionada;
+            }
+        })
+        .catch(error => console.error('Error al cargar tipos de falla:', error));
+}
+
+
+    //_______________________________________________________________________ Delete Paro _________________________________________________________________________//
+
+
+
+    function opendeleteDowntime(paroId) {
+        fetch(`${getParoByIdUrl}?paroId=${paroId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const paro = data.data;
+
+                    // Asignar valores al formulario del modal
+                    document.getElementById('paroIdtoDeleteEventHidden').value = paro._paroId;
+
+
+                    // Mostrar modal
+                    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+                    modal.show();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Error al obtener el paro:", error);
+                alert("Ocurrió un error al obtener el paro.");
+            });
+    }
+
+
+
+document.getElementById('deleteParo').addEventListener('click', function () {
+    const button = document.getElementById('deleteParo');
+    button.disabled = true;
+    button.textContent = "Procesando...";
+
+    const paroId = parseInt(document.getElementById('paroIdtoDeleteEventHidden').value);
+
+    if (isNaN(paroId) || paroId <= 0) {
+        alert("ID de paro inválido.");
+        button.disabled = false;
+        button.textContent = "Eliminar 🗑️";
+        return;
+    }
+
+    const data = { _paroId: paroId };
+
+    fetch('@Url.Action("DeleteDowntime", "Downtime")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            document.getElementById('alertdeleteEvent').style.display = 'block';
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+            modal.hide();
+
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            alert(result.message || "Ocurrió un error.");
+            button.disabled = false;
+            button.textContent = "Eliminar 🗑️";
+        }
+    })
+    .catch(error => {
+        console.error("Error al actualizar a pendiente:", error);
+        alert("Error al enviar datos.");
+        button.disabled = false;
+        button.textContent = "Eliminar 🗑️";
+    });
+});
+
+
+
+    //_______________________________________________________________________ Cerrar Reporte_________________________________________________________________________//
+
+
+     function cerrarReporte() {
+        const fecha = document.getElementById('fechaReporte').value;
+
+        if (!fecha) {
+            alert("Por favor selecciona una fecha.");
+            return;
+        }
+
+        const url = '@Url.Action("CerrarReporte", "Downtime")';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ fecha: fecha })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Cambiar icono del candado
+                document.getElementById("candado").innerHTML = `<i class="bi bi-lock-fill text-warning ms-2"></i>`;
+
+                // Mostrar alerta de éxito
+                const alerta = document.getElementById("alertsuccesclose");
+                alerta.style.display = "block";
+
+                // Opcional: ocultar la alerta después de unos segundos
+                setTimeout(() => {
+                    alerta.style.display = "none";
+                }, 3000);
+            } else {
+                alert(data.message || "No se pudo cerrar el reporte.");
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("Ocurrió un error al intentar cerrar el reporte.");
+        });
+    }
 
 
 </script>

@@ -27,7 +27,7 @@ namespace DVP.Models
         public int _unidadOperativaId { get; set; }
         public string _unidadOperativadescrpipcion { get; set; }
         public int _paisId { get; set; }
-        public int? _paroRelacionadoID { get; set; }
+        public int? _paroRelacionadoId { get; set; }
         public int _paisDescripcion { get; set; }
         public int _tagId { get; set; }
         public bool _active { get; set; }
@@ -37,6 +37,9 @@ namespace DVP.Models
         public DateTime _fechaEvento { get; set; }
         public DateTime _fechaModificacion { get; set; }
         public TimeSpan _horaEvento { get; set; }
+        public TimeSpan _periodoTotal { get; set; }
+        public int _cantidadParosId { get; set; }
+
 
 
         public string _equipoName { get; set; }
@@ -49,6 +52,10 @@ namespace DVP.Models
 
 
 
+        public const int INACTIVE_EVENT = 1;
+        public const int DAY_DELAY_EVENT = 2;
+        public const int ACTIVE_EVENT = 3;
+        public const int RECLASIFICATION_EVENT = 4;
 
 
 
@@ -67,8 +74,13 @@ namespace DVP.Models
         public IEnumerable<Equipo> Equipos { get; set; }
         public IEnumerable<TipoEvento> TipoEventos { get; set; }
 
+        public bool? _cerrado { get; set; }
+        public DateTime _fechaCierre { get; set; }
+        public DateTime _fechaReporte { get; set; }
 
 
+        public bool Success { get; set; }
+        public string Message { get; set; }
 
 
 
@@ -91,27 +103,10 @@ namespace DVP.Models
         }
 
 
-
-        //Este metodo trae los paros del mes actual pero tambien trae los paros
-        //de 5 dias antes del mes actual y 5 dias despues para garantizar validaciones
-        public List<DowntimeViewModel> GetdowntimeListCurrentMonth()
+        public List<DowntimeViewModel> GetdowntimeListByDate(DateTime fecha)
         {
-            var now = DateTime.Now;
-
-            // Último día del mes pasado
-            var ultimoDiaMesPasado = new DateTime(now.Year, now.Month, 1).AddDays(-1);
-
-            // Último día del mes actual
-            var ultimoDiaMesActual = new DateTime(now.Year, now.Month, DateTime.DaysInMonth(now.Year, now.Month));
-
-            // Rango de búsqueda
-            var fechaInicio = ultimoDiaMesPasado.AddDays(-4); // 5 días antes contando el último día
-            var fechaFin = ultimoDiaMesActual.AddDays(5);     // 5 días después
-
             var model = _dvpEntities.Paros
-                .Where(p => p.FechaEvento.HasValue &&
-                            p.FechaEvento.Value >= fechaInicio &&
-                            p.FechaEvento.Value <= fechaFin)
+                .Where(p => p.FechaEvento.HasValue && p.FechaEvento.Value.Date == fecha.Date)
                 .Select(choose => new DowntimeViewModel()
                 {
                     _paroId = choose.ParosID,
@@ -128,10 +123,12 @@ namespace DVP.Models
                     _statusDelete = choose.StatusDelete.Value,
                     _tipoEventoName = choose.TipoEvento.Descripcion,
                     _usuarioCreadorName = choose.Usuario.Nombre
-                }).ToList();
+                })
+                .ToList();
 
             return model;
         }
+
 
 
 
