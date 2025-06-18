@@ -1,0 +1,570 @@
+﻿@model DVP.Models.EnergyViewModel
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Downtime Page";
+
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+
+<style>
+    /* Estilo para el contenedor de la fecha y hora */
+    .container {
+        font-family: Arial, sans-serif;
+        display: flex; /* Usamos flex para alinearlos horizontalmente */
+        justify-content: center; /* Centra los elementos horizontalmente */
+        align-items: center; /* Centra los elementos verticalmente */
+        gap: 20px; /* Espacio entre los divs */
+        margin-top: 20px;
+    }
+    /* Estilo para los divs de fecha y hora */
+    .input-container {
+        font-size: 18px;
+        display: flex;
+        flex-direction: column; /* Los inputs se alinean de arriba hacia abajo */
+        align-items: center;
+    }
+
+    input {
+        padding: 10px;
+        font-size: 16px;
+        margin-top: 10px;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        background-color: #f0f0f0;
+    }
+
+    .scrollable-table {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa; /* color fondo header */
+        z-index: 2;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .table tbody td {
+        vertical-align: middle;
+        text-align: center;
+    }
+</style>
+
+<body>
+    <div class="container-fluid" style="padding-left: 200px;">
+        <br />
+        <br />
+        <br />
+        <div class="card">
+            <div class="container-fluid">
+                <div class="container-fluid">
+                    <div class="card">
+                        <div class="card-body">
+                            <!-- Fecha de validación -->
+                            <h5 class="card-title fw-semibold mb-4 text-end">
+                                <span id="candado">
+                                    <button onclick="cerrarReporte()" class="btn btn-link p-0 m-0 align-baseline">
+                                        <i class="bi bi-unlock-fill text-warning ms-2"></i>
+                                    </button>
+                                </span>
+                                Energy Validation Date:
+                                <input type="date" id="fechaReporte" onchange="filtrarPorFecha()">
+                            </h5>
+                            <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
+                                Paros cerrados correctamente!
+                            </div>
+                            <!-- Equipos -->
+                            <h5 class="card-title fw-semibold mb-4">Equipments - Planta San Pedro</h5>                                                      
+                        </div>
+                        <!-- Sección de Listas -->
+                        <div class="card w-100">
+                            <div class="card-body p-4">
+                                <div class="text-end mb-3">
+                                    <button type="button" class="btn btn-outline-success m-1">
+                                        Validate all
+                                    </button>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <!-- Tabla más ancha (downtimes activos) -->
+                                    <div class="table-responsive w-100" style="max-height: 400px; overflow-y: auto; background-color: #ffffff; padding: 10px; border-radius: 10px;">
+                                        <table class="table table-bordered mb-0" style="background-color: #ffffff;">
+                                            <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
+                                                <tr>
+                                                    <th class="text-center">Status</th>
+                                                    <th class="text-center">Equipo Descripción</th>
+                                                    <th class="text-center">Código SAP Equipo</th>
+                                                    <th class="text-center">Acumulado Mes KWH</th>
+                                                    <th class="text-center">Código SAP KWH</th>
+                                                    <th class="text-center">KWH Validado</th>
+                                                    <th class="text-center">KWH Hoy</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="downtimeTableBody">
+                                                <tr>
+                                                    <td><div style="color: #32CD32; "><i class="fas fa-check-circle"></i></div></td>
+                                                    <td class="text-center bg-white">Crusher 01</td>
+                                                    <td class="text-center bg-white">EQP001</td>
+                                                    <td class="text-center bg-white">18,982,928.908</td>
+                                                    <td class="text-center bg-white">SAPKWH01</td>
+                                                    <td class="text-center bg-white">
+                                                        <input type="text"
+                                                               id="decimalInput"
+                                                               class="form-control form-control-sm"
+                                                               style="width: 120px; margin: auto;"
+                                                               placeholder="0.000"
+                                                               inputmode="decimal" />
+                                                        <small id="inputErrorMsg" style="color: red; display: none;">Número inválido</small>
+                                                    </td>
+                                                    <td class="text-center bg-white">982,928.908</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><div style="color: #32CD32; "><i class="fas fa-check-circle"></i></div></td>
+                                                    <td class="text-center bg-white">Crusher 02</td>
+                                                    <td class="text-center bg-white">EQP002</td>
+                                                    <td class="text-center bg-white">112,452,928.238</td>
+                                                    <td class="text-center bg-white">SAPKWH02</td>
+                                                    <td class="text-center bg-white">
+                                                        <input type="text"
+                                                               id="decimalInput"
+                                                               class="form-control form-control-sm"
+                                                               style="width: 120px; margin: auto;"
+                                                               placeholder="0.000"
+                                                               inputmode="decimal" />
+                                                        <small id="inputErrorMsg" style="color: red; display: none;">Número inválido</small>
+                                                    </td>
+                                                    <td class="text-center bg-white">32,928.908</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><div style="color: #32CD32; "><i class="fas fa-check-circle"></i></div></td>
+                                                    <td class="text-center bg-white">Raw mill 01</td>
+                                                    <td class="text-center bg-white">EQP003</td>
+                                                    <td class="text-center bg-white">82,172,928.908</td>
+                                                    <td class="text-center bg-white">SAPKWH03</td>
+                                                    <td class="text-center bg-white">
+                                                        <input type="text"
+                                                               id="decimalInput"
+                                                               class="form-control form-control-sm"
+                                                               style="width: 120px; margin: auto;"
+                                                               placeholder="0.000"
+                                                               inputmode="decimal" />
+                                                        <small id="inputErrorMsg" style="color: red; display: none;">Número inválido</small>
+                                                    </td>
+                                                    <td class="text-center bg-white">282,928.908</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><div style="color: #32CD32; "><i class="fas fa-check-circle"></i></div></td>
+                                                    <td class="text-center bg-white">Raw mill 02</td>
+                                                    <td class="text-center bg-white">EQP004</td>
+                                                    <td class="text-center bg-white">72,982,928.908</td>
+                                                    <td class="text-center bg-white">SAPKWH04</td>
+                                                    <td class="text-center bg-white">
+                                                        <input type="text"
+                                                               id="decimalInput"
+                                                               class="form-control form-control-sm"
+                                                               style="width: 120px; margin: auto;"
+                                                               placeholder="0.000"
+                                                               inputmode="decimal" />
+                                                        <small id="inputErrorMsg" style="color: red; display: none;">Número inválido</small>
+                                                    </td>
+                                                    <td class="text-center bg-white">682,928.908</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><div style="color: #32CD32; "><i class="fas fa-check-circle"></i></div></td>
+                                                    <td class="text-center bg-white">Kiln 01</td>
+                                                    <td class="text-center bg-white">EQP005</td>
+                                                    <td class="text-center bg-white">65,982,928.908</td>
+                                                    <td class="text-center bg-white">SAPKWH05</td>
+                                                    <td class="text-center bg-white">
+                                                        <input type="text"
+                                                               id="decimalInput"
+                                                               class="form-control form-control-sm"
+                                                               style="width: 120px; margin: auto;"
+                                                               placeholder="0.000"
+                                                               inputmode="decimal" />
+                                                        <small id="inputErrorMsg" style="color: red; display: none;">Número inválido</small>
+                                                    </td>
+                                                    <td class="text-center bg-white">982,928.908</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><div style="color: #32CD32; "><i class="fas fa-check-circle"></i></div></td>
+                                                    <td class="text-center bg-white">Kiln 02</td>
+                                                    <td class="text-center bg-white">EQP006</td>
+                                                    <td class="text-center bg-white">87,982,928.308</td>
+                                                    <td class="text-center bg-white">SAPKWH06</td>
+                                                    <td class="text-center bg-white">
+                                                        <input type="text"
+                                                               id="decimalInput"
+                                                               class="form-control form-control-sm"
+                                                               style="width: 120px; margin: auto;"
+                                                               placeholder="0.000"
+                                                               inputmode="decimal" />
+                                                        <small id="inputErrorMsg" style="color: red; display: none;">Número inválido</small>
+                                                    </td>
+                                                    <td class="text-center bg-white">7,982,928.908</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><div style="color: #32CD32; "><i class="fas fa-check-circle"></i></div></td>
+                                                    <td class="text-center bg-white">Finish mill 01</td>
+                                                    <td class="text-center bg-white">EQP007</td>
+                                                    <td class="text-center bg-white">423,982,928.908</td>
+                                                    <td class="text-center bg-white">SAPKWH07</td>
+                                                    <td class="text-center bg-white">
+                                                        <input type="text"
+                                                               id="decimalInput"
+                                                               class="form-control form-control-sm"
+                                                               style="width: 120px; margin: auto;"
+                                                               placeholder="0.000"
+                                                               inputmode="decimal" />
+                                                        <small id="inputErrorMsg" style="color: red; display: none;">Número inválido</small>
+                                                    </td>
+                                                    <td class="text-center bg-white">18,982,928.908</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><div style="color: #32CD32; "><i class="fas fa-check-circle"></i></div></td>
+                                                    <td class="text-center bg-white">Finish mill 02</td>
+                                                    <td class="text-center bg-white">EQP008</td>
+                                                    <td class="text-center bg-white">983,982,928.908</td>
+                                                    <td class="text-center bg-white">SAPKWH08</td>
+                                                    <td class="text-center bg-white">
+                                                        <input type="text"
+                                                               id="decimalInput"
+                                                               class="form-control form-control-sm"
+                                                               style="width: 120px; margin: auto;"
+                                                               placeholder="0.000"
+                                                               inputmode="decimal" />
+                                                        <small id="inputErrorMsg" style="color: red; display: none;">Número inválido</small>
+                                                    </td>
+                                                    <td class="text-center bg-white">18,982,928.908</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><div style="color: #32CD32; "><i class="fas fa-check-circle"></i></div></td>
+                                                    <td class="text-center bg-white">Finish mill 03</td>
+                                                    <td class="text-center bg-white">EQP009</td>
+                                                    <td class="text-center bg-white">653,982,928.908</td>
+                                                    <td class="text-center bg-white">SAPKWH09</td>
+                                                    <td class="text-center bg-white">
+                                                        <input type="text"
+                                                               id="decimalInput"
+                                                               class="form-control form-control-sm"
+                                                               style="width: 120px; margin: auto;"
+                                                               placeholder="0.000"
+                                                               inputmode="decimal" />
+                                                        <small id="inputErrorMsg" style="color: red; display: none;">Número inválido</small>
+                                                    </td>
+                                                    <td class="text-center bg-white">18,982,928.908</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><div style="color: #32CD32; "><i class="fas fa-check-circle"></i></div></td>
+                                                    <td class="text-center bg-white">Packing 01</td>
+                                                    <td class="text-center bg-white">EQP010</td>
+                                                    <td class="text-center bg-white">762,982,928.908</td>
+                                                    <td class="text-center bg-white">SAPKWH10</td>
+                                                    <td class="text-center bg-white">
+                                                        <input type="text"
+                                                               id="decimalInput"
+                                                               class="form-control form-control-sm"
+                                                               style="width: 120px; margin: auto;"
+                                                               placeholder="0.000"
+                                                               inputmode="decimal" />
+                                                        <small id="inputErrorMsg" style="color: red; display: none;">Número inválido</small>
+                                                    </td>
+                                                    <td class="text-center bg-white">18,982,928.908</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><div style="color: #32CD32; "><i class="fas fa-check-circle"></i></div></td>
+                                                    <td class="text-center bg-white">Packing 02</td>
+                                                    <td class="text-center bg-white">EQP011</td>
+                                                    <td class="text-center bg-white">182,982,928.908</td>
+                                                    <td class="text-center bg-white">SAPKWH11</td>
+                                                    <td class="text-center bg-white">
+                                                        <input type="text"
+                                                               id="decimalInput"
+                                                               class="form-control form-control-sm"
+                                                               style="width: 120px; margin: auto;"
+                                                               placeholder="0.000"
+                                                               inputmode="decimal" />
+                                                        <small id="inputErrorMsg" style="color: red; display: none;">Número inválido</small>
+                                                    </td>
+                                                    <td class="text-center bg-white">18,982,928.908</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><div style="color: #32CD32; "><i class="fas fa-check-circle"></i></div></td>
+                                                    <td class="text-center bg-white">Packing 03</td>
+                                                    <td class="text-center bg-white">EQP012</td>
+                                                    <td class="text-center bg-white">643,982,928.908</td>
+                                                    <td class="text-center bg-white">SAPKWH12</td>
+                                                    <td class="text-center bg-white">
+                                                        <input type="text"
+                                                               id="decimalInput"
+                                                               class="form-control form-control-sm"
+                                                               style="width: 120px; margin: auto;"
+                                                               placeholder="0.000"
+                                                               inputmode="decimal" />
+                                                        <small id="inputErrorMsg" style="color: red; display: none;">Número inválido</small>
+                                                    </td>
+                                                    <td class="text-center bg-white">18,982,928.908</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><div style="color: #32CD32; "><i class="fas fa-check-circle"></i></div></td>
+                                                    <td class="text-center bg-white">Packing 04</td>
+                                                    <td class="text-center bg-white">EQP013</td>
+                                                    <td class="text-center bg-white">213,982,928.908</td>
+                                                    <td class="text-center bg-white">SAPKWH13</td>
+                                                    <td class="text-center bg-white">
+                                                        <input type="text"
+                                                               id="decimalInput"
+                                                               class="form-control form-control-sm"
+                                                               style="width: 120px; margin: auto;"
+                                                               placeholder="0.000"
+                                                               inputmode="decimal" />
+                                                        <small id="inputErrorMsg" style="color: red; display: none;">Número inválido</small>
+                                                    </td>
+                                                    <td class="text-center bg-white">18,982,928.908</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                    </div>
+
+
+                </div>
+
+
+            </div>
+
+        </div>
+    </div>
+</body>
+
+
+@section scripts{
+    <script src="~/Content/Modernize-1.0.0/src/assets/libs/jquery/dist/jquery.min.js"></script>
+    <script src="~/Content/Modernize-1.0.0/src/assets/js/sidebarmenu.js"></script>
+    <script src="~/Content/Modernize-1.0.0/src/assets/js/app.min.js"></script>
+    <script src="~/Content/Modernize-1.0.0/src/assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/Content/Modernize-1.0.0/src/assets/libs/simplebar/dist/simplebar.js"></script>
+
+
+
+}
+
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+        newdowntime();
+    });
+
+    //Calcular fecha del input fecha.
+    window.addEventListener('DOMContentLoaded', () => {
+        const fechaInput = document.getElementById('fechaReporte');
+        const hoy = new Date();
+
+        // Primer y último día del mes actual
+        const primerDiaMesActual = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        const ultimoDiaMesActual = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+
+        // Último día del mes pasado
+        const ultimoDiaMesPasado = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+
+        // 5 días antes del último día del mes pasado
+        const cincoDiasAntes = new Date(ultimoDiaMesPasado);
+        cincoDiasAntes.setDate(ultimoDiaMesPasado.getDate() - 4); // incluye el último día
+
+        // 5 días después del último día del mes actual
+        const cincoDiasDespues = new Date(ultimoDiaMesActual);
+        cincoDiasDespues.setDate(ultimoDiaMesActual.getDate() + 2);
+
+        // Formatear fecha en yyyy-MM-dd
+        const formatoFecha = (fecha) => {
+            const año = fecha.getFullYear();
+            const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+            const dia = String(fecha.getDate()).padStart(2, '0');
+            return `${año}-${mes}-${dia}`;
+        };
+
+        // Aplicar restricciones al input de fecha
+        fechaInput.min = formatoFecha(cincoDiasAntes);
+        fechaInput.max = formatoFecha(cincoDiasDespues);
+
+        // Establecer fecha por defecto a AYER (si está dentro del rango permitido)
+        const ayer = new Date();
+        ayer.setDate(hoy.getDate() - 1);
+
+        let fechaPorDefecto = hoy;
+        if (ayer >= cincoDiasAntes && ayer <= cincoDiasDespues) {
+            fechaPorDefecto = ayer;
+        }
+
+        fechaInput.value = formatoFecha(fechaPorDefecto);
+
+        // Ejecutar el filtro al cargar la página
+        filtrarPorFecha();
+
+        // Escuchar cambios en el input de fecha y volver a ejecutar el filtro automáticamente
+        fechaInput.addEventListener('change', filtrarPorFecha);
+    });
+
+
+    //Calcular fecha para input fecha de creacion de paro
+    window.addEventListener("DOMContentLoaded", () => {
+        const inputFecha = document.getElementById("_fechaEvento");
+        const hoy = new Date();
+        const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+
+        // Formatear a yyyy-MM-dd
+        const formatoFecha = (fecha) => {
+            const año = fecha.getFullYear();
+            const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+            const dia = String(fecha.getDate()).padStart(2, '0');
+            return `${año}-${mes}-${dia}`;
+        };
+
+        inputFecha.min = formatoFecha(inicioMes);
+        inputFecha.max = formatoFecha(finMes);
+    });
+
+
+
+
+
+
+
+    const input = document.getElementById('decimalInput');
+    const errorMsg = document.getElementById('inputErrorMsg');
+
+    // Remueve formato mientras escribe
+    input.addEventListener('input', function (e) {
+        input.style.borderBottom = '';
+        errorMsg.style.display = 'none';
+
+        const value = e.target.value.replace(/,/g, '');
+
+        // Permitir vacío momentáneamente
+        if (value === '') return;
+
+        // Validar con hasta 3 decimales
+        if (!/^\d*\.?\d{0,3}$/.test(value)) {
+            input.style.borderBottom = '2px solid red';
+            errorMsg.style.display = 'block';
+        }
+    });
+
+    // Al salir del input, validación completa y formateo
+    input.addEventListener('blur', function (e) {
+        let raw = e.target.value.replace(/,/g, '');
+        if (!raw) return;
+
+        let num = parseFloat(raw);
+
+        if (isNaN(num) || num > 1000000) {
+            input.style.borderBottom = '2px solid red';
+            errorMsg.style.display = 'block';
+            return;
+        }
+
+        // Validar decimales
+        if (!/^\d*\.?\d{0,3}$/.test(raw)) {
+            input.style.borderBottom = '2px solid red';
+            errorMsg.style.display = 'block';
+            return;
+        }
+
+        // Validación exitosa
+        input.style.borderBottom = '';
+        errorMsg.style.display = 'none';
+
+        // Formatear con comas
+        const [entero, decimal] = num.toFixed(3).split('.');
+        const enteroFormateado = entero.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        e.target.value = `${enteroFormateado}.${decimal}`;
+    });
+
+
+
+
+    //_____________________________________________________________________Creación del paro______________________________________________________________//
+
+
+
+
+    //________________________________________________________________________Editar Paro_________________________________________________________________//
+
+    // Update de generación de arbol de fallas para el paro
+
+
+
+
+
+    //*************************************************** Funciones para el editar paros ********************************************/
+
+
+
+
+
+
+
+
+    //_____________________________________________________________________________Functions___________________________________________________________________//
+
+
+
+
+
+    //*************************************************** Estas funciones rellenan el datatable ********************************************/
+
+
+
+
+
+
+
+
+    //****************************************************** Funciones para crear active event ****************************************/
+
+
+
+
+
+
+
+
+
+
+
+    //________________________________________________________________________Reclasificar Paro_________________________________________________________________//
+
+
+
+    //________________________________________________________________________Añadir Daydelay Paro_________________________________________________________________//
+
+
+
+
+
+    //_______________________________________________________________________ Delete Paro _________________________________________________________________________//
+
+
+
+
+
+    //_______________________________________________________________________ Cerrar Reporte_________________________________________________________________________//
+
+
+
+
+
+</script>

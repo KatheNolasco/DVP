@@ -7,5 +7,6 @@ namespace DVP.Models
 {
     public class InventoryViewModelcs
     {
+
     }
 }

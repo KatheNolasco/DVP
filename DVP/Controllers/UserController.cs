@@ -3,20 +3,30 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using DataAccess;
+using DVP.Models;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+using System.Web.WebPages;
+using System.Net.Http.Headers;
+using System.Net.Http;
+using System.Text;
+using System.Web.UI.WebControls.WebParts;
+using System.Data.Entity;
 
 namespace DVP.Controllers
 {
     public class UserController : Controller
     {
-        // GET: User
         public ActionResult Index()
         {
-            return View();
-        }
+            UserViewModel viewModel = new UserViewModel
+            {
+                Usuarios = new UserViewModel().GetUsuarios().ToList()
+            };
 
-        public ActionResult Nuevo()
-        {
-            return View();
+            return View(viewModel);
+
         }
     }
 }

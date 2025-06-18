@@ -51,6 +51,11 @@ namespace DVP.Models
         public string _usuarioCreadorName { get; set; }
 
 
+        public int _validacionReporteId { get; set; }
+
+
+
+
 
         public const int INACTIVE_EVENT = 1;
         public const int DAY_DELAY_EVENT = 2;

@@ -109,19 +109,18 @@
                                 <div class="d-flex gap-3">
 
                                     <!-- Tabla izquierda (downtimes inactivos) -->
-                                    <div class="table-responsive w-25" style="max-height: 400px; overflow-y: auto; background-color: #ffffff; padding: 10px; border-radius: 10px;">
+                                    <div class="table-responsive w-25" style="max-height: 400px; width: 5px; overflow-y: auto; background-color: #ffffff;  border-radius: 10px;">
                                         <table class="table table-bordered mb-0" style="background-color: #ffffff;">
                                             <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
                                                 <tr>
                                                     <th class="text-center">Downtime</th>
+                                                    <th class="text-center">Horas de paro</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="downtimeTableBodyInactiveList">
-
                                             </tbody>
                                         </table>
                                     </div>
-
                                     <!-- Tabla derecha (downtimes activos) -->
                                     <div class="table-responsive w-75" style="max-height: 400px; overflow-y: auto; background-color: #ffffff; padding: 10px; border-radius: 10px;">
                                         <table class="table table-bordered mb-0" style="background-color: #ffffff;">
@@ -135,7 +134,6 @@
                                                 </tr>
                                             </thead>
                                             <tbody id="downtimeTableBody">
-
                                             </tbody>
                                         </table>
                                     </div>
@@ -150,6 +148,16 @@
 
 
             </div>
+            @*___________________________________________________________________Modal Cargando__________________________________________________*@
+            <div id="loadingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: rgba(0, 0, 0, 0.5);">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 25px 35px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.3); min-width: 250px;">
+                    <div style="display: flex; align-items: center; justify-content: center;">
+                        <img src="/Content/loading-green-loading.gif" alt="Cargando..." style="width: 40px; height: 40px; margin-right: 15px;" />
+                        <span style="color: black; font-size: 16px;">Cargando...</span>
+                    </div>
+                </div>
+            </div>
+
             @*___________________________________________________________________Modal Delete Paro__________________________________________________*@
             <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-lg">
@@ -395,13 +403,12 @@
                                                 }
                                             </select>
                                             <br />
-                                            <select class="form-select" id="_tipoeventoIdedit">
+                                            <select class="form-select" id="_tipoeventoIdedit" hidden>
                                                 @foreach (var item in Model.GetTipoEvento())
                                                 {
                                                     <option value="@item.TipoEventoID">@item.Descripcion</option>
                                                 }
                                             </select>
-                                            <br />
                                             <select class="form-select" id="_subEquipoIdedit">
                                                 <option value="">Seleccione un sub equipo</option>
                                             </select>
@@ -465,8 +472,8 @@
                         <div class="modal-body">
                             <div class="card-body">
                                 <div class="card">
-                                    <div class="card-body">
-                                        <form>
+                                    <form>
+                                        <div class="card-body">
                                             <h4 class="card-title fw-semibold mb-2">Downtime Validation</h4>
                                             <br />
                                             <div class="d-flex gap-3">
@@ -516,26 +523,26 @@
                                             <select class="form-select" id="_tipoFallaId">
                                                 <option value="">La falla para este paro es:</option>
                                             </select>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">Comment</label>
-                                        <textarea type="text" class="form-control" id="_comment" required></textarea>
-                                    </div>
-                                    <div>
-                                        <label for="fecha">Fecha:</label>
-                                        <input type="date" id="_fechaEvento" required>
-                                        <label for="hora">Hora:</label>
-                                        <input type="time" id="_horaEvento" step="1" required>
-                                    </div>
-                                    <br />
-                                    <br />
-                                    <button type="button" id="crearparo" class="btn btn-outline-success m-1"
-                                            data-url="@Url.Action("CreateDowntime", "Downtime")">
-                                        Validate <span class="text-success ms-2">&#10004;</span>
-                                    </button>
-                                    <div id="alertSuccess" class="alert alert-success" role="alert" style="display: none;">
-                                        ¡Paro creado exitosamente!
-                                    </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Comment</label>
+                                            <textarea type="text" class="form-control" id="_comment" required></textarea>
+                                        </div>
+                                        <div>
+                                            <label for="fecha">Fecha:</label>
+                                            <input type="date" id="_fechaEvento" required>
+                                            <label for="hora">Hora:</label>
+                                            <input type="time" id="_horaEvento" step="1" required>
+                                        </div>
+                                        <br />
+                                        <br />
+                                        <button type="button" id="crearparo" class="btn btn-outline-success m-1"
+                                                data-url="@Url.Action("CreateDowntime", "Downtime")">
+                                            Validate <span class="text-success ms-2">&#10004;</span>
+                                        </button>
+                                        <div id="alertSuccess" class="alert alert-success" role="alert" style="display: none;">
+                                            ¡Paro creado exitosamente!
+                                        </div>
                                     </form>
                                 </div>
                             </div>
@@ -566,55 +573,53 @@
         newdowntime();
     });
 
-    //Calcular fecha del input fecha.
+
     window.addEventListener('DOMContentLoaded', () => {
-            const fechaInput = document.getElementById('fechaReporte');
-            const hoy = new Date();
+    const fechaInput = document.getElementById('fechaReporte');
 
-            // Primer y último día del mes actual
-            const primerDiaMesActual = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-            const ultimoDiaMesActual = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    // Formatear fecha en yyyy-MM-dd
+    const formatoFecha = (fecha) => {
+        const año = fecha.getFullYear();
+        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+        const dia = String(fecha.getDate()).padStart(2, '0');
+        return `${año}-${mes}-${dia}`;
+    };
 
-            // Último día del mes pasado
-            const ultimoDiaMesPasado = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
-
-            // 5 días antes del último día del mes pasado
-            const cincoDiasAntes = new Date(ultimoDiaMesPasado);
-            cincoDiasAntes.setDate(ultimoDiaMesPasado.getDate() - 4); // incluye el último día
-
-            // 5 días después del último día del mes actual
-            const cincoDiasDespues = new Date(ultimoDiaMesActual);
-            cincoDiasDespues.setDate(ultimoDiaMesActual.getDate() + 2);
-
-            // Formatear fecha en yyyy-MM-dd
-            const formatoFecha = (fecha) => {
-                const año = fecha.getFullYear();
-                const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-                const dia = String(fecha.getDate()).padStart(2, '0');
-                return `${año}-${mes}-${dia}`;
-            };
-
-            // Aplicar restricciones al input de fecha
-            fechaInput.min = formatoFecha(cincoDiasAntes);
-            fechaInput.max = formatoFecha(cincoDiasDespues);
-
-            // Establecer fecha por defecto a AYER (si está dentro del rango permitido)
-            const ayer = new Date();
-            ayer.setDate(hoy.getDate() - 1);
-
-            let fechaPorDefecto = hoy;
-            if (ayer >= cincoDiasAntes && ayer <= cincoDiasDespues) {
-                fechaPorDefecto = ayer;
+    // Obtener la fecha por defecto desde el método del servidor
+    fetch('@Url.Action("GetUltimaFechaCierre", "Downtime")')
+        .then(response => response.json())
+        .then(res => {
+            if (res.success && res.data && res.data.FechaReporte) {
+                fechaInput.value = res.data.FechaReporte;
+            } else {
+                // Si no hay respuesta válida, usar la fecha de hoy como respaldo
+                const hoy = new Date();
+                fechaInput.value = formatoFecha(hoy);
             }
 
-            fechaInput.value = formatoFecha(fechaPorDefecto);
-
-            // Ejecutar el filtro al cargar la página
+            // Ejecutar el filtro después de establecer la fecha
             filtrarPorFecha();
+        })
+        .catch(error => {
+            console.error("Error al obtener la fecha:", error);
+            // En caso de error, usar la fecha de hoy
+            const hoy = new Date();
+            fechaInput.value = formatoFecha(hoy);
+            filtrarPorFecha();
+        });
 
-            // Escuchar cambios en el input de fecha y volver a ejecutar el filtro automáticamente
-            fechaInput.addEventListener('change', filtrarPorFecha);
+    // Escuchar cambios en el input de fecha
+    fechaInput.addEventListener('change', filtrarPorFecha);
     });
+
+
+
+
+
+
+
+
+    //_____________________________________________________________________Creación del paro______________________________________________________________//
 
 
     //Calcular fecha para input fecha de creacion de paro
@@ -635,12 +640,6 @@
         inputFecha.min = formatoFecha(inicioMes);
         inputFecha.max = formatoFecha(finMes);
     });
-
-
-
-
-
-//_____________________________________________________________________Creación del paro______________________________________________________________//
 
 
     // Genración de árbol de fallas
@@ -798,6 +797,8 @@
             return;
         }
 
+        cargando();
+
         fetch(url, {
             method: "POST",
             headers: {
@@ -821,6 +822,7 @@
                     alert("Hubo un error: " + result.message);
                     boton.disabled = false;
                     boton.textContent = "Validate ✔";
+                    document.getElementById("loadingModal").style.display = "none";
                 }
             })
             .catch(error => {
@@ -828,6 +830,7 @@
                 alert("Hubo un problema al crear el paro.");
                 boton.disabled = false;
                 boton.textContent = "Validate ✔";
+                document.getElementById("loadingModal").style.display = "none";
             });
     });
 
@@ -917,6 +920,8 @@
         _fechaEvento: getFechaHoraISO()
     };
 
+    cargando();
+
     fetch('@Url.Action("UpdateDowntime", "Downtime")', {
         method: 'POST',
         headers: {
@@ -940,6 +945,8 @@
             alert("Error: " + result.message);
             button.disabled = false;
             button.textContent = "Validate ✔";
+            document.getElementById("loadingModal").style.display = "none";
+
         }
     })
     .catch(error => {
@@ -947,6 +954,7 @@
         alert("Error al enviar datos.");
         button.disabled = false;
         button.textContent = "Validate ✔";
+        document.getElementById("loadingModal").style.display = "none";
     });
 });
 
@@ -963,6 +971,8 @@
         }
 
         const data = { _paroId: paroId };
+
+        cargando();
 
         fetch('@Url.Action("UpdatePending", "Downtime")', {
             method: 'POST',
@@ -983,11 +993,14 @@
                 location.reload();
             } else {
                 alert("Error: " + result.message);
+                document.getElementById("loadingModal").style.display = "none";
             }
         })
         .catch(error => {
             console.error("Error al actualizar a pendiente:", error);
             alert("Error al enviar datos.");
+            document.getElementById("loadingModal").style.display = "none";
+
         });
     });
 
@@ -1017,7 +1030,6 @@
 
                 const paro = result.data;
 
-                // Mostrar u ocultar campos según tipoEventoId
                 const tipoEventoId = paro._tipoEventoId;
 
                 const subEquipo = document.getElementById('_subEquipoIdedit');
@@ -1025,7 +1037,6 @@
                 const clasificacion = document.getElementById('_clasificacionIdedit');
                 const tipoFalla = document.getElementById('_tipoFallaIdedit');
 
-                // Si también tienes etiquetas <label>, ocúltalas así:
                 const subEquipoLabel = document.querySelector("label[for='_subEquipoIdedit']");
                 const componenteLabel = document.querySelector("label[for='_componenteEquipoIdedit']");
                 const clasificacionLabel = document.querySelector("label[for='_clasificacionIdedit']");
@@ -1056,8 +1067,8 @@
                 // Set campos base
                 document.getElementById('_equipoIdedit').value = paro._equipoId;
                 document.getElementById('paroIdhidden').value = paro._paroId;
-                const comentario = document.getElementById('_commentedit').value = paro._comment;
-                console.log(paro._comment);
+                document.getElementById('_commentedit').value = paro._comment;
+
                 // Fecha y Hora
                 if (paro._fechaEvento) {
                     const match = paro._fechaEvento.match(/\/Date\((\d+)\)\//);
@@ -1065,31 +1076,37 @@
                         const timestamp = parseInt(match[1]);
                         const fechaObj = new Date(timestamp);
 
-                        const fechaFormateada = fechaObj.toISOString().split('T')[0]; // yyyy-MM-dd
-                        const horaFormateada = fechaObj.toTimeString().split(' ')[0]; // HH:mm:ss
+                        // ✅ Formato local para evitar salto de fecha
+                        const fechaFormateada = fechaObj.getFullYear() + "-" +
+                            String(fechaObj.getMonth() + 1).padStart(2, '0') + "-" +
+                            String(fechaObj.getDate()).padStart(2, '0');
 
-                        document.getElementById('_fechaEventoedit').value = fechaFormateada;
-                        document.getElementById('_horaEventoedit').value = horaFormateada;
+                        const horaFormateada = fechaObj.toTimeString().split(' ')[0];
+
+                        const fechaInput = document.getElementById('_fechaEventoedit');
+                        const horaInput = document.getElementById('_horaEventoedit');
+
+                        fechaInput.value = fechaFormateada;
+                        horaInput.value = horaFormateada;
+
+                        // Limitar fechas al mes del evento original
+                        const primerDiaMes = new Date(fechaObj.getFullYear(), fechaObj.getMonth(), 1);
+                        const ultimoDiaMes = new Date(fechaObj.getFullYear(), fechaObj.getMonth() + 1, 0);
+
+                        fechaInput.min = primerDiaMes.toISOString().split('T')[0];
+                        fechaInput.max = ultimoDiaMes.toISOString().split('T')[0];
                     } else {
                         console.warn("Formato de fecha no reconocido:", paro._fechaEvento);
                     }
                 }
 
-                // Clasificación
-                const clasificacionSelect = document.getElementById('_clasificacionIdedit');
-                clasificacionSelect.value = paro._clasificacionId;
+                // Clasificación y tipo evento
+                document.getElementById('_clasificacionIdedit').value = paro._clasificacionId;
+                document.getElementById('_tipoeventoIdedit').value = paro._tipoEventoId;
 
-                // TipoEvento
-                const tipoEventoSelect = document.getElementById('_tipoeventoIdedit');
-                tipoEventoSelect.value = paro._tipoEventoId;
-
-                // Paso 1: cargar subequipos
+                // SubEquipo → Componente → Tipo de falla
                 cargarSubEquiposEdit(paro._equipoId, paro._subEquipoId, function () {
-
-                    // Paso 2: cargar componentes
                     cargarComponentesEdit(paro._subEquipoId, paro._componenteEquipoId, function () {
-
-                        // Paso 3: cargar tipo de falla ya con los selects anteriores listos
                         cargarTiposFallaEdit(paro._clasificacionId, paro._componenteEquipoId, paro._tipoFallaId);
                     });
                 });
@@ -1098,6 +1115,8 @@
                 console.error("Error al cargar el paro:", error);
             });
     }
+
+
 
 
 
@@ -1234,7 +1253,9 @@
         $("#newdowntime").modal("show");
     };
 
-
+    function cargando() {
+        document.getElementById("loadingModal").style.display = "block";
+    }
 
     //*************************************************** Estas funciones rellenan el datatable ********************************************/
 
@@ -1256,57 +1277,7 @@
     }
 
 
-function filtrarPorFecha() {
-    const fecha = document.getElementById("fechaReporte").value;
-
-    if (fecha) {
-        fetch('@Url.Action("GetDowntimesByDate", "Downtime")?fecha=' + fecha)
-            .then(response => response.json())
-            .then(data => {
-                const activeTbody = document.getElementById("downtimeTableBody");
-                const inactiveTbody = document.getElementById("downtimeTableBodyInactiveList");
-
-                if (!activeTbody || !inactiveTbody) {
-                    console.error("No se encontraron los TBODYs en el DOM.");
-                    return;
-                }
-
-                // Limpiar ambos TBODYs
-                activeTbody.innerHTML = "";
-                inactiveTbody.innerHTML = "";
-
-                data.forEach(item => {
-                    // Solo llenar la tabla de inactivos si el tipoEventoId === 1
-                    if (item._tipoEventoId === 1) {
-                        const rowHtmlInactivo = `
-                            <tr data-equipo-id="${item._equipoId}">
-                                <td>
-                                    <button type="button"
-                                            class="btn btn-outline-dark m-1 tipo-evento-btn"
-                                            onclick="loadRelatedDowntimes(${item._paroId})"
-                                            data-paro-id="${item._paroId}"
-                                            data-paro-rel="${item._paroRelacionadoId}">
-                                            Downtime ${item._paroId}
-                                    </button>
-                                </td>
-                            </tr>`;
-                        inactiveTbody.insertAdjacentHTML("beforeend", rowHtmlInactivo);
-                    }
-                });
-            })
-            .catch(error => {
-                console.error("Error al obtener los paros:", error);
-            });
-    }
-}
-
-
-
-
     let equipoSeleccionadoId = null;
-
-
-
     function filtrarPorEquipo(equipoId) {
         equipoSeleccionadoId = equipoId;
 
@@ -1332,12 +1303,62 @@ function filtrarPorFecha() {
 
 
 
+    function filtrarPorFecha() {
+    const fecha = document.getElementById("fechaReporte").value;
+
+    if (fecha) {
+        fetch('@Url.Action("GetDowntimesByDate", "Downtime")?fecha=' + fecha)
+            .then(response => response.json())
+            .then(data => {
+                const activeTbody = document.getElementById("downtimeTableBody");
+                const inactiveTbody = document.getElementById("downtimeTableBodyInactiveList");
+
+                if (!activeTbody || !inactiveTbody) {
+                    console.error("No se encontraron los TBODYs en el DOM.");
+                    return;
+                }
+
+                // Limpiar ambos TBODYs
+                activeTbody.innerHTML = "";
+                inactiveTbody.innerHTML = "";
+
+                data.forEach(item => {
+                    // Solo llenar la tabla de inactivos si el tipoEventoId === 1
+                    if (item._tipoEventoId === 1) {
+                        const rowHtmlInactivo = `
+                            <tr data-equipo-id="${item._equipoId}" data-paro-id="${item._paroId}">
+                                <td>
+                                    <button type="button"
+                                            class="btn btn-outline-dark m-1 tipo-evento-btn"
+                                            onclick="loadRelatedDowntimes(${item._paroId})"
+                                            data-paro-id="${item._paroId}"
+                                            data-paro-rel="${item._paroRelacionadoId}">
+                                        Details
+                                    </button>
+                                </td>
+                                <td class="horas-cell text-center"></td>
+                            </tr>`;
+                        inactiveTbody.insertAdjacentHTML("beforeend", rowHtmlInactivo);
+                    }
+                });
+            })
+            .catch(error => {
+                console.error("Error al obtener los paros:", error);
+            });
+    }
+}
+
+
+
+
 
     function loadRelatedDowntimes(paroId) {
     if (!equipoSeleccionadoId) {
         alert("Debe seleccionar un equipo antes de continuar.");
         return;
     }
+
+    cargando();
 
     fetch('@Url.Action("GetDowntimesByInactive", "Downtime")?paroId=' + paroId)
         .then(response => {
@@ -1346,9 +1367,9 @@ function filtrarPorFecha() {
         })
         .then(data => {
             const downtimeTbody = document.getElementById('downtimeTableBody');
-            downtimeTbody.innerHTML = ''; // Limpiar tabla
+            downtimeTbody.innerHTML = ''; // Limpiar tabla de eventos activos
 
-            // Ordenar por fecha usando los ticks de .NET
+            // Filtrar y ordenar eventos
             const eventosValidos = data
                 .filter(item => item._statusDelete !== true)
                 .sort((a, b) => {
@@ -1357,10 +1378,18 @@ function filtrarPorFecha() {
                     return aTicks - bTicks;
                 });
 
+            // Mostrar eventos relacionados en tabla derecha
             eventosValidos.forEach(item => {
                 const rowHtmlActivo = `
                 <tr data-equipo-id="${item._equipoId}">
-                    <td class="text-center bg-white">${item._statusValidate ? '✅' : '❌'}</td>
+                    <td class="text-center bg-white">
+                    <span class="d-inline-flex align-items-center gap-1">
+                        ${item._cerrado === true ? '<i class="bi bi-lock-fill text-warning fs-5" title="Paro cerrado"></i>' : '<i class="bi bi-unlock-fill text-warning fs-5" title="Paro cerrado"></i>'}
+                        ${item._statusValidate
+                        ? '<i class="fas fa-check-circle text-success fs-4" title="Validado"></i>'
+                        : '<i class="fas fa-times-circle text-danger fs-4" title="No validado"></i>'}
+                    </span>
+                    </td>
                     <td class="text-center bg-white"><strong>${item._tipoEventoName}</strong></td>
                     <td class="text-center bg-white">${formatearFecha(item._fechaEvento)}</td>
                     <td class="text-center bg-white">
@@ -1379,10 +1408,10 @@ function filtrarPorFecha() {
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="javascript:void(0)" onclick="openEditModal(${item._paroId})"><i class="bi bi-pencil me-2"></i> Editar evento</a></li>
-                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="newActiveEvent(${item._paroId})"><i class="ti ti-calendar me-2"></i> Agregar evento activo</a></li>
+                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="newActiveEvent(${item._paroId})"><i class="ti ti-calendar me-2"></i> Agregar arranque</a></li>
                                 <li><a class="dropdown-item" href="javascript:void(0)" onclick="openReclasificationModal(${item._paroId})"><i class="ti ti-exchange me-2"></i> Reclasificar evento</a></li>
                                 <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="opendeleteDowntime(${item._paroId})"><i class="ti ti-trash me-2"></i> Eliminar evento</a></li>
-                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="openDaydelayModal(${item._paroId})"><i class="ti ti-hourglass-empty me-2"></i> Agregar retraso</a></li>
+                                <li><a class="dropdown-item" href="javascript:void(0)" onclick="openDaydelayModal(${item._paroId})"><i class="ti ti-hourglass-empty me-2"></i> Agregar day delay</a></li>
                             </ul>
                         </div>
                     </td>
@@ -1390,7 +1419,7 @@ function filtrarPorFecha() {
                 downtimeTbody.insertAdjacentHTML('beforeend', rowHtmlActivo);
             });
 
-            // Sombrear el botón clickeado:
+            // Sombrear botón activo
             const botonesDowntime = document.querySelectorAll('.tipo-evento-btn');
             botonesDowntime.forEach(btn => {
                 btn.className = 'btn btn-outline-dark m-1 tipo-evento-btn';
@@ -1400,20 +1429,27 @@ function filtrarPorFecha() {
             if (botonActivo) {
                 botonActivo.className = 'btn btn-dark m-1 tipo-evento-btn';
             }
+
+            // Mostrar _diferenciaEnHoras en columna "Horas"
+            const eventoBase = data.find(item => item._paroId === paroId);
+            if (eventoBase && eventoBase._diferenciaEnHoras !== undefined) {
+                const filaInactiva = document.querySelector(`#downtimeTableBodyInactiveList tr[data-paro-id="${paroId}"]`);
+                if (filaInactiva) {
+                    const celdaHoras = filaInactiva.querySelector('.horas-cell');
+                    if (celdaHoras) {
+                        celdaHoras.textContent = eventoBase._diferenciaEnHoras.toFixed(2);
+                    }
+                }
+            }
         })
-        .catch(error => console.error('Error al cargar eventos relacionados:', error));
-}
-
-
-
-
-
-
-
-
-
-
-
+        .catch(error => {
+            console.error('Error al cargar eventos relacionados:', error);
+        })
+        .finally(() => {
+            // Ocultar el modal de carga
+            document.getElementById("loadingModal").style.display = "none";
+        });
+   }
 
 
 
@@ -1443,7 +1479,15 @@ function filtrarPorFecha() {
 
                     // Asignar valores al formulario del modal
                     document.getElementById('paroIdtoAddActiveEventHidden').value = paro._paroId;
-                    document.getElementById('_fechaActiveEvent').value = fechaStr;
+
+                    const fechaInput = document.getElementById('_fechaActiveEvent');
+                    fechaInput.value = fechaStr;
+
+                    // Fijar límites para solo el mes actual
+                    const primerDiaMes = new Date(fecha.getFullYear(), fecha.getMonth(), 1);
+                    const ultimoDiaMes = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0);
+                    fechaInput.min = primerDiaMes.toISOString().split('T')[0];
+                    fechaInput.max = ultimoDiaMes.toISOString().split('T')[0];
 
                     // Mostrar modal
                     const modal = new bootstrap.Modal(document.getElementById('activeModal'));
@@ -1457,6 +1501,7 @@ function filtrarPorFecha() {
                 alert("Ocurrió un error al obtener el paro.");
             });
     }
+
 
 
     document.getElementById('createActiveEvent').addEventListener('click', () => {
@@ -1497,6 +1542,8 @@ function filtrarPorFecha() {
         _comment: _commentActiveEvent
     };
 
+    cargando();
+
     fetch('@Url.Action("AddActiveEvent", "Downtime")', {
         method: 'POST',
         headers: {
@@ -1518,6 +1565,7 @@ function filtrarPorFecha() {
             alert(result.message || "Ocurrió un error.");
             button.disabled = false;
             button.textContent = "Validate ✔";
+            document.getElementById("loadingModal").style.display = "none";
         }
     })
     .catch(error => {
@@ -1525,6 +1573,7 @@ function filtrarPorFecha() {
         alert("Ocurrió un error al enviar el paro activo.");
         button.disabled = false;
         button.textContent = "Validate ✔";
+        document.getElementById("loadingModal").style.display = "none";
     });
 });
 
@@ -1620,6 +1669,8 @@ function filtrarPorFecha() {
         _fechaEvento: getFechaHoraISOReclasification()
     };
 
+    cargando();
+
     fetch('@Url.Action("AddReclasificationEvent", "Downtime")', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1638,6 +1689,7 @@ function filtrarPorFecha() {
             alert("Error: " + result.message);
             button.disabled = false;
             button.textContent = "Validate ✔";
+            document.getElementById("loadingModal").style.display = "none";
         }
     })
     .catch(error => {
@@ -1645,6 +1697,7 @@ function filtrarPorFecha() {
         alert("Error al enviar datos.");
         button.disabled = false;
         button.textContent = "Validate ✔";
+        document.getElementById("loadingModal").style.display = "none";
     });
 });
 
@@ -1659,41 +1712,56 @@ function getFechaHoraISOReclasification() {
 }
 
 function openReclasificationModal(paroId) {
-    var myModal = new bootstrap.Modal(document.getElementById('reclasificationModal'));
-    myModal.show();
+        var myModal = new bootstrap.Modal(document.getElementById('reclasificationModal'));
+        myModal.show();
 
-    fetch(`${getParoByIdUrl}?paroId=${paroId}`)
-        .then(response => response.json())
-        .then(result => {
-            if (!result.success) {
-                alert("Error: " + result.message);
-                return;
-            }
-
-            const paro = result.data;
-
-            document.getElementById('_equipoIdreclasification').value = paro._equipoId;
-            document.getElementById('paroIdhidden').value = paro._paroId;
-
-            if (paro._fechaEvento) {
-                const match = paro._fechaEvento.match(/\/Date\((\d+)\)\//);
-                if (match) {
-                    const fechaObj = new Date(parseInt(match[1]));
-                    document.getElementById('_fechaEventoreclasification').value = fechaObj.toISOString().split('T')[0];
-                    document.getElementById('_horaEventoreclasification').value = fechaObj.toTimeString().split(' ')[0];
+        fetch(`${getParoByIdUrl}?paroId=${paroId}`)
+            .then(response => response.json())
+            .then(result => {
+                if (!result.success) {
+                    alert("Error: " + result.message);
+                    return;
                 }
-            }
 
-            document.getElementById('_clasificacionIdreclasification').value = paro._clasificacionId;
+                const paro = result.data;
 
-            cargarSubEquiposReclasification(paro._equipoId, paro._subEquipoId, function () {
-                cargarComponentesReclasification(paro._subEquipoId, paro._componenteEquipoId, function () {
-                    cargarTiposFallaReclasification(paro._clasificacionId, paro._componenteEquipoId, paro._tipoFallaId);
+                document.getElementById('_equipoIdreclasification').value = paro._equipoId;
+                document.getElementById('paroIdhidden').value = paro._paroId;
+
+                const fechaInput = document.getElementById('_fechaEventoreclasification');
+                const horaInput = document.getElementById('_horaEventoreclasification');
+
+                if (paro._fechaEvento) {
+                    const match = paro._fechaEvento.match(/\/Date\((\d+)\)\//);
+                    if (match) {
+                        const fechaObj = new Date(parseInt(match[1]));
+
+                        // Asignar fecha y hora
+                        fechaInput.value = fechaObj.toISOString().split('T')[0];
+                        horaInput.value = fechaObj.toTimeString().split(' ')[0];
+
+                        // Limitar al mes actual
+                        const primerDiaMes = new Date(fechaObj.getFullYear(), fechaObj.getMonth(), 1);
+                        const ultimoDiaMes = new Date(fechaObj.getFullYear(), fechaObj.getMonth() + 1, 0);
+                        fechaInput.min = primerDiaMes.toISOString().split('T')[0];
+                        fechaInput.max = ultimoDiaMes.toISOString().split('T')[0];
+                    }
+                } else {
+                    fechaInput.value = '';
+                    horaInput.value = '';
+                }
+
+                document.getElementById('_clasificacionIdreclasification').value = paro._clasificacionId;
+
+                cargarSubEquiposReclasification(paro._equipoId, paro._subEquipoId, function () {
+                    cargarComponentesReclasification(paro._subEquipoId, paro._componenteEquipoId, function () {
+                        cargarTiposFallaReclasification(paro._clasificacionId, paro._componenteEquipoId, paro._tipoFallaId);
+                    });
                 });
-            });
-        })
-        .catch(error => console.error("Error al cargar el paro:", error));
-}
+            })
+            .catch(error => console.error("Error al cargar el paro:", error));
+    }
+
 
 function cargarSubEquiposReclasification(equipoId, subEquipoSeleccionadoId = null, callback = null) {
     const subEquipoSelect = document.getElementById('_subEquipoIdreclasification');
@@ -1847,6 +1915,8 @@ document.addEventListener('DOMContentLoaded', function () {
         _fechaEvento: getFechaHoraISODaydelay()
     };
 
+    cargando();
+
     fetch('@Url.Action("AddDayDelayEvent", "Downtime")', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1865,6 +1935,7 @@ document.addEventListener('DOMContentLoaded', function () {
             alert("Error: " + result.message);
             button.disabled = false;
             button.textContent = "Validate ✔";
+            document.getElementById("loadingModal").style.display = "none";
         }
     })
     .catch(error => {
@@ -1872,6 +1943,7 @@ document.addEventListener('DOMContentLoaded', function () {
         alert("Error al enviar datos.");
         button.disabled = false;
         button.textContent = "Validate ✔";
+        document.getElementById("loadingModal").style.display = "none";
     });
 });
 
@@ -1902,20 +1974,25 @@ function openDaydelayModal(paroId) {
                 const fechaInput = document.getElementById('_fechaEventodaydelay');
                 const horaInput = document.getElementById('_horaEventodaydelay');
 
-                if (paro._fechaEvento) {
-                    const match = paro._fechaEvento.match(/\/Date\((\d+)\)\//);
-                    if (match) {
-                        const fechaObj = new Date(parseInt(match[1]));
-                        fechaInput.value = fechaObj.toISOString().split('T')[0];
-                        horaInput.value = '00:00:00'; // Fuerza hora fija
-                    } else {
-                        fechaInput.value = '';
-                        horaInput.value = '00:00:00';
-                    }
+                // Obtener fecha base del evento o usar la fecha actual
+                let fechaBase = new Date();
+                const match = paro._fechaEvento?.match(/\/Date\((\d+)\)\//);
+                if (match) {
+                    fechaBase = new Date(parseInt(match[1]));
+                    fechaInput.value = fechaBase.toISOString().split('T')[0];
                 } else {
                     fechaInput.value = '';
-                    horaInput.value = '00:00:00';
                 }
+
+                // Establecer hora fija
+                horaInput.value = '00:00:00';
+
+                // Limitar el input de fecha desde el primer día del mes actual hasta el primer día del mes siguiente
+                const primerDiaMesActual = new Date(fechaBase.getFullYear(), fechaBase.getMonth(), 1);
+                const primerDiaMesSiguiente = new Date(fechaBase.getFullYear(), fechaBase.getMonth() + 1, 1);
+
+                fechaInput.min = primerDiaMesActual.toISOString().split('T')[0];
+                fechaInput.max = primerDiaMesSiguiente.toISOString().split('T')[0];
 
                 document.getElementById('_clasificacionIddaydelay').value = paro._clasificacionId;
 
@@ -1927,6 +2004,8 @@ function openDaydelayModal(paroId) {
             })
             .catch(error => console.error("Error al cargar el paro:", error));
     }
+
+
 
 
 function cargarSubEquiposDaydelay(equipoId, subEquipoSeleccionadoId = null, callback = null) {
@@ -2065,6 +2144,8 @@ document.getElementById('deleteParo').addEventListener('click', function () {
 
     const data = { _paroId: paroId };
 
+    cargando();
+
     fetch('@Url.Action("DeleteDowntime", "Downtime")', {
         method: 'POST',
         headers: {
@@ -2086,6 +2167,7 @@ document.getElementById('deleteParo').addEventListener('click', function () {
             alert(result.message || "Ocurrió un error.");
             button.disabled = false;
             button.textContent = "Eliminar 🗑️";
+            document.getElementById("loadingModal").style.display = "none";
         }
     })
     .catch(error => {
@@ -2093,6 +2175,7 @@ document.getElementById('deleteParo').addEventListener('click', function () {
         alert("Error al enviar datos.");
         button.disabled = false;
         button.textContent = "Eliminar 🗑️";
+        document.getElementById("loadingModal").style.display = "none";
     });
 });
 
@@ -2101,46 +2184,48 @@ document.getElementById('deleteParo').addEventListener('click', function () {
     //_______________________________________________________________________ Cerrar Reporte_________________________________________________________________________//
 
 
-     function cerrarReporte() {
-        const fecha = document.getElementById('fechaReporte').value;
+    function cerrarReporte() {
+    const fecha = document.getElementById('fechaReporte').value;
 
-        if (!fecha) {
-            alert("Por favor selecciona una fecha.");
-            return;
-        }
-
-        const url = '@Url.Action("CerrarReporte", "Downtime")';
-
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ fecha: fecha })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Cambiar icono del candado
-                document.getElementById("candado").innerHTML = `<i class="bi bi-lock-fill text-warning ms-2"></i>`;
-
-                // Mostrar alerta de éxito
-                const alerta = document.getElementById("alertsuccesclose");
-                alerta.style.display = "block";
-
-                // Opcional: ocultar la alerta después de unos segundos
-                setTimeout(() => {
-                    alerta.style.display = "none";
-                }, 3000);
-            } else {
-                alert(data.message || "No se pudo cerrar el reporte.");
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert("Ocurrió un error al intentar cerrar el reporte.");
-        });
+    if (!fecha) {
+        alert("Por favor selecciona una fecha.");
+        return;
     }
+
+    const url = '@Url.Action("CerrarReporte", "Downtime")';
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ fecha: fecha })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Cambiar icono del candado
+            document.getElementById("candado").innerHTML = `<i class="bi bi-lock-fill text-warning ms-2"></i>`;
+
+            // Mostrar alerta de éxito
+            const alerta = document.getElementById("alertsuccesclose");
+            alerta.style.display = "block";
+
+            // Ocultar la alerta y recargar después de 3 segundos
+            setTimeout(() => {
+                alerta.style.display = "none";
+                location.reload();
+            }, 3000);
+        } else {
+            alert(data.message || "No se pudo cerrar el reporte.");
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert("Ocurrió un error al intentar cerrar el reporte.");
+    });
+}
+
 
 
 </script>

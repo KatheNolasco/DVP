@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DVP.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -11,7 +12,12 @@ namespace DVP.Controllers
         // GET: Operation
         public ActionResult Index()
         {
-            return View();
+            OperationViewModel viewModel = new OperationViewModel
+            {
+                Equipos = new OperationViewModel().GetEquipos().ToList()
+            };
+
+            return View(viewModel);
         }
     }
 }
