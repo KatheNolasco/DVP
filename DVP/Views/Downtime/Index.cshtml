@@ -63,24 +63,26 @@
         <br />
         <div class="card">
             <div class="container-fluid">
-                <div class="container-fluid">
-                    <div class="card">
-                        <div class="card-body">
                             <!-- Fecha de validación -->
                             <h5 class="card-title fw-semibold mb-4 text-end">
                                 <span id="candado">
-                                    <button onclick="cerrarReporte()" class="btn btn-link p-0 m-0 align-baseline">
+                                    <button onclick="cerrarReporte()" id="btnCerrarReporte" class="btn btn-link p-0 m-0 align-baseline">
                                         <i class="bi bi-unlock-fill text-warning ms-2"></i>
                                     </button>
                                 </span>
                                 Downtime Validation Date:
                                 <input type="date" id="fechaReporte" onchange="filtrarPorFecha()">
                             </h5>
+                            <h5 class="card-title fw-semibold mb-4">Equipments - Planta San Pedro</h5>
                             <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
                                 Paros cerrados correctamente!
                             </div>
                             <!-- Equipos -->
-                            <h5 class="card-title fw-semibold mb-4">Equipments - Planta San Pedro</h5>
+                            <div class="text-end mb-3">
+                                <button type="button" onclick="newdowntime()" class="btn btn-outline-dark m-1">
+                                    New Downtime
+                                </button>
+                            </div>
                             <div class="card">
                                 <div class="card-body p-4">
                                     @foreach (var equipo in Model.GetEquipos())
@@ -93,21 +95,7 @@
                                         </button>
                                     }
                                 </div>
-
-                                <div class="text-end mb-3">
-                                    <button type="button" onclick="newdowntime()" class="btn btn-outline-dark m-1">
-                                        New Downtime
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Sección de Listas -->
-                        <div class="card w-100">
-                            <div class="card-body p-4">
-                                <h5 class="card-title fw-semibold mb-4">Downtime List</h5>
                                 <div class="d-flex gap-3">
-
                                     <!-- Tabla izquierda (downtimes inactivos) -->
                                     <div class="table-responsive w-25" style="max-height: 400px; width: 5px; overflow-y: auto; background-color: #ffffff;  border-radius: 10px;">
                                         <table class="table table-bordered mb-0" style="background-color: #ffffff;">
@@ -142,12 +130,7 @@
                             </div>
                         </div>
                     </div>
-
-
                 </div>
-
-
-            </div>
             @*___________________________________________________________________Modal Cargando__________________________________________________*@
             <div id="loadingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: rgba(0, 0, 0, 0.5);">
                 <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 25px 35px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.3); min-width: 250px;">
@@ -550,8 +533,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 </body>
 
 
@@ -2186,11 +2167,15 @@ document.getElementById('deleteParo').addEventListener('click', function () {
 
     function cerrarReporte() {
     const fecha = document.getElementById('fechaReporte').value;
+    const boton = document.getElementById('btnCerrarReporte');
 
     if (!fecha) {
         alert("Por favor selecciona una fecha.");
         return;
     }
+
+    // Desactivar el botón para evitar múltiples clics
+    boton.disabled = true;
 
     const url = '@Url.Action("CerrarReporte", "Downtime")';
 
@@ -2204,27 +2189,29 @@ document.getElementById('deleteParo').addEventListener('click', function () {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Cambiar icono del candado
             document.getElementById("candado").innerHTML = `<i class="bi bi-lock-fill text-warning ms-2"></i>`;
 
-            // Mostrar alerta de éxito
             const alerta = document.getElementById("alertsuccesclose");
             alerta.style.display = "block";
 
-            // Ocultar la alerta y recargar después de 3 segundos
             setTimeout(() => {
                 alerta.style.display = "none";
                 location.reload();
             }, 3000);
         } else {
             alert(data.message || "No se pudo cerrar el reporte.");
+            // Rehabilitar el botón si falló
+            boton.disabled = false;
         }
     })
     .catch(error => {
         console.error('Error:', error);
         alert("Ocurrió un error al intentar cerrar el reporte.");
+        // Rehabilitar el botón en caso de error
+        boton.disabled = false;
     });
 }
+
 
 
 

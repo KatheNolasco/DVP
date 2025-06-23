@@ -80,12 +80,15 @@
                                 Paros cerrados correctamente!
                             </div>
                             <!-- Equipos -->
-                            <h5 class="card-title fw-semibold mb-4">Equipments - Planta San Pedro</h5>                                                      
+                            <h5 class="card-title fw-semibold mb-4">Equipments - Planta San Pedro</h5>
                         </div>
                         <!-- Sección de Listas -->
                         <div class="card w-100">
                             <div class="card-body p-4">
                                 <div class="text-end mb-3">
+                                    <button type="button" onclick="newenergyproduction()" class="btn btn-outline-dark m-1">
+                                        Add energy production
+                                    </button>
                                     <button type="button" class="btn btn-outline-success m-1">
                                         Validate all
                                     </button>
@@ -99,10 +102,10 @@
                                                     <th class="text-center">Status</th>
                                                     <th class="text-center">Equipo Descripción</th>
                                                     <th class="text-center">Código SAP Equipo</th>
-                                                    <th class="text-center">Acumulado Mes KWH</th>
+                                                    <th class="text-center">Producción KWH</th>
                                                     <th class="text-center">Código SAP KWH</th>
                                                     <th class="text-center">KWH Validado</th>
-                                                    <th class="text-center">KWH Hoy</th>
+                                                    <th class="text-center">Producción en GJ</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="downtimeTableBody">
@@ -333,18 +336,56 @@
                                 </div>
                             </div>
                         </div>
-
-
-
                     </div>
-
-
                 </div>
-
-
             </div>
-
         </div>
+
+
+
+
+        @*______________________________________________________________________Modal add energy production_________________________________________________________________________*@
+
+        <div class="modal fade" id="newenergyproduction" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalLabel">Add Production Energy</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="card-body">
+                            <div class="card">
+                                <form>
+                                    <div class="card-body">
+                                        <h4 class="card-title fw-semibold mb-2">Energy Validation</h4>
+                                        <br />
+                                    </div>
+                                    <div>
+                                        <label for="fecha">Fecha:</label>
+                                        <input type="date" id="_fechaEvento" required>
+                                        <label for="hora">Hora:</label>
+                                        <input type="time" id="_horaEvento" step="1" required>
+                                    </div>
+                                    <br />
+                                    <br />
+                                    <button type="button" id="crearparo" class="btn btn-outline-success m-1"
+                                            data-url="@Url.Action("CreateDowntime", "Downtime")">
+                                        Validate <span class="text-success ms-2">&#10004;</span>
+                                    </button>
+                                    <div id="alertSuccess" class="alert alert-success" role="alert" style="display: none;">
+                                        ¡Paro creado exitosamente!
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @*_____________________________________________________________________________ M ________________________________________________________________________________________*@
+
     </div>
 </body>
 
@@ -364,7 +405,7 @@
 <script>
 
     document.addEventListener("DOMContentLoaded", function () {
-        newdowntime();
+        newenergyproduction();
     });
 
     //Calcular fecha del input fecha.
@@ -418,31 +459,6 @@
     });
 
 
-    //Calcular fecha para input fecha de creacion de paro
-    window.addEventListener("DOMContentLoaded", () => {
-        const inputFecha = document.getElementById("_fechaEvento");
-        const hoy = new Date();
-        const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-        const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
-
-        // Formatear a yyyy-MM-dd
-        const formatoFecha = (fecha) => {
-            const año = fecha.getFullYear();
-            const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-            const dia = String(fecha.getDate()).padStart(2, '0');
-            return `${año}-${mes}-${dia}`;
-        };
-
-        inputFecha.min = formatoFecha(inicioMes);
-        inputFecha.max = formatoFecha(finMes);
-    });
-
-
-
-
-
-
-
     const input = document.getElementById('decimalInput');
     const errorMsg = document.getElementById('inputErrorMsg');
 
@@ -494,75 +510,12 @@
     });
 
 
+    //________________________________________________________________________________ Add energy production__________________________________________________________//
 
 
-    //_____________________________________________________________________Creación del paro______________________________________________________________//
-
-
-
-
-    //________________________________________________________________________Editar Paro_________________________________________________________________//
-
-    // Update de generación de arbol de fallas para el paro
-
-
-
-
-
-    //*************************************************** Funciones para el editar paros ********************************************/
-
-
-
-
-
-
-
-
-    //_____________________________________________________________________________Functions___________________________________________________________________//
-
-
-
-
-
-    //*************************************************** Estas funciones rellenan el datatable ********************************************/
-
-
-
-
-
-
-
-
-    //****************************************************** Funciones para crear active event ****************************************/
-
-
-
-
-
-
-
-
-
-
-
-    //________________________________________________________________________Reclasificar Paro_________________________________________________________________//
-
-
-
-    //________________________________________________________________________Añadir Daydelay Paro_________________________________________________________________//
-
-
-
-
-
-    //_______________________________________________________________________ Delete Paro _________________________________________________________________________//
-
-
-
-
-
-    //_______________________________________________________________________ Cerrar Reporte_________________________________________________________________________//
-
+    function newenergyproduction() {
+        $("#newenergyproduction").modal("show");
+    }
 
 
 

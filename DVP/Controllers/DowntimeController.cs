@@ -52,7 +52,7 @@ namespace DVP.Controllers
                                      .ToList();
 
             return Json(subEquipos, JsonRequestBehavior.AllowGet);
-        }
+        }   
 
         [HttpGet]
         public JsonResult GetComponenteEquipo(int _subEquipoId)
@@ -236,7 +236,7 @@ namespace DVP.Controllers
 
 
         [HttpPost]
-        public JsonResult AddActiveEvent(DowntimeViewModel data)
+        public JsonResult AddActiveEvent(DowntimeViewModel data)    
         {
             if (data == null || data._paroId <= 0 || data._fechaEvento == null)
             {
@@ -261,10 +261,12 @@ namespace DVP.Controllers
 
                 var fechaEventoDelParo = inactiveOrigen.FechaEvento.Value.Date;
 
-                bool fechaCerrada = _dvpEntities.CierreStatus
-                    .Any(p => DbFunctions.TruncateTime(p.FechaReporte) == fechaEventoDelParo);
+                var ultimoParo = _dvpEntities.Paros
+                            .Where(p => p.ParoRelacionadoID == inactiveOrigen.ParoRelacionadoID && p.StatusDelete == false)
+                            .OrderByDescending(p => p.FechaEvento)
+                            .FirstOrDefault();
 
-                if (fechaCerrada == true || fechaEvento <= fechaCierreAutomatica)
+                if (inactiveOrigen.Cerrado == true && ultimoParo.TipoEventoID != DAY_DELAY_EVENT || fechaEvento <= fechaCierreAutomatica)
                 {
                     return Json(new
                     {
@@ -328,12 +330,6 @@ namespace DVP.Controllers
                         return Json(new { success = false, message = datosParosEntrePeriodo.message });
                     }
 
-                    var ultimoParo = _dvpEntities.Paros
-                            .Where(p => p.ParoRelacionadoID == inactiveOrigen.ParoRelacionadoID && p.StatusDelete == false)
-                            .OrderByDescending(p => p.FechaEvento)
-                            .FirstOrDefault();
-
-
                     if (data._fechaEvento.Date >= inactiveOrigen.FechaEvento.Value.Date && (data._fechaEvento.Day  - ultimoParo.FechaEvento.Value.Day >= 1 && ultimoParo.TipoEventoID != DAY_DELAY_EVENT))
                     {
 
@@ -393,10 +389,7 @@ namespace DVP.Controllers
 
                 var fechaEventoDelParo = inactiveOrigen.FechaEvento.Value.Date;
 
-                bool fechaCerrada = _dvpEntities.CierreStatus
-                    .Any(p => DbFunctions.TruncateTime(p.FechaReporte) == fechaEventoDelParo);
-
-                if (fechaCerrada == true || fechaEvento <= fechaCierreAutomatica)
+                if (fechaEvento <= fechaCierreAutomatica)
                 {
                     return Json(new
                     {
@@ -479,8 +472,6 @@ namespace DVP.Controllers
             }
         }
 
-
-
         [HttpPost]
         public JsonResult AddDayDelayEvent(DowntimeViewModel data)
         {
@@ -508,10 +499,12 @@ namespace DVP.Controllers
 
                 var fechaEventoDelParo = inactiveOrigen.FechaEvento.Value.Date;
 
-                bool fechaCerrada = _dvpEntities.CierreStatus
-                    .Any(p => DbFunctions.TruncateTime(p.FechaReporte) == fechaEventoDelParo);
+                var ultimoParo = _dvpEntities.Paros
+                            .Where(p => p.ParoRelacionadoID == inactiveOrigen.ParoRelacionadoID && p.StatusDelete == false)
+                            .OrderByDescending(p => p.FechaEvento)
+                            .FirstOrDefault();
 
-                if (fechaCerrada == true || fechaEvento <= fechaCierreAutomatica)
+                if (inactiveOrigen.Cerrado == true && (ultimoParo.TipoEventoID != DAY_DELAY_EVENT || ultimoParo.TipoEventoID != RECLASIFICATION_EVENT) || fechaEvento <= fechaCierreAutomatica)
                 {
                     return Json(new
                     {
@@ -552,9 +545,9 @@ namespace DVP.Controllers
                             message = $"Solo se pueden registrar a futuro los tres ultimos días del mes para fines de proyección de cierre."
                         });
                     }
-                    if (data._fechaEvento.Date >= DateTime.Now.AddDays(2) && !estamosenUltimosCuatroDias)
+                    if (data._fechaEvento.Date > DateTime.Now && !estamosenUltimosCuatroDias)
                     {
-                        return Json(new { success = false, message = "No se puede crear un day delay pasado mañana porque es un paro a futuro." });
+                        return Json(new { success = false, message = "No se puede crear un day delay mañana porque es un paro a futuro." });
                     }
 
                     var resultado = ValidarSiElPeriodoACrearEstaDentroDeUnPeriodoDeParosYaCreado(data._fechaEvento, inactiveOrigen.ParosID) as JsonResult;
@@ -685,16 +678,13 @@ namespace DVP.Controllers
 
                 var fechaEventoDelParo = paroExistente.FechaEvento.Value.Date;
 
-                bool fechaCerrada = _dvpEntities.CierreStatus
-                    .Any(p => DbFunctions.TruncateTime(p.FechaReporte) == fechaEventoDelParo);
 
-
-                if (fechaCerrada == true && paroExistente.FechaEvento != data._fechaEvento)
+                if (paroExistente.Cerrado == true && paroExistente.FechaEvento != data._fechaEvento)
                 {
                     return Json(new
                     {
                         success = false,
-                        message = $"La fecha {data._fechaEvento:dd/MM/yyyy} ya está cerrada no se puede hacer modificaciones en la hora del evento"
+                        message = $"La fecha {paroExistente.FechaEvento:dd/MM/yyyy} ya está cerrada no se puede hacer modificaciones en la hora del evento"
                     });
                 }
 
@@ -774,16 +764,12 @@ namespace DVP.Controllers
                 DateTime fechaCierreAutomatica = new DateTime(2024, 12, 31);
 
                 // Verificar si la fecha del evento ya está cerrada en CierreStatus
-                bool fechaCerrada = _dvpEntities.CierreStatus.Any(p =>
-                    p.FechaReporte == paroExistente.FechaEvento
-                );
-
-                if (fechaCerrada == true || paroExistente.FechaEvento <= fechaCierreAutomatica)
+                if (paroExistente.Cerrado == true)
                 {
                     return Json(new
                     {
                         success = false,
-                        message = $"La fecha {data._fechaEvento:dd/MM/yyyy} ya está cerrada no se puede hacer modificaciones."
+                        message = $"La fecha {paroExistente.FechaEvento:dd/MM/yyyy} ya está cerrada no se puede hacer modificaciones en la hora del evento"
                     });
                 }
                 else
@@ -821,16 +807,12 @@ namespace DVP.Controllers
                 DateTime fechaCierreAutomatica = new DateTime(2024, 12, 31);
 
                 // Verificar si la fecha del evento ya está cerrada en CierreStatus
-                bool fechaCerrada = _dvpEntities.CierreStatus.Any(p =>
-                    p.FechaReporte == paroExistente.FechaEvento
-                );
-
-                if (fechaCerrada == true || paroExistente.FechaEvento <= fechaCierreAutomatica)
+                if (paroExistente.Cerrado == true)
                 {
                     return Json(new
                     {
                         success = false,
-                        message = $"La fecha {data._fechaEvento:dd/MM/yyyy} ya está cerrada no se puede hacer modificaciones."
+                        message = $"La fecha {paroExistente.FechaEvento:dd/MM/yyyy} ya está cerrada no se puede hacer modificaciones en la hora del evento"
                     });
                 }
                 else
@@ -841,8 +823,21 @@ namespace DVP.Controllers
                         return Json(new { success = false, message = "No se encontró el paro para actualizar." });
                     }
 
-                    paroExistente.StatusDelete = true;
+                    var paroRelacionadoIDparoExistente = paroExistente.ParoRelacionadoID;
 
+                    if (paroExistente.TipoEventoID == INACTIVE_EVENT)
+                    {
+                        var  parosaborrar = _dvpEntities.Paros.Where(p => p.ParoRelacionadoID == paroRelacionadoIDparoExistente).ToList();
+
+                        foreach (var paroaborrar in parosaborrar)
+                        {
+                            paroaborrar.StatusDelete = true;
+                            _dvpEntities.SaveChanges();
+                        }
+                    }
+
+
+                    paroExistente.StatusDelete = true;
                     _dvpEntities.SaveChanges();
 
                     return Json(new { success = true, paroId = paroExistente.ParosID });
@@ -858,59 +853,63 @@ namespace DVP.Controllers
         [HttpGet]
         public JsonResult GetDowntimesByDate(DateTime fecha)
         {
-            // Obtener paros del día seleccionado
-            var downtimes = _dvpEntities.Paros
+            // Buscar todos los paros cuya fecha coincida
+            var parosEnFecha = _dvpEntities.Paros
                 .Where(p => DbFunctions.TruncateTime(p.FechaEvento) == fecha.Date && p.StatusDelete == false)
-                .Select(choose => new
-                {
-                    _paroId = choose.ParosID,
-                    _fechaCreacionParo = choose.FechaCreacion,
-                    _fechaEvento = choose.FechaEvento,
-                    _comment = choose.Comentario,
-                    _equipoId = choose.EquipoID,
-                    _equipoName = choose.Equipo.Descripcion,
-                    _componenteEquipoName = choose.ComponenteEquipo.Descripcion,
-                    _tipoFallaName = choose.TipoFalla.Descripcion,
-                    _clasificacionName = choose.Clasificacion.Descripcion,
-                    _statusValidate = choose.StatusValidate,
-                    _statusDelete = choose.StatusDelete,
-                    _tipoEventoId = choose.TipoEventoID,
-                    _tipoEventoName = choose.TipoEvento.Descripcion,
-                    _paroRelacionadoId = choose.ParoRelacionadoID,
-                    _cerrado = choose.Cerrado
-                })
                 .ToList();
 
-            if (downtimes == null || downtimes.Count == 0)
+            // Obtener los ParoRelacionadoID únicos desde esos eventos (para agrupar por el paro INACTIVE origen)
+            var paroRelacionadoIds = parosEnFecha
+                .Where(p => p.ParoRelacionadoID.HasValue)
+                .Select(p => p.ParoRelacionadoID.Value)
+                .Distinct()
+                .ToList();
+
+            // Obtener todos los eventos asociados a esos ParoRelacionadoID
+            var parosOrigen = new List<dynamic>();
+
+            if (paroRelacionadoIds.Any())
             {
-                // Si no hay paros, devolvemos lista vacía o solo los downtimes vacíos (sin concatenar)
-                return Json(new List<object>(), JsonRequestBehavior.AllowGet);
+                parosOrigen = _dvpEntities.Paros
+                    .Where(p => paroRelacionadoIds.Contains(p.ParoRelacionadoID.Value) && p.StatusDelete == false)
+                    .Select(choose => new
+                    {
+                        _paroId = choose.ParosID,
+                        _fechaCreacionParo = choose.FechaCreacion,
+                        _fechaEvento = choose.FechaEvento,
+                        _comment = choose.Comentario,
+                        _equipoId = choose.EquipoID,
+                        _equipoName = choose.Equipo.Descripcion,
+                        _componenteEquipoName = choose.ComponenteEquipo.Descripcion,
+                        _tipoFallaName = choose.TipoFalla.Descripcion,
+                        _clasificacionName = choose.Clasificacion.Descripcion,
+                        _statusValidate = choose.StatusValidate,
+                        _statusDelete = choose.StatusDelete,
+                        _tipoEventoId = choose.TipoEventoID,
+                        _tipoEventoName = choose.TipoEvento.Descripcion,
+                        _paroRelacionadoId = choose.ParoRelacionadoID,
+                        _cerrado = choose.Cerrado
+                    })
+                    .ToList<dynamic>();
             }
 
-            // Obtener IDs ya usados
-            var downtimeIds = downtimes.Select(p => p._paroId).ToList();
+            // IDs ya mostrados (para evitar duplicados)
+            var idsMostrados = parosOrigen.Select(p => (int)p._paroId).ToList();
 
-            // Obtener los paros sin arranque que no están duplicados
+            // Obtener todos los paros sin arranque que no se hayan mostrado aún
             var parosSinArranque = GetParosSinArranque()
-                .Where(p => !downtimeIds.Contains((int)((dynamic)p)._paroId))
+                .Where(p => !idsMostrados.Contains((int)((dynamic)p)._paroId))
                 .ToList();
 
-            // Verificar si alguno de los paros sin arranque tiene una fecha posterior a los downtimes
-            bool hayParoSinArranqueMayor = parosSinArranque
-                .Any(p => ((DateTime)((dynamic)p)._fechaEvento) > downtimes.Max(d => d._fechaEvento));
-
-            // Si hay alguno posterior, solo devolvemos los downtimes
-            var resultado = hayParoSinArranqueMayor
-                ? downtimes.OrderBy(p => p._fechaEvento).Cast<object>().ToList()
-                : downtimes.Cast<object>()
-                    .Concat(parosSinArranque)
-                    .OrderBy(p => ((DateTime)((dynamic)p)._fechaEvento))
-                    .ToList();
+            // Combinar siempre los paros encontrados con los sin arranque
+            var resultado = parosOrigen
+                .Cast<object>()
+                .Concat(parosSinArranque)
+                .OrderBy(p => ((DateTime)((dynamic)p)._fechaEvento))
+                .ToList();
 
             return Json(resultado, JsonRequestBehavior.AllowGet);
         }
-
-
 
         [HttpGet]
         public JsonResult GetDowntimesByInactive(int paroId)
@@ -996,27 +995,44 @@ namespace DVP.Controllers
                     return Json(new { success = false, message = "Fecha inválida" });
                 }
 
-                var fechaInicio = fecha.Date;
-                var fechaFin = fechaInicio.AddDays(1);
+                DateTime fechaMasUnoParaBuscarDayDelay = fecha.Date.AddDays(1);
+
+                var parosDelDia = _dvpEntities.Paros
+                    .Where(p => DbFunctions.TruncateTime(p.FechaEvento) == fecha.Date
+                                && p.StatusDelete == false
+                                || (p.TipoEventoID == DAY_DELAY_EVENT || p.TipoEventoID == RECLASIFICATION_EVENT
+                                    && DbFunctions.TruncateTime(p.FechaEvento) == fechaMasUnoParaBuscarDayDelay))
+                    .ToList();
+
+                var relacionadosIds = parosDelDia
+                    .Where(p => p.ParoRelacionadoID.HasValue)
+                    .Select(p => p.ParoRelacionadoID.Value)
+                    .Distinct()
+                    .ToList();
 
                 var paros = _dvpEntities.Paros
-                            .Include(p => p.Equipo)
-                            .Where(p => p.FechaEvento >= fechaInicio && p.FechaEvento < fechaFin && p.StatusDelete == false)
-                            .ToList();
+                    .Where(p => p.ParoRelacionadoID.HasValue &&
+                                relacionadosIds.Contains(p.ParoRelacionadoID.Value) &&
+                                p.StatusDelete == false)
+                    .ToList();
+
 
                 var parosInactive = paros
                     .Where(p => p.TipoEventoID == INACTIVE_EVENT && p.StatusDelete == false)
                     .ToList();
 
-                var paroRelacionadoIDs = parosInactive
-                    .Where(p => p.ParoRelacionadoID.HasValue && p.StatusDelete == false)
-                    .Select(p => p.ParoRelacionadoID.Value)
+                var parosACerrar = paros
+                    .Where(p => p.ParoRelacionadoID.HasValue && relacionadosIds.Contains(p.ParoRelacionadoID.Value) && p.StatusDelete == false)
                     .ToList();
 
-                var parosACerrar = _dvpEntities.Paros
-                    .Where(p => p.ParoRelacionadoID.HasValue && paroRelacionadoIDs.Contains(p.ParoRelacionadoID.Value) && p.StatusDelete == false)
+                var parosDelafecha = paros
+                    .Where(p => p.StatusDelete == false && p.FechaEvento.Value.Date == fecha.Date)
                     .ToList();
 
+                if (parosDelafecha.Count() <= 0)
+                {
+                    return Json(new { success = false, message = "No se puede cerrar este reporte debido a que no hay eventos inactive en la fecha seleccionada" });
+                }
 
                 if (fecha >= DateTime.Now.AddDays(1))
                 {
@@ -1026,11 +1042,6 @@ namespace DVP.Controllers
                 if (!parosACerrar.Any())
                 {
                     return Json(new { success = false, message = "No se encontraron paros para la fecha seleccionada." });
-                }
-
-                if (parosACerrar.All(p => p.Cerrado == true))
-                {
-                    return Json(new { success = false, message = "Ya los paros fueron cerrados correctamente." });
                 }
 
                 foreach (var paro in parosInactive)
@@ -1049,6 +1060,7 @@ namespace DVP.Controllers
                         var eventoDayDelay = parosACerrar.FirstOrDefault(p =>
                             p.ParoRelacionadoID == paroRelacionadoID &&
                             p.TipoEventoID == DAY_DELAY_EVENT &&
+                            p.FechaEvento >= fecha.Date &&
                             p.StatusDelete == false);
 
 
