@@ -1144,7 +1144,6 @@ namespace DVP.Controllers
         }
     
 
-
         private DowntimeViewModel VerificarEvento(int paroRelacionadoId, int tipoEventoId, DateTime fechaEvento)
         {
 

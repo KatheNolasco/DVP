@@ -72,6 +72,9 @@
                                 </span>
                                 Downtime Validation Date:
                                 <input type="date" id="fechaReporte" onchange="filtrarPorFecha()">
+                                <a id="btnenergy" onclick="sendtoenergyvalidation()" class="btn btn-link p-0 m-0 align-baseline" style="display: none;" role="button">
+                                    <i class="bi bi-arrow-right-circle-fill text-danger"></i>
+                                </a>
                             </h5>
                             <h5 class="card-title fw-semibold mb-4">Equipments - Planta San Pedro</h5>
                             <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
@@ -2189,28 +2192,59 @@ document.getElementById('deleteParo').addEventListener('click', function () {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            // Cambiar ícono del candado
             document.getElementById("candado").innerHTML = `<i class="bi bi-lock-fill text-warning ms-2"></i>`;
 
+            // Mostrar alerta
             const alerta = document.getElementById("alertsuccesclose");
             alerta.style.display = "block";
 
+            // Guardar bandera para mostrar botón después de recargar
+            localStorage.setItem('mostrarFlecha', 'true');
+
+            // Esperar 3 segundos y recargar
             setTimeout(() => {
                 alerta.style.display = "none";
                 location.reload();
             }, 3000);
         } else {
             alert(data.message || "No se pudo cerrar el reporte.");
-            // Rehabilitar el botón si falló
             boton.disabled = false;
         }
     })
     .catch(error => {
         console.error('Error:', error);
         alert("Ocurrió un error al intentar cerrar el reporte.");
-        // Rehabilitar el botón en caso de error
         boton.disabled = false;
     });
 }
+
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const btnEnergy = document.getElementById("btnenergy");
+
+        if (localStorage.getItem('mostrarFlecha') === 'true') {
+            // Mostrar y habilitar el botón
+            btnEnergy.style.display = 'inline-block';
+            btnEnergy.disabled = false;
+
+            // Eliminar la bandera para evitar que se repita
+            localStorage.removeItem('mostrarFlecha');
+        }
+    });
+
+
+
+    //_______________________________________________________________________ Pasar a energy validation_____________________________________________________________//
+
+
+    function sendtoenergyvalidation() {
+      cargando(); 
+
+      setTimeout(() => {
+        window.location.href = '@Url.Action("Index", "Energy")';
+      }, 300);
+    }
 
 
 
