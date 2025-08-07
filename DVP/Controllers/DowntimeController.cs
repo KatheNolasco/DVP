@@ -25,9 +25,26 @@ namespace DVP.Controllers
         // GET: Downtime
         public ActionResult Index()
         {
+            var tokenEnSession = Session["token"]?.ToString();
+
+            if (string.IsNullOrEmpty(tokenEnSession))
+            {
+                return RedirectToAction("Index", "Account");
+            }
+
+            var usuario = _dvpEntities.Usuario.FirstOrDefault(u => u.Token == tokenEnSession);
+            if (usuario == null)
+            {
+                return RedirectToAction("Index", "Account");
+            }
+
+            var paisId = usuario.PaisID ?? 0;
+            var plantaId = usuario.PlantaID ?? 0;
             DowntimeViewModel viewModel = new DowntimeViewModel
             {
-                Equipos = new DowntimeViewModel().GetEquipos().ToList()
+                _plantaId = plantaId,
+                _paisId = paisId,
+                Equipos = new DowntimeViewModel().GetEquiposPorPais(paisId,plantaId).ToList()
             };
 
             return View(viewModel);
@@ -167,7 +184,7 @@ namespace DVP.Controllers
                         });
                     }
 
-                    if (data._fechaEvento.Date >= DateTime.Now.Date && !estamosenUltimosTresDias)
+                    if (data._fechaEvento.Date > DateTime.Now.Date && !estamosenUltimosTresDias)
                     {
                         return Json(new { success = false, message = "No se puede crear un evento posterior al día de ayer, a menos estemos en los 3 últimos días del mes para fines de proyección de cierre." });
                     }
@@ -308,7 +325,7 @@ namespace DVP.Controllers
                         });
                     }
 
-                    if (data._fechaEvento.Date >= DateTime.Now.Date && !estamosenUltimosTresDias)
+                    if (data._fechaEvento.Date > DateTime.Now.Date && !estamosenUltimosTresDias)
                     {
                         
                         return Json(new { success = false, message = "No se puede crear un evento 1 o mas dias despues al día de ayer, necesitas un day delay." });
@@ -429,7 +446,7 @@ namespace DVP.Controllers
                             message = $"Solo se pueden registrar a futuro los tres ultimos días del mes para fines de proyección de cierre."
                         });
                     }
-                    if (data._fechaEvento.Date >= DateTime.Now.Date && !estamosenUltimosTresDias)
+                    if (data._fechaEvento.Date > DateTime.Now.Date && !estamosenUltimosTresDias)
                     {
                         return Json(new { success = false, message = "NNo se puede crear un evento 1 o mas dias despues del evento original, necesitas un day delay." });
                     }
@@ -714,7 +731,7 @@ namespace DVP.Controllers
                     });
                 }
 
-                if (data._fechaEvento.Date >= DateTime.Now.Date && !estamosenUltimosTresDias)
+                if (data._fechaEvento.Date > DateTime.Now.Date && !estamosenUltimosTresDias)
                 {
                     return Json(new { success = false, message = "No se puede crear un evento 1 o mas dias despues del evento original, necesitas un day delay." });
                 }
@@ -1034,7 +1051,7 @@ namespace DVP.Controllers
                     return Json(new { success = false, message = "No se puede cerrar este reporte debido a que no hay eventos inactive en la fecha seleccionada" });
                 }
 
-                if (fecha >= DateTime.Now.AddDays(1))
+                if (fecha >= DateTime.Now)
                 {
                     return Json(new { success = false, message = "No se pueden cerrar paros en reportes futuros" });
                 }
@@ -1712,5 +1729,32 @@ namespace DVP.Controllers
         public const int RECLASIFICATION_EVENT = 4;
 
 
+     
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

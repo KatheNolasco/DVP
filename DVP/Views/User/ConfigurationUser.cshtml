@@ -1,0 +1,428 @@
+﻿@model DVP.Models.UserViewModel
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Downtime Page";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+
+<style>
+    /* Estilo para el contenedor de la fecha y hora */
+    .container {
+        font-family: Arial, sans-serif;
+        display: flex; /* Usamos flex para alinearlos horizontalmente */
+        justify-content: center; /* Centra los elementos horizontalmente */
+        align-items: center; /* Centra los elementos verticalmente */
+        gap: 20px; /* Espacio entre los divs */
+        margin-top: 20px;
+    }
+    /* Estilo para los divs de fecha y hora */
+    .input-container {
+        font-size: 18px;
+        display: flex;
+        flex-direction: column; /* Los inputs se alinean de arriba hacia abajo */
+        align-items: center;
+    }
+
+    input {
+        padding: 10px;
+        font-size: 16px;
+        margin-top: 10px;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        background-color: #f0f0f0;
+    }
+
+    .scrollable-table {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa; /* color fondo header */
+        z-index: 2;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .table tbody td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 45px;
+        height: 24px;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+            .switch .slider:before {
+                position: absolute;
+                content: "";
+                height: 18px;
+                width: 18px;
+                left: 3px;
+                bottom: 3px;
+                background-color: white;
+                transition: .4s;
+                border-radius: 50%;
+            }
+
+        .switch input:checked + .slider {
+            background-color: #13DEB9; /* Verde menta */
+        }
+
+            .switch input:checked + .slider:before {
+                transform: translateX(21px);
+            }
+
+    .switch-label {
+        font-size: 14px;
+        color: #555;
+        vertical-align: middle;
+    }
+</style>
+
+
+<body>
+    <div class="container-fluid" style="padding-left: 200px;">
+        <br />
+        <br />
+        <br />
+        <div class="card">
+            <div class="container-fluid">
+                <div class="container-fluid">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
+                                Agregado correctamente!
+                            </div>
+                            <!-- Configuracion -->
+                            <h5 class="card-title fw-semibold mb-4">Configuration user</h5>
+                        </div>
+                        <div class="mb-3">
+                            <form id="formElemento">
+                                <label class="form-label">Add</label>
+                                <select class="form-select" id="_elememnto">
+                                    <option value="">Seleccione lo que desea agregar</option>
+                                    <option value="1">Planta</option>
+                                    <option value="2">Unidad Operativa</option>
+                                    <option value="3">País</option>
+                                    <option value="4">Gerencia</option>
+                                    <option value="5">Rol</option>
+                                </select>
+
+                                <div id="camposContainer" class="mt-3"></div>
+
+                                <button type="submit" id="btnGuardar" class="btn btn-primary mt-2">Guardar</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ver elementos por tipo</label>
+                        <select class="form-select" id="selectListado">
+                            <option value="">Seleccione un tipo</option>
+                            <option value="Planta">Planta</option>
+                            <option value="UnidadOperativa">Unidad Operativa</option>
+                            <option value="Pais">País</option>
+                            <option value="Gerencia">Gerencia</option>
+                            <option value="Rol">Rol</option>
+                        </select>
+                    </div>
+
+                    <div id="contenedorListado" class="mt-3"></div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const select = document.getElementById('_elememnto');
+        const contenedor = document.getElementById('camposContainer');
+        const form = document.getElementById('formElemento');
+
+        select.addEventListener('change', function () {
+            const valor = this.value;
+            contenedor.innerHTML = '';
+
+            switch (valor) {
+                case '1':
+                    contenedor.innerHTML = `
+                    <div class="mb-3">
+                        <label class="form-label">Nombre de la planta</label>
+                        <input type="text" class="form-control" id="_descripcion" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Código de planta</label>
+                        <input type="text" class="form-control" id="_codigoSAPProgreso" required />
+                    </div>
+                `;
+                    break;
+                case '2':
+                    contenedor.innerHTML = `
+                    <div class="mb-3">
+                        <label class="form-label">Nombre unidad operativa</label>
+                        <input type="text" class="form-control" id="_descripcion" required />
+                    </div>
+                `;
+                    break;
+                case '3':
+                    contenedor.innerHTML = `
+                    <div class="mb-3">
+                        <label class="form-label">Nombre del país</label>
+                        <input type="text" class="form-control" id="_descripcion" required />
+                    </div>
+                `;
+                    break;
+                case '4':
+                    contenedor.innerHTML = `
+                    <div class="mb-3">
+                        <label class="form-label">Nombre de la gerencia</label>
+                        <input type="text" class="form-control" id="_descripcion" required />
+                    </div>
+                `;
+                    break;
+                case '5':
+                    contenedor.innerHTML = `
+                    <div class="mb-3">
+                        <label class="form-label">Nombre del rol</label>
+                        <input type="text" class="form-control" id="_descripcion" required />
+                    </div>
+                `;
+                    break;
+            }
+        });
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault(); // evitar recarga
+
+            // Validación nativa del navegador
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const _tipo = select.value;
+            let data = {};
+
+            switch (_tipo) {
+                case '1':
+                    data = {
+                        _tipo: 'Planta',
+                        _descripcion: document.getElementById('_descripcion').value,
+                        _codigoSAPProgreso: document.getElementById('_codigoSAPProgreso').value
+                    };
+                    break;
+                case '2':
+                    data = {
+                        _tipo: 'UnidadOperativa',
+                        _descripcion: document.getElementById('_descripcion').value
+                    };
+                    break;
+                case '3':
+                    data = {
+                        _tipo: 'Pais',
+                        _descripcion: document.getElementById('_descripcion').value
+                    };
+                    break;
+                case '4':
+                    data = {
+                        _tipo: 'Gerencia',
+                        _descripcion: document.getElementById('_descripcion').value
+                    };
+                    break;
+                case '5':
+                    data = {
+                        _tipo: 'Rol',
+                        _descripcion: document.getElementById('_descripcion').value
+                    };
+                    break;
+                default:
+                    alert('Seleccione una opción válida');
+                    return;
+            }
+
+            fetch('/User/GuardarElementoConfiguracion', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        alert('Guardado exitosamente');
+                        form.reset(); // limpia todos los campos
+                        contenedor.innerHTML = '';
+                    } else {
+                        alert('Error al guardar: ' + res.message);
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Error en la petición');
+                });
+        });
+    });
+
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectListado = document.getElementById('selectListado');
+        const contenedorListado = document.getElementById('contenedorListado');
+
+        selectListado.addEventListener('change', function () {
+            const _tipo = this.value;
+
+            if (!_tipo) {
+                contenedorListado.innerHTML = '';
+                return;
+            }
+
+            fetch(`/User/GetListadoConfiguracion?_tipo=${_tipo}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success || !data.items || data.items.length === 0) {
+                        contenedorListado.innerHTML = '<div class="alert alert-warning">No hay registros disponibles.</div>';
+                        return;
+                    }
+
+                    let html = `
+                <table class="table table-bordered table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Descripción</th>
+                            <th>Código</th>
+                            <th>Activo</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                `;
+
+                    data.items.forEach((item, index) => {
+                        html += `
+                    <tr data-index="${index}">
+                        <td>${index + 1}</td>
+                        <td class="descripcion">${item._descripcion || item.descripcion || item.nombre}</td>
+                        <td class="codigo">${item._codigoSAPProgreso || '-'}</td>
+                        <td class="activo">${item._active ? 'Sí' : 'No'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary btn-editar">Editar</button>
+                        </td>
+                    </tr>
+                    `;
+                    });
+
+                    html += '</tbody></table>';
+                    contenedorListado.innerHTML = html;
+
+                    // Agregar eventos a botones editar
+                    document.querySelectorAll('.btn-editar').forEach(btn => {
+                        btn.addEventListener('click', function () {
+                            const fila = this.closest('tr');
+                            const descCell = fila.querySelector('.descripcion');
+                            const codCell = fila.querySelector('.codigo');
+                            const activoCell = fila.querySelector('.activo');
+
+                            const descripcion = descCell.textContent.trim();
+                            const codigo = codCell.textContent.trim();
+                            const activo = activoCell.textContent.trim() === 'Sí';
+
+                            // Reemplazar celdas por inputs
+                            descCell.innerHTML = `<input type="text" class="form-control form-control-sm" value="${descripcion}">`;
+                            codCell.innerHTML = `<input type="text" class="form-control form-control-sm" value="${codigo === '-' ? '' : codigo}">`;
+                            activoCell.innerHTML = `
+                            <label class="switch">
+                                <input type="checkbox" id="activoCheckbox" ${activo ? 'checked' : ''}>
+                                <span class="slider"></span>
+                            </label>
+                            <span class="switch-label">Activo</span>
+                        `;
+
+                            // Reemplazar botón por Guardar / Cancelar
+                            this.parentElement.innerHTML = `
+                            <button class="btn btn-sm btn-success btn-guardar">Guardar</button>
+                            <button class="btn btn-sm btn-secondary btn-cancelar">Cancelar</button>
+                        `;
+
+                            // Botón Guardar
+                            fila.querySelector('.btn-guardar').addEventListener('click', function () {
+                                const nuevaDescripcion = descCell.querySelector('input').value.trim();
+                                const nuevoCodigo = codCell.querySelector('input').value.trim();
+                                const nuevoActivo = activoCell.querySelector('input[type="checkbox"]').checked;
+
+                                const datosActualizados = {
+                                    _tipo: selectListado.value,
+                                    _descripcion: nuevaDescripcion,
+                                    _codigoSAPProgreso: nuevoCodigo,
+                                    _active: nuevoActivo
+                                };
+
+                                fetch('/User/ActualizarElementoConfiguracion', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify(datosActualizados)
+                                })
+                                    .then(res => res.json())
+                                    .then(res => {
+                                        if (res.success) {
+                                            alert('Actualizado correctamente');
+                                            selectListado.dispatchEvent(new Event('change'));
+                                        } else {
+                                            alert('Error al actualizar: ' + res.message);
+                                        }
+                                    });
+                            });
+
+                            // Botón Cancelar
+                            fila.querySelector('.btn-cancelar').addEventListener('click', function () {
+                                selectListado.dispatchEvent(new Event('change'));
+                            });
+                        });
+                    });
+                })
+                .catch(err => {
+                    console.error(err);
+                    contenedorListado.innerHTML = '<div class="text-danger">Error al cargar los datos.</div>';
+                });
+        });
+    });
+
+
+
+
+
+
+</script>
+
+

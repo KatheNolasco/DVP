@@ -76,7 +76,7 @@
                                     <i class="bi bi-arrow-right-circle-fill text-danger"></i>
                                 </a>
                             </h5>
-                            <h5 class="card-title fw-semibold mb-4">Equipments - Planta San Pedro</h5>
+                            <h5 class="card-title fw-semibold mb-4">Equipments</h5>
                             <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
                                 Paros cerrados correctamente!
                             </div>
@@ -88,7 +88,7 @@
                             </div>
                             <div class="card">
                                 <div class="card-body p-4">
-                                    @foreach (var equipo in Model.GetEquipos())
+                                    @foreach (var equipo in Model.Equipos)
                                     {
                                         <button type="button"
                                                 value="@equipo.EquipoID"
@@ -105,7 +105,7 @@
                                             <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
                                                 <tr>
                                                     <th class="text-center">Downtime</th>
-                                                    <th class="text-center">Horas de paro</th>
+                                                    <th class="text-center">Downtime hours</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="downtimeTableBodyInactiveList">
@@ -117,11 +117,11 @@
                                         <table class="table table-bordered mb-0" style="background-color: #ffffff;">
                                             <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
                                                 <tr>
-                                                    <th class="text-center">St</th>
-                                                    <th class="text-center">Tipo Evento</th>
-                                                    <th class="text-center">Fecha Evento</th>
-                                                    <th class="text-center">Clasificación</th>
-                                                    <th class="text-center">Acciones</th>
+                                                    <th class="text-center">Status</th>
+                                                    <th class="text-center">Event type</th>
+                                                    <th class="text-center">Event date</th>
+                                                    <th class="text-center">Clasification</th>
+                                                    <th class="text-center">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="downtimeTableBody">
@@ -193,7 +193,7 @@
                                             <input type="hidden" id="paroIdhidden" value="" />
                                             <br />
                                             <select class="form-select" id="_equipoIddaydelay">
-                                                @foreach (var item in Model.GetEquipos())
+                                                @foreach (var item in Model.Equipos)
                                                 {
                                                     <option value="@item.EquipoID">@item.Descripcion</option>
                                                 }
@@ -265,7 +265,7 @@
                                             <input type="hidden" id="paroIdhidden" value="" />
                                             <br />
                                             <select class="form-select" id="_equipoIdreclasification">
-                                                @foreach (var item in Model.GetEquipos())
+                                                @foreach (var item in Model.Equipos)
                                                 {
                                                     <option value="@item.EquipoID">@item.Descripcion</option>
                                                 }
@@ -383,7 +383,7 @@
                                             <input type="hidden" id="paroIdhidden" value="" />
                                             <br />
                                             <select class="form-select" id="_equipoIdedit">
-                                                @foreach (var item in Model.GetEquipos())
+                                                @foreach (var item in Model.Equipos)
                                                 {
                                                     <option value="@item.EquipoID">@item.Descripcion</option>
                                                 }
@@ -467,7 +467,7 @@
                                                     <label class="form-label">Select Equipment</label>
                                                     <select class="form-select" id="_equipoId">
                                                         <option value="">Seleccione un equipo</option>
-                                                        @foreach (var equipo in Model.GetEquipos())
+                                                        @foreach (var equipo in Model.Equipos)
                                                         {
                                                             <option value="@equipo.EquipoID">@equipo.Descripcion</option>
                                                         }

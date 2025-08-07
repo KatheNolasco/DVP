@@ -18,8 +18,8 @@ namespace DataAccess
         public Nullable<int> EquipoID { get; set; }
         public Nullable<int> TipoOperacionID { get; set; }
         public Nullable<int> MaterialID { get; set; }
-        public Nullable<decimal> CantidadObtenida { get; set; }
-        public Nullable<decimal> CantidadReal { get; set; }
+        public Nullable<decimal> CantidadPIMS { get; set; }
+        public Nullable<decimal> CantidadValidada { get; set; }
         public Nullable<int> UnidadMedidaID { get; set; }
         public Nullable<int> TipoMovimientoSAPID { get; set; }
         public Nullable<System.DateTime> FechaReporte { get; set; }

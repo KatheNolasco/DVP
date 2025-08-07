@@ -18,6 +18,7 @@ namespace DataAccess
         public Material()
         {
             this.BillOfMaterial = new HashSet<BillOfMaterial>();
+            this.BillOfMaterial1 = new HashSet<BillOfMaterial>();
             this.DataOperacion = new HashSet<DataOperacion>();
             this.DataOperacion1 = new HashSet<DataOperacion>();
         }
@@ -31,9 +32,12 @@ namespace DataAccess
         public Nullable<bool> Alterno { get; set; }
         public Nullable<bool> AfectaInventario { get; set; }
         public string IDStock { get; set; }
+        public Nullable<bool> Activo { get; set; }
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<BillOfMaterial> BillOfMaterial { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<BillOfMaterial> BillOfMaterial1 { get; set; }
         public virtual ClasificacionMaterial ClasificacionMaterial { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<DataOperacion> DataOperacion { get; set; }

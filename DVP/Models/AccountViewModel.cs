@@ -7,7 +7,7 @@ namespace DVP.Models
 {
     public class AccountViewModel
     {
-        public int _usuarioID { get; set; }
+        public int _usuarioId { get; set; }
         public string _descripcion { get; set; }
         public string _email { get; set; }
         public string _nombre { get; set; }
@@ -18,10 +18,13 @@ namespace DVP.Models
         public string _token { get; set; }
         public DateTime? _ultimoLogin { get; set; }
         public string _numeroEmpleado { get; set; }
-        public int? _plantaID { get; set; }
-        public int? _unidadOperativaID { get; set; }
-        public int? _paisID { get; set; }
-        public int? _gerenciaID { get; set; }
+        public int? _plantaId { get; set; }
+        public int? _unidadOperativaId { get; set; }
+        public int? _paisId { get; set; }
+        public int? _gerenciaId { get; set; }
         public bool _active { get; set; }
+        public string _userIdProgreso { get; set; }
+
+        public int? _rolId { get; set; }
     }
 }

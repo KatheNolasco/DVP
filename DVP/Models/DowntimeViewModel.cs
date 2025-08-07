@@ -23,7 +23,7 @@ namespace DVP.Models
         public int _procesoDescripcion{ get; set; }
         public string _comment { get; set; }
 
-        public int _plamtaId { get; set; }
+        public int _plantaId { get; set; }
         public int _unidadOperativaId { get; set; }
         public string _unidadOperativadescrpipcion { get; set; }
         public int _paisId { get; set; }
@@ -89,11 +89,16 @@ namespace DVP.Models
 
 
 
-        public IEnumerable<Equipo> GetEquipos()
+        public IEnumerable<Equipo> GetEquiposPorPais(int paisId, int plantaId)
         {
-            IEnumerable<Equipo> listaEquipos = _dvpEntities.Equipo.ToList();
+            IEnumerable<Equipo> listaEquipos = _dvpEntities.Equipo
+                .Where(e => e.PaisID == paisId && e.PlantaID == plantaId)
+                .ToList();
+
             return listaEquipos;
         }
+
+
 
         public IEnumerable<TipoEvento> GetTipoEvento()
         {

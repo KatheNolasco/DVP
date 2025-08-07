@@ -17,10 +17,10 @@ namespace DataAccess
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         public Equipo()
         {
+            this.BillOfMaterial = new HashSet<BillOfMaterial>();
             this.DataOperacion = new HashSet<DataOperacion>();
-            this.SubEquipo = new HashSet<SubEquipo>();
-            this.TagEquipo = new HashSet<TagEquipo>();
             this.Paros = new HashSet<Paros>();
+            this.SubEquipo = new HashSet<SubEquipo>();
         }
     
         public int EquipoID { get; set; }
@@ -33,18 +33,20 @@ namespace DataAccess
         public Nullable<int> PaisID { get; set; }
         public Nullable<bool> BuscarParo { get; set; }
         public Nullable<bool> Active { get; set; }
+        public Nullable<bool> EnviarASAP { get; set; }
+        public Nullable<System.DateTime> FechaCreación { get; set; }
     
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<BillOfMaterial> BillOfMaterial { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<DataOperacion> DataOperacion { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<SubEquipo> SubEquipo { get; set; }
+        public virtual ICollection<Paros> Paros { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<TagEquipo> TagEquipo { get; set; }
+        public virtual ICollection<SubEquipo> SubEquipo { get; set; }
         public virtual Pais Pais { get; set; }
-        public virtual Planta Planta { get; set; }
         public virtual Proceso Proceso { get; set; }
         public virtual UnidadOperativa UnidadOperativa { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<Paros> Paros { get; set; }
+        public virtual Planta Planta { get; set; }
     }
 }

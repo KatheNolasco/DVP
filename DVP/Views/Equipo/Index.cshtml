@@ -1,0 +1,678 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Index</h2>
+
+@model DVP.Models.EnergyViewModel
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Downtime Page";
+
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+
+<style>
+    /* Estilo para el contenedor de la fecha y hora */
+    .container {
+        font-family: Arial, sans-serif;
+        display: flex; /* Usamos flex para alinearlos horizontalmente */
+        justify-content: center; /* Centra los elementos horizontalmente */
+        align-items: center; /* Centra los elementos verticalmente */
+        gap: 20px; /* Espacio entre los divs */
+        margin-top: 20px;
+    }
+    /* Estilo para los divs de fecha y hora */
+    .input-container {
+        font-size: 18px;
+        display: flex;
+        flex-direction: column; /* Los inputs se alinean de arriba hacia abajo */
+        align-items: center;
+    }
+
+    input {
+        padding: 10px;
+        font-size: 16px;
+        margin-top: 10px;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        background-color: #f0f0f0;
+    }
+
+    .scrollable-table {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa; /* color fondo header */
+        z-index: 2;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .table tbody td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .form-check-input:checked {
+        background-color: #13DEB9 !important; /* bg-success */
+        border-color: #13DEB9 !important;
+    }
+
+    /* Opcional: cambiar el texto también */
+    .form-check-label {
+        font-weight: 500;
+    }
+</style>
+
+<body>
+    <div class="container-fluid" style="padding-left: 200px;">
+        <br />
+        <br />
+        <br />
+        <div class="card">
+            <div class="container-fluid">
+                <div class="container-fluid">
+                    <div class="card">
+                        <div class="card-body">
+                            <!-- Fecha de validación -->
+                            <h5 class="card-title fw-semibold mb-4 text-end">
+                            </h5>
+                            <div id="alertsuccesnewequipment" class="alert alert-success" role="alert" style="display: none;">
+                                Equipo agregado correctamente!
+                            </div>
+                            <!-- Equipos -->
+                            <h5 class="card-title fw-semibold mb-4">Equipments Configuration</h5>
+                        </div>
+                        <!-- Sección de Listas -->
+                        <div class="card w-100">
+                            <div class="card-body p-4">
+                                <div class="text-end mb-3">
+                                    <div class="d-flex justify-content-end align-items-center gap-2 mb-3">
+                                        <i class="bi bi-binoculars-fill text-success"></i>
+                                        <input type="text" class="form-control form-control-sm w-25" id="_buscar" placeholder="Buscar...">
+                                        <button type="button" onclick="newEquipment()" class="btn btn-outline-dark btn-sm">
+                                            Add new
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <!-- Tabla más ancha (downtimes activos) -->
+                                    <div class="table-responsive w-100" style="max-height: 400px; overflow-y: auto; background-color: #ffffff; padding: 10px; border-radius: 10px;">
+                                        <table class="table table-bordered mb-0" style="background-color: #ffffff;">
+                                            <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
+                                                <tr>
+                                                    <th class="text-center">Status</th>
+                                                    <th class="text-center">Plant</th>
+                                                    <th class="text-center">Equipment</th>
+                                                    <th class="text-center">Old SAP code</th>
+                                                    <th class="text-center">New detail code </th>
+                                                    <th class="text-center">Send to SAP</th>
+                                                    <th class="text-center">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="downtimeTableBody">
+                                                <tr>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        @*___________________________________________________________________Modal Cargando__________________________________________________*@
+        <div id="loadingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: rgba(0, 0, 0, 0.5);">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 25px 35px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.3); min-width: 250px;">
+                <div style="display: flex; align-items: center; justify-content: center;">
+                    <img src="/Content/loading-green-loading.gif" alt="Cargando..." style="width: 40px; height: 40px; margin-right: 15px;" />
+                    <span style="color: black; font-size: 16px;">Cargando...</span>
+                </div>
+            </div>
+        </div>
+
+
+        @*______________________________________________________________________Modal crear equipo _________________________________________________________________________*@
+
+        <div class="modal fade" id="newEquipment" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="card-body">
+                            <div class="card">
+                                <form>
+                                    <div class="card-body">
+                                        <h4 class="card-title fw-semibold mb-2">Add New Equipment</h4>
+                                        <br />
+                                    </div>
+                                    <div class="row">
+                                        <!-- Columna izquierda -->
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Descripción</label>
+                                                <input type="text" class="form-control" id="_descripcion" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Código Detalle</label>
+                                                <input type="text" class="form-control" id="_condigoDetalle" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Código SAP</label>
+                                                <input type="text" class="form-control" id="_codigoSAP" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Proceso</label>
+                                                <select class="form-select" id="_procesoId">
+                                                    <option value="">Seleccione un proceso</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <!-- Columna derecha -->
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Planta</label>
+                                                <select class="form-select" id="_plantaId">
+                                                    <option value="">Seleccione una planta</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Unidad Operativa</label>
+                                                <select class="form-select" id="_unidadOperativaId">
+                                                    <option value="">Seleccione una Unidad Operativa</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">País</label>
+                                                <select class="form-select" id="_paisId">
+                                                    <option value="">Seleccione un país</option>
+                                                </select>
+                                            </div>
+                                            <!-- Switches -->
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="_buscarParo">
+                                                <label class="form-check-label" for="_buscarParo">Buscar Paro</label>
+                                            </div>
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="_active">
+                                                <label class="form-check-label" for="_active">Activo</label>
+                                            </div>
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="_enviarASAP">
+                                                <label class="form-check-label" for="_enviarASAP">Enviar a SAP</label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Botón y alerta -->
+                                    <div class="text-end mt-3">
+                                        <button type="button" id="crearequipo" class="btn btn-outline-success m-1"
+                                                data-url="@Url.Action("CreateEquipment", "Equipo")">
+                                            Crear <span class="text-success ms-2">&#10004;</span>
+                                        </button>
+                                    </div>
+
+                                    <div id="alertSuccess" class="alert alert-success mt-3" role="alert" style="display: none;">
+                                        ¡Equipo creado exitosamente!
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @*_____________________________________________________________________________ Modal para Editar equipo ___________________________________________________________________*@
+
+
+        <div class="modal fade" id="editEquipment" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="card-body">
+                            <div class="card">
+                                <div class="card-body">
+                                    <form>
+                                        <div class="card-body">
+                                            <h4 class="card-title fw-semibold mb-2">Edit New Equipment</h4>
+                                            <br />
+                                            <input type="hidden" id="equipoIdhidden" value=""/>
+                                        </div>
+                                        <div class="row">
+                                            <!-- Columna izquierda -->
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Descripción</label>
+                                                    <input type="text" class="form-control" id="_descripcioneditar" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Código Detalle</label>
+                                                    <input type="text" class="form-control" id="_condigoDetalleeditar" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Código SAP</label>
+                                                    <input type="text" class="form-control" id="_codigoSAPeditar" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Proceso</label>
+                                                    <select class="form-select" id="_procesoIdeditar">
+                                                        <option value="">Seleccione un proceso</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <!-- Columna derecha -->
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Planta</label>
+                                                    <select class="form-select" id="_plantaIdeditar">
+                                                        <option value="">Seleccione una planta</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Unidad Operativa</label>
+                                                    <select class="form-select" id="_unidadOperativaIdeditar">
+                                                        <option value="">Seleccione una Unidad Operativa</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">País</label>
+                                                    <select class="form-select" id="_paisIdeditar">
+                                                        <option value="">Seleccione un país</option>
+                                                    </select>
+                                                </div>
+                                                <!-- Switches -->
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="_buscarParoeditar">
+                                                    <label class="form-check-label" for="_buscarParoeditar">Buscar Paro</label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="_activeeditar">
+                                                    <label class="form-check-label" for="_activeeditar">Activo</label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="_enviarASAPeditar">
+                                                    <label class="form-check-label" for="_enviarASAPeditar">Enviar a SAP</label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Botón y alerta -->
+                                        <div class="text-end mt-3">
+                                            <button type="button" id="editarequipo"
+                                                    class="btn btn-outline-success m-1"
+                                                    data-url="@Url.Action("EditEquipment", "Equipo")"
+                                                    onclick="submitEditEquipmentForm()">
+                                                Editar <span class="text-success ms-2">&#10004;</span>
+                                            </button>
+                                        </div>
+                                    </form>
+                                    <div id="alertEditeSuccesseditar" class="alert alert-success" role="alert" style="display: none;">
+                                        ¡Editado!
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+
+
+@section scripts{
+    <script src="~/Content/Modernize-1.0.0/src/assets/libs/jquery/dist/jquery.min.js"></script>
+    <script src="~/Content/Modernize-1.0.0/src/assets/js/sidebarmenu.js"></script>
+    <script src="~/Content/Modernize-1.0.0/src/assets/js/app.min.js"></script>
+    <script src="~/Content/Modernize-1.0.0/src/assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/Content/Modernize-1.0.0/src/assets/libs/simplebar/dist/simplebar.js"></script>
+}
+
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+        loadEquipmentTable();
+    });
+
+    function cargando() {
+        document.getElementById("loadingModal").style.display = "block";
+    }
+
+    //___________________________________________________________________ Crear Equipo __________________________________________________________________//
+
+    function newEquipment() {
+    // Mostrar el modal
+    const modalElement = document.getElementById("newEquipment");
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+
+    // Cargar los combos al abrir
+    cargarCombosEquipo();
+    }
+
+    function cargarCombosEquipo() {
+    // Limpiar selects
+    limpiarSelect("_procesoId");
+    limpiarSelect("_plantaId");
+    limpiarSelect("_unidadOperativaId");
+    limpiarSelect("_paisId");
+
+    // Llamadas AJAX a cada endpoint
+    fetch('@Url.Action("GetProceso", "Equipo")')
+        .then(response => response.json())
+        .then(data => llenarSelect("_procesoId", data, "ProcesoID", "Descripcion"));
+
+    fetch('@Url.Action("GetPlanta", "Equipo")')
+        .then(response => response.json())
+        .then(data => llenarSelect("_plantaId", data, "PlantaID", "Descripcion"));
+
+    fetch('@Url.Action("GetUnidadOperativa", "Equipo")')
+        .then(response => response.json())
+        .then(data => llenarSelect("_unidadOperativaId", data, "UnidadOperativaID", "Descripcion"));
+
+    fetch('@Url.Action("GetPais", "Equipo")')
+        .then(response => response.json())
+        .then(data => llenarSelect("_paisId", data, "PaisID", "Descripcion"));
+}
+
+    function llenarSelect(selectId, data, valueField, textField) {
+    const select = document.getElementById(selectId);
+    data.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item[valueField];
+        option.text = item[textField];
+        select.appendChild(option);
+    });
+}
+
+    function limpiarSelect(selectId) {
+    const select = document.getElementById(selectId);
+    select.innerHTML = '<option value="">Seleccione una opción</option>';
+}
+
+
+
+    document.getElementById("crearequipo").addEventListener("click", crearEquipoNuevo);
+
+    function crearEquipoNuevo() {
+        // Obtener valores del formulario
+        const descripcion = document.getElementById("_descripcion").value.trim();
+        const condigoDetalle = document.getElementById("_condigoDetalle").value.trim();
+        const condigoSAP = document.getElementById("_codigoSAP").value.trim();
+        const procesoId = document.getElementById("_procesoId").value;
+        const plantaId = document.getElementById("_plantaId").value;
+        const unidadOperativaId = document.getElementById("_unidadOperativaId").value;
+        const paisId = document.getElementById("_paisId").value;
+        const buscarParo = document.getElementById("_buscarParo").checked;
+        const active = document.getElementById("_active").checked;
+        const enviarASAP = document.getElementById("_enviarASAP").checked;
+
+        const url = document.getElementById("crearequipo").getAttribute("data-url");
+
+        // Construir el objeto que será enviado al controlador
+        const data = {
+            _descripcion: descripcion,
+            _condigoDetalle: condigoDetalle,
+            _condigoSAP: condigoSAP,
+            _procesoId: parseInt(procesoId),
+            _plantaId: parseInt(plantaId),
+            _unidadOperativaId: parseInt(unidadOperativaId),
+            _paisId: parseInt(paisId),
+            _buscarParo: buscarParo,
+            _active: active,
+            _enviarASAP: enviarASAP
+        };
+
+        // Enviar al backend vía fetch
+        fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    // Mostrar alerta
+                    document.getElementById("alertSuccess").style.display = "block";
+
+                    // Ocultar modal y limpiar formulario después de unos segundos
+                    setTimeout(() => {
+                        document.getElementById("alertSuccess").style.display = "none";
+                        var modal = bootstrap.Modal.getInstance(document.getElementById("newEquipment"));
+                        modal.hide();
+                        document.querySelector("#newEquipment form").reset();
+
+                        // Puedes recargar la tabla de equipos si es necesario
+                        loadEquipmentTable();
+                    }, 1500);
+                } else {
+                    alert(result.message || "Ocurrió un error al crear el equipo.");
+                }
+            })
+            .catch(error => {
+                console.error("Error al enviar el formulario:", error);
+                alert("Ocurrió un error al enviar los datos.");
+            });
+    }
+
+    //____________________________________________________________________ Mostrar Equipos en el datatable_______________________________________________//
+
+
+
+    function loadEquipmentTable() {
+    const tbody = document.getElementById('downtimeTableBody');
+    tbody.innerHTML = ''; // Limpiar contenido anterior
+
+    cargando(); // Mostrar modal de carga
+
+    fetch('@Url.Action("GetEquipos", "Equipo")')
+        .then(response => {
+            if (!response.ok) throw new Error("Error al obtener los datos.");
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success || !Array.isArray(data.data)) {
+                alert("La respuesta del servidor no es válida.");
+                return;
+            }
+
+            // Filtrar solo los que tienen _active === true
+            const equiposActivos = data.data.filter(item => item._active === true);
+
+            equiposActivos.forEach(item => {
+                const row = document.createElement('tr');
+
+                row.innerHTML = `
+                    <td class="text-center">
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                    </td>
+                    <td class="text-center">${item._plantaDescripcion || ''}</td>
+                    <td class="text-center">${item._descripcion || ''}</td>
+                    <td class="text-center">${item._condigoSAP || ''}</td>
+                    <td class="text-center">${item._condigoDetalle || ''}</td>
+                    <td class="text-center">
+                        ${item._enviarASAP ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}
+                    </td>
+                    <td class="text-center bg-white">
+                        <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditarEquipo(${item._equipoId})"><i class="bi bi-pencil me-2"></i></a>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error("Error cargando la tabla de equipos:", error);
+            alert("Ocurrió un error al cargar los equipos.");
+        })
+        .finally(() => {
+            // Ocultar modal de carga al final
+            document.getElementById("loadingModal").style.display = "none";
+        });
+}
+
+
+
+
+    //____________________________________________________________________ Editar Equipo_________________________________________________________________//
+
+
+    function abrirModalEditarEquipo(equipoId) {
+    Promise.all([
+        fetch('@Url.Action("GetProceso", "Equipo")').then(res => res.json()),
+        fetch('@Url.Action("GetPlanta", "Equipo")').then(res => res.json()),
+        fetch('@Url.Action("GetUnidadOperativa", "Equipo")').then(res => res.json()),
+        fetch('@Url.Action("GetPais", "Equipo")').then(res => res.json())
+    ])
+    .then(([procesos, plantas, unidades, paises]) => {
+        llenarSelect('_procesoIdeditar', procesos, 'ProcesoID', 'Descripcion');
+        llenarSelect('_plantaIdeditar', plantas, 'PlantaID', 'Descripcion');
+        llenarSelect('_unidadOperativaIdeditar', unidades, 'UnidadOperativaID', 'Descripcion');
+        llenarSelect('_paisIdeditar', paises, 'PaisID', 'Descripcion');
+
+        return fetch('@Url.Action("GetEquipoId", "Equipo")' + '?equipoId=' + equipoId);
+    })
+    .then(res => res.json())
+    .then(result => {
+        if (result.success) {
+            const data = result.data;
+
+            document.getElementById("equipoIdhidden").value = data._equipoId;
+            document.getElementById("_descripcioneditar").value = data._descripcion;
+            document.getElementById("_condigoDetalleeditar").value = data._condigoDetalle;
+            document.getElementById("_codigoSAPeditar").value = data._condigoSAP;
+            document.getElementById("_buscarParoeditar").checked = data._buscarParo;
+            document.getElementById("_activeeditar").checked = data._active;
+            document.getElementById("_enviarASAPeditar").checked = data._enviarASAP;
+
+            // Asignar valores a los selects
+            setTimeout(() => {
+                document.getElementById("_procesoIdeditar").value = data._procesoID?.toString();
+                document.getElementById("_plantaIdeditar").value = data._plantaID?.toString();
+                document.getElementById("_unidadOperativaIdeditar").value = data._unidadOperativaID?.toString();
+                document.getElementById("_paisIdeditar").value = data._paisID?.toString();
+            }, 100);
+
+            const modalElement = document.getElementById("editEquipment");
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } else {
+            alert("Error al obtener datos del equipo: " + result.message);
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("Error al cargar el formulario de edición.");
+    });
+}
+
+
+
+
+    function llenarSelect(selectId, items, valueProp, textProp) {
+        const select = document.getElementById(selectId);
+        select.innerHTML = '<option value="">Seleccione una opción</option>';
+
+        items.forEach(item => {
+            const option = document.createElement("option");
+            option.value = item[valueProp];
+            option.textContent = item[textProp];
+            select.appendChild(option);
+        });
+    }
+
+
+    function submitEditEquipmentForm() {
+    cargando();
+
+    const data = {
+        _equipoId: document.getElementById("equipoIdhidden").value,
+        _descripcion: document.getElementById("_descripcioneditar").value,
+        _condigoDetalle: document.getElementById("_condigoDetalleeditar").value,
+        _condigoSAP: document.getElementById("_codigoSAPeditar").value,
+        _procesoId: document.getElementById("_procesoIdeditar").value,
+        _plantaId: document.getElementById("_plantaIdeditar").value,
+        _unidadOperativaId: document.getElementById("_unidadOperativaIdeditar").value,
+        _paisId: document.getElementById("_paisIdeditar").value,
+        _buscarParo: document.getElementById("_buscarParoeditar").checked,
+        _active: document.getElementById("_activeeditar").checked,
+        _enviarASAP: document.getElementById("_enviarASAPeditar").checked
+    };
+
+    fetch('@Url.Action("EditEquipment", "Equipo")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(response => {
+        if (response.success) {
+            // Mostrar mensaje de éxito
+            document.getElementById("alertEditeSuccesseditar").style.display = "block";
+
+            // Ocultar el modal y mensaje después de un tiempo
+            setTimeout(() => {
+                document.getElementById("alertEditeSuccesseditar").style.display = "none";
+                const modal = bootstrap.Modal.getInstance(document.getElementById("editEquipment"));
+                modal.hide();
+
+                // Opcional: recargar para ver cambios reflejados
+                location.reload();
+            }, 2000);
+        } else {
+            alert("Error: " + response.message);
+        }
+    })
+    .catch(error => {
+        console.error("Error al enviar datos:", error);
+        alert("Ocurrió un error al enviar los datos.");
+    });
+    }
+
+
+
+    //____________________________________________________________________ Buscar ________________________________________________________________________//
+
+
+    document.getElementById("_buscar").addEventListener("keyup", function () {
+        const filtro = this.value.toLowerCase();
+        const filas = document.querySelectorAll("#downtimeTableBody tr");
+
+        filas.forEach(fila => {
+            const textoFila = fila.textContent.toLowerCase();
+            fila.style.display = textoFila.includes(filtro) ? "" : "none";
+        });
+    });
+
+
+</script>
+

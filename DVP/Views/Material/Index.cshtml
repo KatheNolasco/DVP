@@ -1,0 +1,631 @@
+﻿
+
+@model DVP.Models.MaterialViewModel
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Downtime Page";
+
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+
+<style>
+    /* Estilo para el contenedor de la fecha y hora */
+    .container {
+        font-family: Arial, sans-serif;
+        display: flex; /* Usamos flex para alinearlos horizontalmente */
+        justify-content: center; /* Centra los elementos horizontalmente */
+        align-items: center; /* Centra los elementos verticalmente */
+        gap: 20px; /* Espacio entre los divs */
+        margin-top: 20px;
+    }
+    /* Estilo para los divs de fecha y hora */
+    .input-container {
+        font-size: 18px;
+        display: flex;
+        flex-direction: column; /* Los inputs se alinean de arriba hacia abajo */
+        align-items: center;
+    }
+
+    input {
+        padding: 10px;
+        font-size: 16px;
+        margin-top: 10px;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        background-color: #f0f0f0;
+    }
+
+    .scrollable-table {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa; /* color fondo header */
+        z-index: 2;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .table tbody td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .form-check-input:checked {
+        background-color: #13DEB9 !important; /* bg-success */
+        border-color: #13DEB9 !important;
+    }
+
+    /* Opcional: cambiar el texto también */
+    .form-check-label {
+        font-weight: 500;
+    }
+</style>
+
+<body>
+    <div class="container-fluid" style="padding-left: 200px;">
+        <br />
+        <br />
+        <br />
+        <div class="card">
+            <div class="container-fluid">
+                <div class="container-fluid">
+                    <div class="card">
+                        <div class="card-body">
+                            <!-- Fecha de validación -->
+                            <h5 class="card-title fw-semibold mb-4 text-end">
+                            </h5>
+                            <div id="alertsuccesnewmaterial" class="alert alert-success" role="alert" style="display: none;">
+                                Material agregado correctamente!
+                            </div>
+                            <!-- Equipos -->
+                            <h5 class="card-title fw-semibold mb-4">Material Configuration</h5>
+                        </div>
+                        <!-- Sección de Listas -->
+                        <div class="card w-100">
+                            <div class="card-body p-4">
+                                <div class="text-end mb-3">
+                                    <div class="d-flex justify-content-end align-items-center gap-2 mb-3">
+                                        <i class="bi bi-binoculars-fill text-success"></i>
+                                        <input type="text" class="form-control form-control-sm w-25" id="_buscar" placeholder="Buscar...">
+                                        <button type="button" onclick="newMaterial()" class="btn btn-outline-dark btn-sm">
+                                            Add new
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-3">
+                                    <!-- Tabla más ancha (downtimes activos) -->
+                                    <div class="table-responsive w-100" style="max-height: 400px; overflow-y: auto; background-color: #ffffff; padding: 10px; border-radius: 10px;">
+                                        <table class="table table-bordered mb-0" style="background-color: #ffffff;">
+                                            <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
+                                                <tr>
+                                                    <th class="text-center">Status</th>
+                                                    <th class="text-center">Description</th>
+                                                    <th class="text-center">New SAP code</th>
+                                                    <th class="text-center">Old SAP code</th>
+                                                    <th class="text-center">Produced</th>
+                                                    <th class="text-center">Material Classification</th>
+                                                    <th class="text-center">Alternate</th>
+                                                    <th class="text-center">Affects Inventory</th>
+                                                    <th class="text-center">ID Stock</th>
+                                                    <th class="text-center">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="downtimeTableBody">
+                                                <tr>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        @*___________________________________________________________________Modal Cargando__________________________________________________*@
+        <div id="loadingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: rgba(0, 0, 0, 0.5);">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 25px 35px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.3); min-width: 250px;">
+                <div style="display: flex; align-items: center; justify-content: center;">
+                    <img src="/Content/loading-green-loading.gif" alt="Cargando..." style="width: 40px; height: 40px; margin-right: 15px;" />
+                    <span style="color: black; font-size: 16px;">Cargando...</span>
+                </div>
+            </div>
+        </div>
+
+
+
+
+        @*______________________________________________________________________Modal crear equipo _________________________________________________________________________*@
+
+        <div class="modal fade" id="newMaterial" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="card-body">
+                            <div class="card">
+                                <form>
+                                    <div class="card-body">
+                                        <h4 class="card-title fw-semibold mb-2">Add New Material</h4>
+                                        <br />
+                                    </div>
+                                    <div class="row">
+                                        <!-- Columna izquierda -->
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Descripción</label>
+                                                <input type="text" class="form-control" id="_descripcion" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Código SAP Nuveo</label>
+                                                <input type="text" class="form-control" id="_codSAPNuevo" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Código SAP Antiguo</label>
+                                                <input type="text" class="form-control" id="_codOldSAP" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">ID STOCK</label>
+                                                <input type="text" class="form-control" id="_idStock" required>
+                                            </div>
+                                        </div>
+
+                                        <!-- Columna derecha -->
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Clasificación Material</label>
+                                                <select class="form-select" id="_clasificacionMaterialID">
+                                                    <option value="">Seleccione una clasificación</option>
+                                                </select>
+                                            </div>
+                                            <!-- Switches -->
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="_producido">
+                                                <label class="form-check-label" for="_producido">Producido</label>
+                                            </div>
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="_alterno">
+                                                <label class="form-check-label" for="_alterno">Alterno</label>
+                                            </div>
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="_afectaInventario">
+                                                <label class="form-check-label" for="_afectaInventario">Afecta Inventario</label>
+                                            </div>
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="_activo">
+                                                <label class="form-check-label" for="_activo">Activo</label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Botón y alerta -->
+                                    <div class="text-end mt-3">
+                                        <button type="button" id="crear" class="btn btn-outline-success m-1"
+                                                data-url="@Url.Action("Create", "Material")">
+                                            Crear <span class="text-success ms-2">&#10004;</span>
+                                        </button>
+                                    </div>
+
+                                    <div id="alertSuccess" class="alert alert-success mt-3" role="alert" style="display: none;">
+                                        ¡Creado exitosamente!
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @*_____________________________________________________________________________ Modal para Editar equipo ___________________________________________________________________*@
+        <div class="modal fade" id="editar" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="card-body">
+                            <div class="card">
+                                <div class="card-body">
+                                    <form>
+                                        <div class="card-body">
+                                            <h4 class="card-title fw-semibold mb-2">Edit New Equipment</h4>
+                                            <br />
+                                            <input type="hidden" id="materialidhidden" value="" />
+                                        </div>
+                                        <div class="row">
+                                            <!-- Columna izquierda -->
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Descripción</label>
+                                                    <input type="text" class="form-control" id="_descripcioneditar" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Código SAP Nuevo</label>
+                                                    <input type="text" class="form-control" id="_codSAPNuevoeditar" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Código SAP Viejo</label>
+                                                    <input type="text" class="form-control" id="_codOldSAPeditar" required>
+                                                </div>
+                                            </div>
+
+                                            <!-- Columna derecha -->
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Clasificación Material</label>
+                                                    <select class="form-select" id="_clasificacionMaterialIdeditar">
+                                                        <option value="">Seleccione una clasificación</option>
+                                                    </select>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="_activoedit">
+                                                    <label class="form-check-label" for="_activoedit">Activo</label>
+                                                </div>
+
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="_alternoeditar">
+                                                    <label class="form-check-label" for="_alternoeditar">Alterno</label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="_afectaInventarioeditar">
+                                                    <label class="form-check-label" for="_afectaInventarioeditar">Afecta Inventario</label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="_producidoeditar">
+                                                    <label class="form-check-label" for="_producidoeditar">Producido</label>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">ID Stock</label>
+                                                    <input type="text" class="form-control" id="_idStockeditar" required>
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+                                        <!-- Botón y alerta -->
+                                        <div class="text-end mt-3">
+                                            <button type="button" id="editar"
+                                                    class="btn btn-outline-success m-1"
+                                                    data-url="@Url.Action("Edit", "Material")"
+                                                    onclick="submitEditForm()">
+                                                Editar <span class="text-success ms-2">&#10004;</span>
+                                            </button>
+                                        </div>
+                                    </form>
+                                    <div id="alertEditSuccess" class="alert alert-success" role="alert" style="display: none;">
+                                        ¡Editado!
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+
+
+@section scripts{
+    <script src="~/Content/Modernize-1.0.0/src/assets/libs/jquery/dist/jquery.min.js"></script>
+    <script src="~/Content/Modernize-1.0.0/src/assets/js/sidebarmenu.js"></script>
+    <script src="~/Content/Modernize-1.0.0/src/assets/js/app.min.js"></script>
+    <script src="~/Content/Modernize-1.0.0/src/assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/Content/Modernize-1.0.0/src/assets/libs/simplebar/dist/simplebar.js"></script>
+}
+
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+        loadTable();
+    });
+
+    function cargando() {
+        document.getElementById("loadingModal").style.display = "block";
+    }
+
+    //___________________________________________________________________ Crear Material __________________________________________________________________//
+
+    function newMaterial() {
+    // Mostrar el modal
+    const modalElement = document.getElementById("newMaterial");
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+
+    // Cargar los combos al abrir
+    cargarCombos();
+}
+
+    function cargarCombos() {
+    // Limpiar selects
+    limpiarSelect("_clasificacionMaterialID");
+
+    // Llamadas AJAX a cada endpoint
+    fetch('@Url.Action("GetClasificacionMaterial", "Material")')
+        .then(response => response.json())
+        .then(data => llenarSelect("_clasificacionMaterialID", data, "ClasificacionMaterialID", "Descripcion"));
+}
+
+    function llenarSelect(selectId, data, valueField, textField) {
+    const select = document.getElementById(selectId);
+    data.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item[valueField];
+        option.text = item[textField];
+        select.appendChild(option);
+    });
+}
+
+    function limpiarSelect(selectId) {
+    const select = document.getElementById(selectId);
+    select.innerHTML = '<option value="">Seleccione una opción</option>';
+}
+
+
+
+    document.getElementById("crear").addEventListener("click", crearNuevo);
+
+    function crearNuevo() {
+        // Obtener valores del formulario
+        const descripcion = document.getElementById("_descripcion").value.trim();
+        const codSAPNuevo = document.getElementById("_codSAPNuevo").value.trim();
+        const codOldSAP = document.getElementById("_codOldSAP").value.trim();
+        const idStock = document.getElementById("_idStock").value.trim();
+        const clasificacionMaterialID = document.getElementById("_clasificacionMaterialID").value;
+        const producido = document.getElementById("_producido").checked;
+        const alterno = document.getElementById("_alterno").checked;
+        const afectaInventario = document.getElementById("_afectaInventario").checked;
+        const activo = document.getElementById("_activo").checked;
+
+        const url = document.getElementById("crear").getAttribute("data-url");
+
+        // Construir el objeto que será enviado al controlador
+        const data = {
+            _descripcion: descripcion,
+            _codSAPNuevo: codSAPNuevo,
+            _codOldSAP: codOldSAP,
+            _idStock: idStock,
+            _clasificacionMaterialID: parseInt(clasificacionMaterialID),
+            _producido: producido,
+            _alterno: alterno,
+            _afectaInventario: afectaInventario,
+            _activo: activo
+        };
+
+        // Enviar al backend vía fetch
+        fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    // Mostrar alerta
+                    document.getElementById("alertSuccess").style.display = "block";
+
+                    // Ocultar modal y limpiar formulario después de unos segundos
+                    setTimeout(() => {
+                        document.getElementById("alertSuccess").style.display = "none";
+                        var modal = bootstrap.Modal.getInstance(document.getElementById("newMaterial"));
+                        modal.hide();
+                        document.querySelector("#newMaterial form").reset();
+
+                        //recargar la tabla
+                        loadTable();
+                    }, 1500);
+                } else {
+                    alert(result.message || "Ocurrió un error al crear el material.");
+                }
+            })
+            .catch(error => {
+                console.error("Error al enviar el formulario:", error);
+                alert("Ocurrió un error al enviar los datos.");
+            });
+    }
+
+    //____________________________________________________________________ Mostrar datatable_______________________________________________//
+
+
+
+    function loadTable() {
+    const tbody = document.getElementById('downtimeTableBody');
+    tbody.innerHTML = ''; // Limpiar contenido anterior
+
+    cargando(); // Mostrar modal de carga
+
+    fetch('@Url.Action("GetMateriales", "Material")')
+        .then(response => {
+            if (!response.ok) throw new Error("Error al obtener los datos.");
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success || !Array.isArray(data.data)) {
+                alert("La respuesta del servidor no es válida.");
+                return;
+            }
+
+            // Filtrar solo los activos
+            const materialesActivos = data.data.filter(item => item._activo === true);
+
+            materialesActivos.forEach(item => {
+                const row = document.createElement('tr');
+
+                row.innerHTML = `
+                    <td class="text-center">
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                    </td>
+                    <td class="text-center">${item._descripcion || ''}</td>
+                    <td class="text-center">${item._codSAPNuevo || ''}</td>
+                    <td class="text-center">${item._codOldSAP || ''}</td>
+                    <td class="text-center">
+                        ${item._producido ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}
+                    </td>
+                    <td class="text-center">${item._clasificacionMaterialdescripcion || ''}</td>
+                    <td class="text-center">
+                        ${item._alterno ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}
+                    </td>
+                    <td class="text-center">
+                        ${item._afectaInventario ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}
+                    </td>
+                    <td class="text-center">${item._idStock || ''}</td>
+                    <td class="text-center bg-white">
+                        <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditar(${item._materialID})"><i class="bi bi-pencil me-2"></i></a>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error("Error cargando la tabla de materiales:", error);
+            alert("Ocurrió un error al cargar los materiales.");
+        })
+        .finally(() => {
+            document.getElementById("loadingModal").style.display = "none";
+        });
+}
+
+
+
+
+    //____________________________________________________________________ Editar _________________________________________________________________//
+
+
+    function abrirModalEditar(materialId) {
+    // Obtener clasificaciones primero
+    fetch('@Url.Action("GetClasificacionMaterial", "Material")')
+        .then(res => res.json())
+        .then(clasificaciones => {
+            const select = document.getElementById('_clasificacionMaterialIdeditar');
+
+            // Limpiar opciones actuales
+            select.innerHTML = '<option value="">Seleccione una clasificación</option>';
+
+            // Llenar select con opciones
+            clasificaciones.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.ClasificacionMaterialID;
+                option.textContent = item.Descripcion;
+                select.appendChild(option);
+            });
+
+            // Luego obtener el material
+            return fetch('@Url.Action("GetMaterialId", "Material")' + '?materialId=' + materialId);
+        })
+        .then(res => res.json())
+        .then(result => {
+            if (result.success) {
+                const data = result.data;
+
+                // Llenar campos
+                document.getElementById("materialidhidden").value = data._materialID;
+                document.getElementById("_descripcioneditar").value = data._descripcion;
+                document.getElementById("_codSAPNuevoeditar").value = data._codSAPNuevo;
+                document.getElementById("_codOldSAPeditar").value = data._codOldSAP;
+                document.getElementById("_producidoeditar").checked = data._producido;
+                document.getElementById("_clasificacionMaterialIdeditar").value = data._clasificacionMaterialID?.toString() || "";
+                document.getElementById("_activoedit").checked = data._activo;
+                document.getElementById("_alternoeditar").checked = data._alterno;
+                document.getElementById("_afectaInventarioeditar").checked = data._afectaInventario;
+                document.getElementById("_idStockeditar").value = data._idStock;
+
+                // Mostrar el modal
+                const modalElement = document.getElementById("editar");
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            } else {
+                alert("No se encontró el material.");
+            }
+        })
+        .catch(error => {
+            console.error("Error al obtener los datos del material o clasificaciones:", error);
+            alert("Ocurrió un error al cargar los datos.");
+        });
+    }
+
+
+
+    function submitEditForm() {
+    cargando();
+
+    const data = {
+        _materialId: document.getElementById("materialidhidden").value,
+        _descripcion: document.getElementById("_descripcioneditar").value,
+        _codSAPNuevo: document.getElementById("_codSAPNuevoeditar").value,
+        _codOldSAP: document.getElementById("_codOldSAPeditar").value,
+        _producido: document.getElementById("_producidoeditar").checked,
+        _clasificacionMaterialID: document.getElementById("_clasificacionMaterialIdeditar").value,
+        _activo: document.getElementById("_activoedit").checked,
+        _alterno: document.getElementById("_alternoeditar").checked,
+        _afectaInventario: document.getElementById("_afectaInventarioeditar").checked,
+        _idStock: document.getElementById("_idStockeditar").value
+    };
+
+    fetch('@Url.Action("Edit", "Material")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(response => {
+        if (response.success) {
+            document.getElementById("alertEditSuccess").style.display = "block";
+
+            setTimeout(() => {
+                document.getElementById("alertEditSuccess").style.display = "none";
+                const modal = bootstrap.Modal.getInstance(document.getElementById("editar"));
+                modal.hide();
+                location.reload();
+            }, 2000);
+        } else {
+            alert("Error: " + response.message);
+        }
+    })
+    .catch(error => {
+        console.error("Error al enviar datos:", error);
+        alert("Ocurrió un error al enviar los datos.");
+    });
+}
+
+
+
+
+    //____________________________________________________________________ Buscar ________________________________________________________________________//
+
+
+    document.getElementById("_buscar").addEventListener("keyup", function () {
+        const filtro = this.value.toLowerCase();
+        const filas = document.querySelectorAll("#downtimeTableBody tr");
+
+        filas.forEach(fila => {
+            const textoFila = fila.textContent.toLowerCase();
+            fila.style.display = textoFila.includes(filtro) ? "" : "none";
+        });
+    });
+
+
+</script>
+

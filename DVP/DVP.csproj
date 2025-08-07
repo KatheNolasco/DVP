@@ -185,8 +185,10 @@
     <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\DowntimeController.cs" />
     <Compile Include="Controllers\EnergyController.cs" />
+    <Compile Include="Controllers\EquipoController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\InventoryController.cs" />
+    <Compile Include="Controllers\MaterialController.cs" />
     <Compile Include="Controllers\OperationController.cs" />
     <Compile Include="Controllers\UserController.cs" />
     <Compile Include="Global.asax.cs">
@@ -195,7 +197,9 @@
     <Compile Include="Models\AccountViewModel.cs" />
     <Compile Include="Models\DowntimeViewModel.cs" />
     <Compile Include="Models\EnergyViewModel.cs" />
+    <Compile Include="Models\EquipoViewModel.cs" />
     <Compile Include="Models\InventoryViewModelcs.cs" />
+    <Compile Include="Models\MaterialViewModel.cs" />
     <Compile Include="Models\OperationViewModel.cs" />
     <Compile Include="Models\UserViewModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -917,6 +921,9 @@
     <Content Include="Views\Energy\Index.cshtml" />
     <Content Include="Views\Operation\Index.cshtml" />
     <Content Include="Views\Inventory\Index.cshtml" />
+    <Content Include="Views\Equipo\Index.cshtml" />
+    <Content Include="Views\Material\Index.cshtml" />
+    <Content Include="Views\User\ConfigurationUser.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
@@ -955,7 +962,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DataAccess\DataAccess.csproj">
-      <Project>{c97196f1-0f75-4a62-92a2-a7207763e638}</Project>
+      <Project>{5691c87a-a9a3-420d-aa57-d7fd1c5fb83d}</Project>
       <Name>DataAccess</Name>
     </ProjectReference>
   </ItemGroup>

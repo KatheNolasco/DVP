@@ -15,11 +15,21 @@ namespace DataAccess
     public partial class BillOfMaterial
     {
         public int BillOfMaterialID { get; set; }
-        public Nullable<int> MaterialID { get; set; }
+        public Nullable<int> MaterialProduccionID { get; set; }
         public Nullable<int> TipoOperacionID { get; set; }
         public Nullable<int> TipoMovimientoSAPID { get; set; }
+        public Nullable<decimal> FactorConsumo { get; set; }
+        public Nullable<int> EquipoID { get; set; }
+        public string TagProduccion { get; set; }
+        public string TagHumedad { get; set; }
+        public Nullable<bool> ConsumoSeco { get; set; }
+        public Nullable<bool> ConsumoHumedo { get; set; }
+        public Nullable<System.DateTime> FechaBOM { get; set; }
+        public Nullable<int> MaterialConsumoID { get; set; }
     
+        public virtual Equipo Equipo { get; set; }
         public virtual Material Material { get; set; }
+        public virtual Material Material1 { get; set; }
         public virtual TipoMovimientoSAP TipoMovimientoSAP { get; set; }
         public virtual TipoOperacion TipoOperacion { get; set; }
     }

@@ -18,8 +18,5 @@ namespace DataAccess
         public string Descripcion { get; set; }
         public string TagName { get; set; }
         public string TagCode { get; set; }
-        public Nullable<int> EquipoID { get; set; }
-    
-        public virtual Equipo Equipo { get; set; }
     }
 }

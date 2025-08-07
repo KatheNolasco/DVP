@@ -3,7 +3,6 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewBag.Title = "Downtime Page";
-
 }
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -54,6 +53,16 @@
         vertical-align: middle;
         text-align: center;
     }
+
+    .form-check-input:checked {
+        background-color: #13DEB9 !important; /* bg-success */
+        border-color: #13DEB9 !important;
+    }
+
+    /* Opcional: cambiar el texto también */
+    .form-check-label {
+        font-weight: 500;
+    }
 </style>
 
 <body>
@@ -66,56 +75,40 @@
                 <div class="container-fluid">
                     <div class="card">
                         <div class="card-body">
-                            <!-- Fecha de validación -->
-                            <h5 class="card-title fw-semibold mb-4 text-end">
-                                <span id="candado">
-                                    <button onclick="cerrarReporte()" class="btn btn-link p-0 m-0 align-baseline">
-                                        <i class="bi bi-unlock-fill text-warning ms-2"></i>
-                                    </button>
-                                </span>
-                                Downtime Validation Date:
-                                <input type="date" id="fechaReporte" onchange="filtrarPorFecha()">
-                            </h5>
                             <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
-                                Paros cerrados correctamente!
+                                Agregado correctamente!
                             </div>
                             <!-- Equipos -->
-                            <h5 class="card-title fw-semibold mb-4">Equipments - Planta San Pedro</h5>
-
+                            <h5 class="card-title fw-semibold mb-4">Users</h5>
                         </div>
-
                         <!-- Sección de Listas -->
                         <div class="card w-100">
                             <div class="card-body p-4">
-                                <h5 class="card-title fw-semibold mb-4">Downtime List</h5>
+                                <div class="d-flex justify-content-end align-items-center gap-2 mb-3">
+                                    <i class="bi bi-binoculars-fill text-success"></i>
+                                    <input type="text" class="form-control form-control-sm w-25" id="_buscar" placeholder="Buscar...">
+                                    <button type="button" onclick="newUser()" class="btn btn-outline-dark btn-sm">
+                                        Add new
+                                    </button>
+                                </div>
                                 <div class="d-flex gap-3">
 
                                     <!-- Tabla izquierda (downtimes inactivos) -->
-                                    <div class="table-responsive w-25" style="max-height: 400px; overflow-y: auto; background-color: #ffffff; padding: 10px; border-radius: 10px;">
+                                    <div class="table-responsive w-100" style="max-height: 400px; overflow-y: auto; background-color: #ffffff; padding: 10px; border-radius: 10px;">
                                         <table class="table table-bordered mb-0" style="background-color: #ffffff;">
                                             <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
                                                 <tr>
-                                                    <th class="text-center">Downtime</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="downtimeTableBodyInactiveList">
-                                            </tbody>
-                                        </table>
-                                    </div>
-
-                                    <!-- Tabla derecha (downtimes activos) -->
-                                    <div class="table-responsive w-75" style="max-height: 400px; overflow-y: auto; background-color: #ffffff; padding: 10px; border-radius: 10px;">
-                                        <table class="table table-bordered mb-0" style="background-color: #ffffff;">
-                                            <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
-                                                <tr>
-                                                    <th class="text-center">St</th>
-                                                    <th class="text-center">Tipo Evento</th>
-                                                    <th class="text-center">Fecha Evento</th>
-                                                    <th class="text-center">Clasificación</th>
+                                                    <th class="text-center">Status</th>
+                                                    <th class="text-center">Descripcion</th>
+                                                    <th class="text-center">User Id Progreso</th>
+                                                    <th class="text-center">Planta</th>
+                                                    <th class="text-center">Email</th>
                                                     <th class="text-center">Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="downtimeTableBody">
+                                                <tr>
+                                                </tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -124,14 +117,249 @@
                             </div>
                         </div>
                     </div>
-
-
                 </div>
-
-
             </div>
-
         </div>
+
+        @*___________________________________________________________________Modal Cargando__________________________________________________*@
+        <div id="loadingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: rgba(0, 0, 0, 0.5);">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 25px 35px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.3); min-width: 250px;">
+                <div style="display: flex; align-items: center; justify-content: center;">
+                    <img src="/Content/loading-green-loading.gif" alt="Cargando..." style="width: 40px; height: 40px; margin-right: 15px;" />
+                    <span style="color: black; font-size: 16px;">Cargando...</span>
+                </div>
+            </div>
+        </div>
+
+        @*____________________________________________________________________ Modal create _________________________________________________________________*@
+        <div class="modal fade" id="newUser" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="card-body">
+                            <div class="card">
+                                <form>
+                                    <div class="card-body">
+                                        <h4 class="card-title fw-semibold mb-2">Add New User</h4>
+                                        <br />
+                                    </div>
+                                    <div class="row">
+                                        <!-- Columna izquierda -->
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Descripción</label>
+                                                <input type="text" class="form-control" id="_descripcion" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Email</label>
+                                                <input type="text" class="form-control" id="_email" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Nombre Completo</label>
+                                                <input type="text" class="form-control" id="_nombre" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">User Id Progreso</label>
+                                                <input type="text" class="form-control" id="_userIdProgreso" required>
+                                            </div>
+                                            <div class="mb-3 position-relative">
+                                                <label class="form-label">Contraseña</label>
+                                                <input type="password" class="form-control pe-5" id="_contraseñaHash" required>
+                                                <i class="bi bi-eye-slash" id="togglePassword"
+                                                   style="position: absolute; top: 38px; right: 15px; cursor: pointer;"></i>
+                                            </div>
+                                            <div id="msgInsegura" class="text-danger mt-1" style="display: none;">
+                                                ⚠️ Esta contraseña débil para la web. Debes utilizar caracteres especiales, mayúscula y contener una longitud de 8 o más.
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Active directory username</label>
+                                                <input type="text" class="form-control" id="_aDUsername" required>
+                                            </div>
+                                        </div>
+
+                                        <!-- Columna derecha -->
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Número Empleado</label>
+                                                <input type="text" class="form-control" id="_numeroEmpleado" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Planta</label>
+                                                <select class="form-select" id="_plantaId">
+                                                    <option value="">Seleccione una planta</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Unidad Operativa</label>
+                                                <select class="form-select" id="_unidadOperativaId">
+                                                    <option value="">Seleccione una Unidad Operativa</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">País</label>
+                                                <select class="form-select" id="_paisId">
+                                                    <option value="">Seleccione un país</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Gerencia</label>
+                                                <select class="form-select" id="_gerenciaId">
+                                                    <option value="">Seleccione una gerencia</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Rol</label>
+                                                <select class="form-select" id="_rolId">
+                                                    <option value="">Seleccione un rol</option>
+                                                </select>
+                                            </div>
+                                            <!-- Switches -->
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="_esAD">
+                                                <label class="form-check-label" for="_esAD">Es active directory</label>
+                                            </div>
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="_active">
+                                                <label class="form-check-label" for="_active">Activo</label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Botón y alerta -->
+                                    <div class="text-end mt-3">
+                                        <button type="button" id="crear" class="btn btn-outline-success m-1"
+                                                data-url="@Url.Action("Create", "User")">
+                                            Crear <span class="text-success ms-2">&#10004;</span>
+                                        </button>
+                                    </div>
+
+                                    <div id="alertSuccess" class="alert alert-success mt-3" role="alert" style="display: none;">
+                                        ¡User creado exitosamente!
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @*____________________________________________________________________ Modal editar _________________________________________________________________*@
+        <div class="modal fade" id="editar" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalLabel">Edit User</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="card-body">
+                            <div class="card">
+                                <div class="card-body">
+                                    <form>
+                                        <div class="card-body">
+                                            <h4 class="card-title fw-semibold mb-2">Edit New User</h4>
+                                            <br />
+                                            <input type="hidden" id="userid" value="" />
+                                        </div>
+                                        <div class="row">
+                                            <!-- Columna izquierda -->
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Descripción</label>
+                                                    <input type="text" class="form-control" id="_descripcionedit" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Email</label>
+                                                    <input type="text" class="form-control" id="_emailedit" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Nombre Completo</label>
+                                                    <input type="text" class="form-control" id="_nombreedit" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">User Id Progreso</label>
+                                                    <input type="text" class="form-control" id="_userIdProgresoedit" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Active directory username</label>
+                                                    <input type="text" class="form-control" id="_aDUsernameedit" required>
+                                                </div>
+                                            </div>
+
+                                            <!-- Columna derecha -->
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Número Empleado</label>
+                                                    <input type="text" class="form-control" id="_numeroEmpleadoedit" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Planta</label>
+                                                    <select class="form-select" id="_plantaIdedit">
+                                                        <option value="">Seleccione una planta</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Unidad Operativa</label>
+                                                    <select class="form-select" id="_unidadOperativaIdedit">
+                                                        <option value="">Seleccione una Unidad Operativa</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">País</label>
+                                                    <select class="form-select" id="_paisIdedit">
+                                                        <option value="">Seleccione un país</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Gerencia</label>
+                                                    <select class="form-select" id="_gerenciaIdedit">
+                                                        <option value="">Seleccione una gerencia</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Rol</label>
+                                                    <select class="form-select" id="_rolIdedit">
+                                                        <option value="">Seleccione un rol</option>
+                                                    </select>
+                                                </div>
+                                                <!-- Switches -->
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="_esADedit">
+                                                    <label class="form-check-label" for="_esAD">Es active directory</label>
+                                                </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="_activeedit">
+                                                    <label class="form-check-label" for="_active">Activo</label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+                                        <!-- Botón y alerta -->
+                                        <div class="text-end mt-3">
+                                            <button type="button" id="edit"
+                                                    class="btn btn-outline-success m-1"
+                                                    data-url="@Url.Action("Edit", "User")"
+                                                    onclick="submitEditForm()">
+                                                Editar <span class="text-success ms-2">&#10004;</span>
+                                            </button>
+                                        </div>
+                                    </form>
+                                    <div id="alertEditeSuccesseditar" class="alert alert-success" role="alert" style="display: none;">
+                                        ¡Editado exitosamente!
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </body>
 
@@ -150,151 +378,403 @@
 
 <script>
 
+
+
     document.addEventListener("DOMContentLoaded", function () {
-        newdowntime();
+        loadTable();
     });
 
-    //Calcular fecha del input fecha.
-    window.addEventListener('DOMContentLoaded', () => {
-        const fechaInput = document.getElementById('fechaReporte');
-        const hoy = new Date();
+    function cargando() {
+        document.getElementById("loadingModal").style.display = "block";
+    }
 
-        // Primer y último día del mes actual
-        const primerDiaMesActual = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-        const ultimoDiaMesActual = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    //______________________________________________________________ Crear usuario ________________________________________________________________//
 
-        // Último día del mes pasado
-        const ultimoDiaMesPasado = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
 
-        // 5 días antes del último día del mes pasado
-        const cincoDiasAntes = new Date(ultimoDiaMesPasado);
-        cincoDiasAntes.setDate(ultimoDiaMesPasado.getDate() - 4); // incluye el último día
+    function newUser() {
+    // Mostrar el modal
+    const modalElement = document.getElementById("newUser");
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
 
-        // 5 días después del último día del mes actual
-        const cincoDiasDespues = new Date(ultimoDiaMesActual);
-        cincoDiasDespues.setDate(ultimoDiaMesActual.getDate() + 2);
+    // Cargar los combos al abrir
+    cargarCombos();
+    }
 
-        // Formatear fecha en yyyy-MM-dd
-        const formatoFecha = (fecha) => {
-            const año = fecha.getFullYear();
-            const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-            const dia = String(fecha.getDate()).padStart(2, '0');
-            return `${año}-${mes}-${dia}`;
+    function cargarCombos() {
+    // Limpiar selects
+    limpiarSelect("_rolId");
+    limpiarSelect("_gerenciaId");
+    limpiarSelect("_plantaId");
+    limpiarSelect("_unidadOperativaId");
+    limpiarSelect("_paisId");
+
+        // Llamadas AJAX a cada endpoint
+    fetch('@Url.Action("GetRol", "User")')
+        .then(response => response.json())
+        .then(data => llenarSelect("_rolId", data, "RolID", "Descripcion"));
+
+    fetch('@Url.Action("GetGerencia", "User")')
+        .then(response => response.json())
+        .then(data => llenarSelect("_gerenciaId", data, "GerenciaID", "Descripcion"));
+
+    fetch('@Url.Action("GetPlanta", "Equipo")')
+        .then(response => response.json())
+        .then(data => llenarSelect("_plantaId", data, "PlantaID", "Descripcion"));
+
+    fetch('@Url.Action("GetUnidadOperativa", "Equipo")')
+        .then(response => response.json())
+        .then(data => llenarSelect("_unidadOperativaId", data, "UnidadOperativaID", "Descripcion"));
+
+    fetch('@Url.Action("GetPais", "Equipo")')
+        .then(response => response.json())
+        .then(data => llenarSelect("_paisId", data, "PaisID", "Descripcion"));
+}
+
+    function llenarSelect(selectId, data, valueField, textField) {
+    const select = document.getElementById(selectId);
+    data.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item[valueField];
+        option.text = item[textField];
+        select.appendChild(option);
+    });
+}
+
+    function limpiarSelect(selectId) {
+    const select = document.getElementById(selectId);
+    select.innerHTML = '<option value="">Seleccione una opción</option>';
+}
+
+
+
+    document.getElementById("crear").addEventListener("click", crearEquipoNuevo);
+
+    function crearEquipoNuevo() {
+        // Obtener valores del formulario
+        const descripcion = document.getElementById("_descripcion").value.trim();
+        const email = document.getElementById("_email").value.trim();
+        const nombre = document.getElementById("_nombre").value.trim();
+        const contraseñaHash = document.getElementById("_contraseñaHash").value.trim();
+        const aDUsername = document.getElementById("_aDUsername").value.trim();
+        const esAD = document.getElementById("_esAD").checked;
+        const numeroEmpleado = document.getElementById("_numeroEmpleado").value.trim();
+        const plantaId = document.getElementById("_plantaId").value;
+        const unidadOperativaId = document.getElementById("_unidadOperativaId").value;
+        const paisId = document.getElementById("_paisId").value;
+        const gerenciaId = document.getElementById("_gerenciaId").value;
+        const active = document.getElementById("_active").checked;
+        const rolId = document.getElementById("_rolId").value;
+        const userIdProgreso = document.getElementById("_userIdProgreso").value;
+
+
+        const url = document.getElementById("crear").getAttribute("data-url");
+
+        // Construir el objeto que será enviado al controlador
+        const data = {
+            _descripcion: descripcion,
+            _email: email,
+            _nombre: nombre,
+            _contraseñaHash: contraseñaHash,
+            _aDUsername: aDUsername,
+            _esAD: esAD,
+            _numeroEmpleado: numeroEmpleado,
+            _plantaId: parseInt(plantaId),
+            _unidadOperativaId: parseInt(unidadOperativaId),
+            _paisId: parseInt(paisId),
+            _gerenciaId: parseInt(gerenciaId),
+            _active: active,
+            _rolId: parseInt(rolId),
+            _userIdProgreso: userIdProgreso
         };
 
-        // Aplicar restricciones al input de fecha
-        fechaInput.min = formatoFecha(cincoDiasAntes);
-        fechaInput.max = formatoFecha(cincoDiasDespues);
+        // Enviar al backend vía fetch
+        fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    // Mostrar alerta
+                    document.getElementById("alertSuccess").style.display = "block";
 
-        // Establecer fecha por defecto a AYER (si está dentro del rango permitido)
-        const ayer = new Date();
-        ayer.setDate(hoy.getDate() - 1);
+                    // Ocultar modal y limpiar formulario después de unos segundos
+                    setTimeout(() => {
+                        document.getElementById("alertSuccess").style.display = "none";
+                        var modal = bootstrap.Modal.getInstance(document.getElementById("newUser"));
+                        modal.hide();
+                        document.querySelector("#newUser form").reset();
 
-        let fechaPorDefecto = hoy;
-        if (ayer >= cincoDiasAntes && ayer <= cincoDiasDespues) {
-            fechaPorDefecto = ayer;
+
+                        loadEquipmentTable();
+                    }, 1500);
+                } else {
+                    alert(result.message || "Ocurrió un error al crear el equipo.");
+                }
+            })
+            .catch(error => {
+                console.error("Error al enviar el formulario:", error);
+                alert("Ocurrió un error al enviar los datos.");
+            });
+    }
+
+
+    //______________________________________________________________ Validación de contraseña desde el frontend ____________________________________//
+
+
+    async function estaComprometida(password) {
+        const sha1 = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(password));
+        const hash = Array.from(new Uint8Array(sha1)).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+        const prefix = hash.substring(0, 5);
+        const suffix = hash.substring(5);
+
+        const response = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`);
+        const text = await response.text();
+        return text.includes(suffix);
+    }
+    const input = document.getElementById("_contraseñaHash");
+    const msg = document.getElementById("msgInsegura");
+    input.addEventListener("blur", async function () {
+        const password = input.value.trim();
+
+        // Validaciones frontend
+        const tieneLongitudSuficiente = password.length >= 8;
+        const tieneMayuscula = /[A-Z]/.test(password);
+        const tieneCaracterEspecial = /[^a-zA-Z0-9]/.test(password);
+
+        if (!tieneLongitudSuficiente || !tieneMayuscula || !tieneCaracterEspecial) {
+            msg.style.display = "block";
+            msg.innerText = "⚠️ Esta contraseña es débil. Usa al menos 8 caracteres, una mayúscula y un carácter especial.";
+            input.classList.add("is-invalid");
+            return;
         }
 
-        fechaInput.value = formatoFecha(fechaPorDefecto);
+        // Si pasa las validaciones básicas, verificar si está comprometida
+        const comprometida = await estaComprometida(password);
 
-        // Ejecutar el filtro al cargar la página
-        filtrarPorFecha();
+        if (comprometida) {
+            msg.style.display = "block";
+            msg.innerText = "⚠️ Esta contraseña ha sido comprometida en una filtración. Elige otra.";
+            input.classList.add("is-invalid");
+        } else {
+            msg.style.display = "none";
+            input.classList.remove("is-invalid");
+        }
+    });
+    const togglePassword = document.getElementById("togglePassword");
+    const passwordInput = document.getElementById("_contraseñaHash");
+    togglePassword.addEventListener("click", function () {
+        const isPassword = passwordInput.getAttribute("type") === "password";
+        passwordInput.setAttribute("type", isPassword ? "text" : "password");
 
-        // Escuchar cambios en el input de fecha y volver a ejecutar el filtro automáticamente
-        fechaInput.addEventListener('change', filtrarPorFecha);
+        // Cambiar icono
+        this.classList.toggle("bi-eye");
+        this.classList.toggle("bi-eye-slash");
     });
 
 
-    //Calcular fecha para input fecha de creacion de paro
-    window.addEventListener("DOMContentLoaded", () => {
-        const inputFecha = document.getElementById("_fechaEvento");
-        const hoy = new Date();
-        const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-        const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    //______________________________________________________________ Relleno del datatable ____________________________________//
 
-        // Formatear a yyyy-MM-dd
-        const formatoFecha = (fecha) => {
-            const año = fecha.getFullYear();
-            const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-            const dia = String(fecha.getDate()).padStart(2, '0');
-            return `${año}-${mes}-${dia}`;
-        };
+       function loadTable() {
+        const tbody = document.getElementById('downtimeTableBody');
+        tbody.innerHTML = '';
 
-        inputFecha.min = formatoFecha(inicioMes);
-        inputFecha.max = formatoFecha(finMes);
+        cargando();
+
+        fetch('@Url.Action("GetUsuarios", "User")')
+            .then(response => {
+                if (!response.ok) throw new Error("Error al obtener los datos.");
+                return response.json();
+            })
+            .then(result => {
+                // ✅ Asegurar estructura esperada
+                if (!result.success || !Array.isArray(result.data)) {
+                    alert("La respuesta del servidor no es válida.");
+                    return;
+                }
+
+                const usuariosActivos = result.data.filter(user => user._active === true);
+
+                usuariosActivos.forEach(user => {
+                    const row = document.createElement('tr');
+
+                    row.innerHTML = `
+                        <td class="text-center">
+                            ${user._active ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}
+                        </td>
+                        <td class="text-center">${user._descripcion || ''}</td>
+                        <td class="text-center">${user._userIdProgreso || ''}</td>
+                        <td class="text-center">${user._plantaDescripcion || ''}</td>
+                        <td class="text-center">${user._email || ''}</td>
+                        <td class="text-center bg-white">
+                            <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditar(${user._usuarioId})">
+                                <i class="bi bi-pencil me-2"></i>
+                            </a>
+                        </td>
+                    `;
+
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error("Error cargando la tabla de usuarios:", error);
+                alert("Ocurrió un error al cargar los usuarios.");
+            })
+            .finally(() => {
+                document.getElementById("loadingModal").style.display = "none";
+            });
+        }
+
+
+    //______________________________________________________________ Editar usuario ___________________________________________//
+
+
+
+    function abrirModalEditar(userId) {
+    cargando(); // ✅ Mostrar el loading modal al hacer clic
+
+    Promise.all([
+        fetch('@Url.Action("GetRol", "User")').then(res => res.json()),
+        fetch('@Url.Action("GetGerencia", "User")').then(res => res.json()),
+        fetch('@Url.Action("GetPlanta", "Equipo")').then(res => res.json()),
+        fetch('@Url.Action("GetUnidadOperativa", "Equipo")').then(res => res.json()),
+        fetch('@Url.Action("GetPais", "Equipo")').then(res => res.json())
+    ])
+    .then(([roles, gerencias, plantas, unidades, paises]) => {
+        llenarSelect('_rolIdedit', roles, 'RolID', 'Descripcion');
+        llenarSelect('_gerenciaIdedit', gerencias, 'GerenciaID', 'Descripcion');
+        llenarSelect('_plantaIdedit', plantas, 'PlantaID', 'Descripcion');
+        llenarSelect('_unidadOperativaIdedit', unidades, 'UnidadOperativaID', 'Descripcion');
+        llenarSelect('_paisIdedit', paises, 'PaisID', 'Descripcion');
+
+        return fetch('@Url.Action("GetuserbyId", "User")' + '?userId=' + userId);
+    })
+    .then(res => res.json())
+    .then(result => {
+        if (result.success) {
+            const data = result.data;
+
+            document.getElementById("userid").value = data._usuarioId;
+            document.getElementById("_descripcionedit").value = data._descripcion;
+            document.getElementById("_emailedit").value = data._email;
+            document.getElementById("_nombreedit").value = data._nombre;
+            document.getElementById("_userIdProgresoedit").value = data._userIdProgreso;
+            document.getElementById("_aDUsernameedit").value = data._aDUsername;
+            document.getElementById("_numeroEmpleadoedit").value = data._numeroEmpleado;
+            document.getElementById("_esADedit").checked = data._esAD;
+            document.getElementById("_activeedit").checked = data._active;
+
+            setTimeout(() => {
+                document.getElementById("_rolIdedit").value = data._rolId?.toString();
+                document.getElementById("_gerenciaIdedit").value = data._gerenciaId?.toString();
+                document.getElementById("_plantaIdedit").value = data._plantaId?.toString();
+                document.getElementById("_unidadOperativaIdedit").value = data._unidadOperativaId?.toString();
+                document.getElementById("_paisIdedit").value = data._paisId?.toString();
+            }, 100);
+
+            const modalElement = document.getElementById("editar");
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } else {
+            alert("Error al obtener datos del equipo: " + result.message);
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        alert("Error al cargar el formulario de edición.");
+    })
+    .finally(() => {
+        document.getElementById("loadingModal").style.display = "none";
     });
+}
+
+
+    function llenarSelect(selectId, items, valueProp, textProp) {
+        const select = document.getElementById(selectId);
+        select.innerHTML = '<option value="">Seleccione una opción</option>';
+
+        items.forEach(item => {
+            const option = document.createElement("option");
+            option.value = item[valueProp];
+            option.textContent = item[textProp];
+            select.appendChild(option);
+        });
+    }
 
 
 
+function submitEditForm() {
+cargando();
+
+const data = {
+    _usuarioId: document.getElementById("userid").value,
+    _descripcion: document.getElementById("_descripcionedit").value,
+    _email: document.getElementById("_emailedit").value,
+    _nombre: document.getElementById("_nombreedit").value,
+    _userIdProgreso: document.getElementById("_userIdProgresoedit").value,
+    _aDUsername: document.getElementById("_aDUsernameedit").value,
+    _numeroEmpleado: document.getElementById("_numeroEmpleadoedit").value,
+    _esAD: document.getElementById("_esADedit").checked,
+    _active: document.getElementById("_activeedit").checked,
+    _rolId: document.getElementById("_rolIdedit").value,
+    _gerenciaId: document.getElementById("_gerenciaIdedit").value,
+    _plantaId: document.getElementById("_plantaIdedit").value,
+    _unidadOperativaId: document.getElementById("_unidadOperativaIdedit").value,
+    _paisId: document.getElementById("_paisIdedit").value,
 
 
-    //_____________________________________________________________________Creación del paro______________________________________________________________//
+};
 
+fetch('@Url.Action("Edit", "User")', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+})
+.then(res => res.json())
+.then(response => {
+    if (response.success) {
+        // Mostrar mensaje de éxito
+        document.getElementById("alertEditeSuccesseditar").style.display = "block";
 
+        // Ocultar el modal y mensaje después de un tiempo
+        setTimeout(() => {
+            document.getElementById("alertEditeSuccesseditar").style.display = "none";
+            const modal = bootstrap.Modal.getInstance(document.getElementById("editar"));
+            modal.hide();
 
-
-    //________________________________________________________________________Editar Paro_________________________________________________________________//
-
-    // Update de generación de arbol de fallas para el paro
-
-
-
-
-
-    //*************************************************** Funciones para el editar paros ********************************************/
-
-
-
-
-
-
-
-
-    //_____________________________________________________________________________Functions___________________________________________________________________//
-
-
-
-
-
-    //*************************************************** Estas funciones rellenan el datatable ********************************************/
-
-
-
-
-
-
-
-
-    //****************************************************** Funciones para crear active event ****************************************/
-
-
-
-
-
-
-
-
-
-
-
-    //________________________________________________________________________Reclasificar Paro_________________________________________________________________//
-
-
-
-    //________________________________________________________________________Añadir Daydelay Paro_________________________________________________________________//
+            // Opcional: recargar para ver cambios reflejados
+            location.reload();
+        }, 2000);
+    } else {
+        alert("Error: " + response.message);
+    }
+})
+.catch(error => {
+    console.error("Error al enviar datos:", error);
+    alert("Ocurrió un error al enviar los datos.");
+});
+}
 
 
 
+//____________________________________________________________________ Buscar ________________________________________________________________________//
 
 
-    //_______________________________________________________________________ Delete Paro _________________________________________________________________________//
+document.getElementById("_buscar").addEventListener("keyup", function () {
+    const filtro = this.value.toLowerCase();
+    const filas = document.querySelectorAll("#downtimeTableBody tr");
 
-
-
-
-
-    //_______________________________________________________________________ Cerrar Reporte_________________________________________________________________________//
-
+    filas.forEach(fila => {
+        const textoFila = fila.textContent.toLowerCase();
+        fila.style.display = textoFila.includes(filtro) ? "" : "none";
+    });
+});
 
 
 
