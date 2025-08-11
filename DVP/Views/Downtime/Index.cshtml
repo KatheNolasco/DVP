@@ -98,6 +98,10 @@
                                         </button>
                                     }
                                 </div>
+                                <!-- Contador arriba de la tabla -->
+                                <div id="downtimeCountContainer" class="alert alert-success p-2 my-2" style="display:none;">
+                                    Total downtime: <strong id="countEventosRelacionados">0</strong>
+                                </div>
                                 <div class="d-flex gap-3">
                                     <!-- Tabla izquierda (downtimes inactivos) -->
                                     <div class="table-responsive w-25" style="max-height: 400px; width: 5px; overflow-y: auto; background-color: #ffffff;  border-radius: 10px;">
@@ -1267,9 +1271,16 @@
 
         // Filtrar filas por equipo
         const todasFilas = document.querySelectorAll('#downtimeTableBody tr, #downtimeTableBodyInactiveList tr');
+        let contadorVisibles = 0;
+
         todasFilas.forEach(fila => {
             const filaEquipoId = fila.getAttribute('data-equipo-id');
-            fila.style.display = filaEquipoId === equipoId.toString() ? '' : 'none';
+            if (filaEquipoId === equipoId.toString()) {
+                fila.style.display = '';
+                contadorVisibles++;
+            } else {
+                fila.style.display = 'none';
+            }
         });
 
         // Restaurar estilos originales a todos los botones
@@ -1283,7 +1294,16 @@
         if (botonSeleccionado) {
             botonSeleccionado.className = 'btn btn-dark m-1 equipo-btn';
         }
+
+        // Actualizar el contador si existe el contenedor
+        const countWrap = document.getElementById("downtimeCountContainer");
+        const countSpan = document.getElementById("countEventosRelacionados");
+        if (countWrap && countSpan) {
+            countSpan.textContent = contadorVisibles;
+            countWrap.style.display = 'block';
+        }
     }
+
 
 
 
