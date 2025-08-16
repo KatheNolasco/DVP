@@ -36,7 +36,7 @@ namespace DVP.Controllers
 
             var query = _dvpEntities.Usuario.AsQueryable();
 
-            if (rol != "Desarrollador de Software")
+            if (rol != "Desarrollador de Software" && rol != "Administrador de la información")
             {
                 return RedirectToAction("Index", "Account");
             }

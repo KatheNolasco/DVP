@@ -19,6 +19,7 @@ namespace DataAccess
         {
             this.Equipo = new HashSet<Equipo>();
             this.Usuario = new HashSet<Usuario>();
+            this.PlantaAsignada = new HashSet<PlantaAsignada>();
         }
     
         public int PlantaID { get; set; }
@@ -31,5 +32,7 @@ namespace DataAccess
         public virtual ICollection<Equipo> Equipo { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<Usuario> Usuario { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<PlantaAsignada> PlantaAsignada { get; set; }
     }
 }

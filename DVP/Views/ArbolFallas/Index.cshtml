@@ -1,0 +1,861 @@
+﻿@model DVP.Models.UserViewModel
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Downtime Page";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+
+<style>
+    /* Estilo para el contenedor de la fecha y hora */
+    .container {
+        font-family: Arial, sans-serif;
+        display: flex; /* Usamos flex para alinearlos horizontalmente */
+        justify-content: center; /* Centra los elementos horizontalmente */
+        align-items: center; /* Centra los elementos verticalmente */
+        gap: 20px; /* Espacio entre los divs */
+        margin-top: 20px;
+    }
+    /* Estilo para los divs de fecha y hora */
+    .input-container {
+        font-size: 18px;
+        display: flex;
+        flex-direction: column; /* Los inputs se alinean de arriba hacia abajo */
+        align-items: center;
+    }
+
+    input {
+        padding: 10px;
+        font-size: 16px;
+        margin-top: 10px;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        background-color: #f0f0f0;
+    }
+
+    .scrollable-table {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa; /* color fondo header */
+        z-index: 2;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .table tbody td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 45px;
+        height: 24px;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+            .switch .slider:before {
+                position: absolute;
+                content: "";
+                height: 18px;
+                width: 18px;
+                left: 3px;
+                bottom: 3px;
+                background-color: white;
+                transition: .4s;
+                border-radius: 50%;
+            }
+
+        .switch input:checked + .slider {
+            background-color: #13DEB9; /* Verde menta */
+        }
+
+            .switch input:checked + .slider:before {
+                transform: translateX(21px);
+            }
+
+    .switch-label {
+        font-size: 14px;
+        color: #555;
+        vertical-align: middle;
+    }
+</style>
+
+
+<body>
+    <div class="container-fluid" style="padding-left: 200px;">
+        <br />
+        <br />
+        <br />
+        <div class="card">
+            <div class="container-fluid">
+                <div class="container-fluid">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
+                                Agregado correctamente!
+                            </div>
+                            <!-- Configuracion -->
+                            <h5 class="card-title fw-semibold mb-4">Configuration Fault Tree</h5>
+                        </div>
+                        <div class="mb-3">
+                            <form id="formElemento">
+                                <label class="form-label">Add</label>
+                                <select class="form-select" id="_elememnto">
+                                    <option value="">Seleccione lo que desea agregar</option>
+                                    <option value="1">Sub Equipo</option>
+                                    <option value="2">Componente</option>
+                                    <option value="3">Clasificación</option>
+                                    <option value="4">Tipo Falla</option>
+                                </select>
+
+                                <div id="camposContainer" class="mt-3"></div>
+
+                                <button type="submit" id="btnGuardar" class="btn btn-primary mt-2">Guardar</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ver arbol de falla por secciones</label>
+                        <select class="form-select" id="selectListado">
+                            <option value="">Seleccione un tipo</option>
+                            <option value="SubEquipo">Sub Equipo</option>
+                            <option value="Componente">Componente</option>
+                            <option value="Clasificacion">Clasificación</option>
+                            <option value="TipoFalla">Tipo Falla</option>
+                        </select>
+                    </div>
+
+                    <div id="filtrosListado" class="row g-3 mb-2"></div>
+                    <div id="contenedorListado" class="mt-3"></div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const select = document.getElementById('_elememnto'); // si tu select real es _elemento, cambia este id
+        const contenedor = document.getElementById('camposContainer');
+        const form = document.getElementById('formElemento');
+
+        // alert success (usa el div con id="alertsuccesclose")
+        const alertSuccessEl = document.getElementById('alertsuccesclose');
+        const showSuccess = (msg) => {
+            if (!alertSuccessEl) return;
+            alertSuccessEl.textContent = msg || 'Agregado correctamente!';
+            alertSuccessEl.style.display = 'block';
+            clearTimeout(showSuccess._t);
+            showSuccess._t = setTimeout(() => {
+                alertSuccessEl.style.display = 'none';
+            }, 4000);
+        };
+        const hideSuccess = () => {
+            if (alertSuccessEl) alertSuccessEl.style.display = 'none';
+        };
+
+        // ==== endpoints por opcion ====
+        const endpoints = {
+            '1': '/ArbolFallas/CreateSubEquipo',        // data: { _descripcion, _equipoId }
+            '2': '/ArbolFallas/CreateComponenteEquipo', // data: { _descripcion, _subequipoId }
+            '3': '/ArbolFallas/CreateClasificacion',    // data: { _descripcion, _ajeno, _afectaTMEF }
+            '4': '/ArbolFallas/CreateTipoFalla'         // data: { _descripcion, _clasificacionId, _componenteEquipoId }
+        };
+
+        // util: POST JSON con soporte a antiforgery
+        const postJson = async (url, payload) => {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            const headers = { 'Content-Type': 'application/json; charset=utf-8' };
+            if (token) headers['RequestVerificationToken'] = token;
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers,
+                // IMPORTANTE: el param en MVC es "data", asi que envolvemos { data: payload }
+                body: JSON.stringify({ data: payload })
+            });
+
+            let json = null;
+            try { json = await res.json(); } catch (_) { }
+
+            if (!res.ok) {
+                const msg = (json && (json.message || json.error)) || ('HTTP ' + res.status);
+                throw new Error(msg);
+            }
+            return json || {};
+        };
+
+        // Helper: cargar equipos por pais del usuario logueado
+        const loadEquipos = (selectId) => {
+            const sel = document.getElementById(selectId);
+            sel.disabled = true;
+            sel.innerHTML = '<option value="">Cargando...</option>';
+
+            return fetch('/Equipo/GetEquiposporPaislogguedUser')
+                .then(res => res.json())
+                .then(data => {
+                    if (!Array.isArray(data) || data.length === 0) {
+                        sel.innerHTML = '<option value="">Sin datos</option>';
+                        return [];
+                    }
+
+                    sel.innerHTML = '<option value="">Seleccione un equipo</option>';
+                    data.forEach(equipo => {
+                        const opt = document.createElement('option');
+                        opt.value = equipo.EquipoID;
+                        opt.textContent = equipo.Descripcion;
+                        sel.appendChild(opt);
+                    });
+
+                    return data;
+                })
+                .catch(err => {
+                    console.error(err);
+                    sel.innerHTML = '<option value="">Error al cargar</option>';
+                    return [];
+                })
+                .finally(() => {
+                    sel.disabled = false;
+                });
+        };
+
+        // Helper: cargar subequipos dado un EquipoID
+        const loadSubEquipos = (equipoId, selectId) => {
+            const sel = document.getElementById(selectId);
+
+            if (!equipoId || Number(equipoId) <= 0) {
+                sel.innerHTML = '<option value="">Seleccione un equipo primero</option>';
+                return Promise.resolve([]);
+            }
+
+            sel.disabled = true;
+            sel.innerHTML = '<option value="">Cargando...</option>';
+
+            return fetch(`/Downtime/GetSubEquipos?_equipoId=${encodeURIComponent(equipoId)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data?.error) {
+                        sel.innerHTML = `<option value="">${data.error}</option>`;
+                        return [];
+                    }
+                    if (!Array.isArray(data) || data.length === 0) {
+                        sel.innerHTML = '<option value="">Sin datos</option>';
+                        return [];
+                    }
+
+                    sel.innerHTML = '<option value="">Seleccione un subequipo</option>';
+                    data.forEach(se => {
+                        const opt = document.createElement('option');
+                        opt.value = se.SubEquipoID;
+                        opt.textContent = se.Descripcion;
+                        sel.appendChild(opt);
+                    });
+                    return data;
+                })
+                .catch(err => {
+                    console.error(err);
+                    sel.innerHTML = '<option value="">Error al cargar</option>';
+                    return [];
+                })
+                .finally(() => {
+                    sel.disabled = false;
+                });
+        };
+
+        // Helper: cargar clasificaciones
+        const loadClasificaciones = (selectId) => {
+            const sel = document.getElementById(selectId);
+            sel.disabled = true;
+            sel.innerHTML = '<option value="">Cargando...</option>';
+
+            return fetch('/Downtime/GetClasificacion')
+                .then(res => res.json())
+                .then(data => {
+                    if (!Array.isArray(data) || data.length === 0) {
+                        sel.innerHTML = '<option value="">Sin datos</option>';
+                        return [];
+                    }
+                    sel.innerHTML = '<option value="">Seleccione una clasificacion</option>';
+                    data.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.ClasificacionID;
+                        opt.textContent = c.Descripcion;
+                        sel.appendChild(opt);
+                    });
+                    return data;
+                })
+                .catch(err => {
+                    console.error(err);
+                    sel.innerHTML = '<option value="">Error al cargar</option>';
+                    return [];
+                })
+                .finally(() => { sel.disabled = false; });
+        };
+
+        // Helper: cargar componentes por subequipo
+        const loadComponentes = (subequipoId, selectId) => {
+            const sel = document.getElementById(selectId);
+
+            if (!subequipoId || Number(subequipoId) <= 0) {
+                sel.innerHTML = '<option value="">Seleccione un subequipo primero</option>';
+                return Promise.resolve([]);
+            }
+
+            sel.disabled = true;
+            sel.innerHTML = '<option value="">Cargando...</option>';
+
+            return fetch(`/Downtime/GetComponenteEquipo?_subEquipoId=${encodeURIComponent(subequipoId)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data?.error) {
+                        sel.innerHTML = `<option value="">${data.error}</option>`;
+                        return [];
+                    }
+                    if (!Array.isArray(data) || data.length === 0) {
+                        sel.innerHTML = '<option value="">Sin datos</option>';
+                        return [];
+                    }
+
+                    sel.innerHTML = '<option value="">Seleccione un componente</option>';
+                    data.forEach(co => {
+                        const opt = document.createElement('option');
+                        opt.value = co.ComponenteEquipoID;
+                        opt.textContent = co.Descripcion;
+                        sel.appendChild(opt);
+                    });
+                    return data;
+                })
+                .catch(err => {
+                    console.error(err);
+                    sel.innerHTML = '<option value="">Error al cargar</option>';
+                    return [];
+                })
+                .finally(() => { sel.disabled = false; });
+        };
+
+        // Render segun opcion
+        select.addEventListener('change', function () {
+            const valor = this.value;
+            contenedor.innerHTML = '';
+
+            switch (valor) {
+                case '1':
+                    contenedor.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label">Descripcion</label>
+                    <input type="text" class="form-control" id="_descripcion" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Equipo</label>
+                    <select class="form-control" id="_equipoId" required>
+                        <option value="">Cargando equipos...</option>
+                    </select>
+                </div>`;
+                    loadEquipos('_equipoId');
+                    break;
+
+                case '2':
+                    contenedor.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label">Descripcion</label>
+                    <input type="text" class="form-control" id="_descripcion" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Equipo</label>
+                    <select class="form-control" id="_equipoIdForSub" required>
+                        <option value="">Cargando...</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Subequipo</label>
+                    <select class="form-control" id="_subequipoId" required>
+                        <option value="">Seleccione un equipo primero</option>
+                    </select>
+                </div>`;
+                    loadEquipos('_equipoIdForSub').then(() => {
+                        const selEquipo = document.getElementById('_equipoIdForSub');
+                        if (window.equipoSeleccionadoId) {
+                            selEquipo.value = String(window.equipoSeleccionadoId);
+                            loadSubEquipos(selEquipo.value, '_subequipoId');
+                        }
+                        selEquipo.addEventListener('change', function () {
+                            document.getElementById('_subequipoId').innerHTML = '<option value="">Cargando...</option>';
+                            loadSubEquipos(this.value, '_subequipoId');
+                        });
+                    });
+                    break;
+
+                case '3':
+                    contenedor.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label">Descripcion</label>
+                    <input type="text" class="form-control" id="_descripcion" required />
+                </div>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="_ajeno">
+                    <label class="form-check-label" for="_ajeno">Ajeno</label>
+                </div>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="_afectaTMEF">
+                    <label class="form-check-label" for="_afectaTMEF">Afecta TMEF</label>
+                </div>`;
+                    break;
+
+                case '4':
+                    contenedor.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label">Descripcion</label>
+                    <input type="text" class="form-control" id="_descripcion" required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Equipo</label>
+                    <select class="form-control" id="_equipoIdForTF" required>
+                        <option value="">Cargando...</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Subequipo</label>
+                    <select class="form-control" id="_subequipoIdForTF" required>
+                        <option value="">Seleccione un equipo primero</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Componente</label>
+                    <select class="form-control" id="_componenteId" required>
+                        <option value="">Seleccione un subequipo primero</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Clasificacion</label>
+                    <select class="form-control" id="_clasificacionId" required>
+                        <option value="">Cargando...</option>
+                    </select>
+                </div>`;
+                    loadClasificaciones('_clasificacionId');
+                    loadEquipos('_equipoIdForTF').then(() => {
+                        const selEquipo = document.getElementById('_equipoIdForTF');
+                        const selSubEq = document.getElementById('_subequipoIdForTF');
+                        const selComp = document.getElementById('_componenteId');
+
+                        if (window.equipoSeleccionadoId) {
+                            selEquipo.value = String(window.equipoSeleccionadoId);
+                            loadSubEquipos(selEquipo.value, '_subequipoIdForTF');
+                        }
+
+                        selEquipo.addEventListener('change', function () {
+                            selSubEq.innerHTML = '<option value="">Cargando...</option>';
+                            selComp.innerHTML = '<option value="">Seleccione un subequipo primero</option>';
+                            loadSubEquipos(this.value, '_subequipoIdForTF');
+                        });
+
+                        selSubEq.addEventListener('change', function () {
+                            selComp.innerHTML = '<option value="">Cargando...</option>';
+                            loadComponentes(this.value, '_componenteId');
+                        });
+                    });
+                    break;
+            }
+        });
+
+        // ==== submit al backend segun opcion seleccionada ====
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            hideSuccess();
+
+            const opcion = select.value;
+            if (!opcion || !endpoints[opcion]) {
+                alert('Seleccione una opcion valida.');
+                return;
+            }
+
+            let payload = null;
+
+            try {
+                switch (opcion) {
+                    case '1': {
+                        // CreateSubEquipo
+                        const descripcion = document.getElementById('_descripcion')?.value.trim();
+                        const equipoId = parseInt(document.getElementById('_equipoId')?.value || '0', 10) || null;
+                        payload = { _descripcion: descripcion, _equipoId: equipoId };
+                        break;
+                    }
+                    case '2': {
+                        // CreateComponenteEquipo
+                        const descripcion = document.getElementById('_descripcion')?.value.trim();
+                        const subequipoId = parseInt(document.getElementById('_subequipoId')?.value || '0', 10) || null;
+                        payload = { _descripcion: descripcion, _subequipoId: subequipoId };
+                        break;
+                    }
+                    case '3': {
+                        // CreateClasificacion
+                        const descripcion = document.getElementById('_descripcion')?.value.trim();
+                        const ajeno = !!document.getElementById('_ajeno')?.checked;
+                        const afectaTMEF = !!document.getElementById('_afectaTMEF')?.checked;
+                        payload = { _descripcion: descripcion, _ajeno: ajeno, _afectaTMEF: afectaTMEF };
+                        break;
+                    }
+                    case '4': {
+                        // CreateTipoFalla
+                        const descripcion = document.getElementById('_descripcion')?.value.trim();
+                        const clasificacionId = parseInt(document.getElementById('_clasificacionId')?.value || '0', 10) || null;
+                        const componenteEquipoId = parseInt(document.getElementById('_componenteId')?.value || '0', 10) || null;
+                        payload = {
+                            _descripcion: descripcion,
+                            _clasificacionId: clasificacionId,
+                            _componenteEquipoId: componenteEquipoId
+                        };
+                        break;
+                    }
+                }
+
+                // validacion rapida
+                if (!payload || Object.values(payload).some(v => v === null || v === '' || Number.isNaN(v))) {
+                    alert('Complete los datos requeridos.');
+                    return;
+                }
+
+                const url = endpoints[opcion];
+                const resp = await postJson(url, payload);
+
+                if (resp?.success) {
+                    showSuccess(resp.message || 'Agregado correctamente!');
+                    // form.reset(); // si quieres limpiar
+                } else {
+                    alert(resp?.message || 'No se pudo guardar.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error: ' + (err?.message || 'Fallo al enviar.'));
+            }
+        });
+    });
+
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectListado = document.getElementById('selectListado');
+        const filtros = document.getElementById('filtrosListado');
+        const contenedorListado = document.getElementById('contenedorListado');
+
+        // ------- Helpers de fetch -------
+        const loadEquipos = () => fetch('/Equipo/GetEquiposporPaislogguedUser').then(r => r.json());
+        const loadSubEquipos = (equipoId) => fetch(`/Downtime/GetSubEquipos?_equipoId=${encodeURIComponent(equipoId)}`).then(r => r.json());
+        const loadComponentesBySub = (subEquipoId) => fetch(`/Downtime/GetComponenteEquipo?_subEquipoId=${encodeURIComponent(subEquipoId)}`).then(r => r.json());
+        const loadClasificaciones = () => fetch('/Downtime/GetClasificacion').then(r => r.json());
+        const loadTiposFalla = (clasificacionId, componenteId) =>
+            fetch(`/Downtime/GetTiposFalla?_clasificacionId=${encodeURIComponent(clasificacionId)}&_componenteEquipoId=${encodeURIComponent(componenteId)}`).then(r => r.json());
+
+        // ------- Render generico de tablas -------
+        function renderTable(columns, data) {
+            if (data?.error) {
+                contenedorListado.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
+            if (!Array.isArray(data) || data.length === 0) {
+                contenedorListado.innerHTML = '<div class="alert alert-warning">No hay registros disponibles.</div>';
+                return;
+            }
+            const thead = columns.map(c => `<th>${c.header}</th>`).join('');
+            const tbody = data.map((item, idx) => {
+                const tds = columns.map(c => {
+                    const raw = typeof c.value === 'function' ? c.value(item, idx) : (item[c.value] ?? '');
+                    return `<td>${raw}</td>`;
+                }).join('');
+                return `<tr>${tds}</tr>`;
+            }).join('');
+            contenedorListado.innerHTML = `
+      <table class="table table-bordered table-sm table-striped">
+        <thead><tr>${thead}</tr></thead>
+        <tbody>${tbody}</tbody>
+      </table>
+    `;
+        }
+
+        function clearUI() {
+            filtros.innerHTML = '';
+            contenedorListado.innerHTML = '';
+        }
+
+        // Crea un select simple
+        function createSelect({ id, label, placeholder, col = 'col-md-4' }) {
+            const colDiv = document.createElement('div');
+            colDiv.className = col;
+            colDiv.innerHTML = `
+      <div class="mb-2">
+        <label class="form-label">${label}</label>
+        <select id="${id}" class="form-select">
+          <option value="">${placeholder}</option>
+        </select>
+      </div>
+    `;
+            return colDiv;
+        }
+
+        // Llena un select con items [{value, text}]
+        function fillSelect(selectEl, items, firstOptionText) {
+            selectEl.innerHTML = `<option value="">${firstOptionText}</option>`;
+            items.forEach(i => {
+                const opt = document.createElement('option');
+                opt.value = i.value;
+                opt.textContent = i.text;
+                selectEl.appendChild(opt);
+            });
+        }
+
+        // ------- Handlers por tipo -------
+        async function handleSubEquipo() {
+            clearUI();
+            const selEquipoWrap = createSelect({ id: 'filtroEquipo', label: 'Equipo', placeholder: 'Seleccione un equipo' });
+            filtros.appendChild(selEquipoWrap);
+            const selEquipo = document.getElementById('filtroEquipo');
+
+            const equipos = await loadEquipos().catch(() => []);
+            if (Array.isArray(equipos)) {
+                fillSelect(
+                    selEquipo,
+                    equipos.map(e => ({ value: e.EquipoID, text: e.Descripcion })),
+                    'Seleccione un equipo'
+                );
+                if (window.equipoSeleccionadoId) selEquipo.value = String(window.equipoSeleccionadoId);
+            } else {
+                selEquipo.innerHTML = `<option value="">${equipos?.message || 'Sin datos'}</option>`;
+            }
+
+            selEquipo.addEventListener('change', async function () {
+                contenedorListado.innerHTML = '';
+                const id = this.value;
+                if (!id) return;
+                const data = await loadSubEquipos(id).catch(() => []);
+                renderTable(
+                    [
+                        { header: '#', value: (row, idx) => idx + 1 },
+                        { header: 'Descripcion', value: (row) => row.Descripcion ?? row.Nombre ?? row.nombre ?? '' }
+                    ],
+                    data
+                );
+            });
+
+            if (selEquipo.value) selEquipo.dispatchEvent(new Event('change'));
+        }
+
+        // Componente por Subequipo
+        async function handleComponente() {
+            clearUI();
+            const selEquipoWrap = createSelect({ id: 'filtroEquipo', label: 'Equipo', placeholder: 'Seleccione un equipo' });
+            const selSubWrap = createSelect({ id: 'filtroSubequipo', label: 'Subequipo', placeholder: 'Seleccione un subequipo' });
+            filtros.appendChild(selEquipoWrap);
+            filtros.appendChild(selSubWrap);
+
+            const selEquipo = document.getElementById('filtroEquipo');
+            const selSub = document.getElementById('filtroSubequipo');
+
+            const equipos = await loadEquipos().catch(() => []);
+            if (Array.isArray(equipos)) {
+                fillSelect(
+                    selEquipo,
+                    equipos.map(e => ({ value: e.EquipoID, text: e.Descripcion })),
+                    'Seleccione un equipo'
+                );
+                if (window.equipoSeleccionadoId) selEquipo.value = String(window.equipoSeleccionadoId);
+            }
+
+            selEquipo.addEventListener('change', async function () {
+                contenedorListado.innerHTML = '';
+                selSub.innerHTML = '<option value="">Cargando...</option>';
+                const eqId = this.value;
+                if (!eqId) { selSub.innerHTML = '<option value="">Seleccione un equipo primero</option>'; return; }
+
+                const subs = await loadSubEquipos(eqId).catch(() => []);
+                if (Array.isArray(subs)) {
+                    fillSelect(
+                        selSub,
+                        subs.map(s => ({ value: s.SubEquipoID, text: s.Descripcion })),
+                        'Seleccione un subequipo'
+                    );
+                } else {
+                    selSub.innerHTML = '<option value="">Sin datos</option>';
+                }
+            });
+
+            selSub.addEventListener('change', async function () {
+                contenedorListado.innerHTML = '';
+                const subId = this.value;
+                if (!subId) return;
+
+                const comps = await loadComponentesBySub(subId).catch(() => []);
+                renderTable(
+                    [
+                        { header: '#', value: (row, idx) => idx + 1 },
+                        { header: 'Descripcion', value: (row) => row.Descripcion ?? row.Nombre ?? row.nombre ?? '' }
+                    ],
+                    comps
+                );
+            });
+
+            if (selEquipo.value) selEquipo.dispatchEvent(new Event('change'));
+        }
+
+        // Clasificacion sin filtro
+        async function handleClasificacion() {
+            clearUI();
+            const data = await loadClasificaciones().catch(() => []);
+            renderTable(
+                [
+                    { header: '#', value: (row, idx) => idx + 1 },
+                    { header: 'Descripcion', value: (row) => row.Descripcion ?? row.Nombre ?? row.nombre ?? '' }
+                ],
+                data
+            );
+        }
+
+        // TipoFalla: requiere Clasificacion y Componente (Componente depende de Subequipo)
+        async function handleTipoFalla() {
+            clearUI();
+            const selEquipoWrap = createSelect({ id: 'filtroEquipoTF', label: 'Equipo', placeholder: 'Seleccione un equipo' });
+            const selSubWrap = createSelect({ id: 'filtroSubTF', label: 'Subequipo', placeholder: 'Seleccione un subequipo' });
+            const selCompWrap = createSelect({ id: 'filtroCompTF', label: 'Componente', placeholder: 'Seleccione un componente' });
+            const selClasWrap = createSelect({ id: 'filtroClasTF', label: 'Clasificacion', placeholder: 'Seleccione una clasificacion' });
+            filtros.appendChild(selEquipoWrap);
+            filtros.appendChild(selSubWrap);
+            filtros.appendChild(selCompWrap);
+            filtros.appendChild(selClasWrap);
+
+            const selEquipo = document.getElementById('filtroEquipoTF');
+            const selSub = document.getElementById('filtroSubTF');
+            const selComp = document.getElementById('filtroCompTF');
+            const selClas = document.getElementById('filtroClasTF');
+
+            const [equipos, clasificaciones] = await Promise.all([
+                loadEquipos().catch(() => []),
+                loadClasificaciones().catch(() => [])
+            ]);
+
+            if (Array.isArray(equipos)) {
+                fillSelect(
+                    selEquipo,
+                    equipos.map(e => ({ value: e.EquipoID, text: e.Descripcion })),
+                    'Seleccione un equipo'
+                );
+                if (window.equipoSeleccionadoId) selEquipo.value = String(window.equipoSeleccionadoId);
+            }
+            if (Array.isArray(clasificaciones)) {
+                fillSelect(
+                    selClas,
+                    clasificaciones.map(c => ({ value: c.ClasificacionID, text: c.Descripcion })),
+                    'Seleccione una clasificacion'
+                );
+                if (window.clasificacionId) selClas.value = String(window.clasificacionId);
+            }
+
+            // Cascada: Equipo -> Subequipo
+            selEquipo.addEventListener('change', async function () {
+                contenedorListado.innerHTML = '';
+                selSub.innerHTML = '<option value="">Cargando...</option>';
+                selComp.innerHTML = '<option value="">Seleccione un subequipo primero</option>';
+                const eqId = this.value;
+                if (!eqId) { selSub.innerHTML = '<option value="">Seleccione un equipo primero</option>'; return; }
+
+                const subs = await loadSubEquipos(eqId).catch(() => []);
+                if (Array.isArray(subs)) {
+                    fillSelect(
+                        selSub,
+                        subs.map(s => ({ value: s.SubEquipoID, text: s.Descripcion })),
+                        'Seleccione un subequipo'
+                    );
+                    if (window.subEquipoId) { selSub.value = String(window.subEquipoId); selSub.dispatchEvent(new Event('change')); }
+                } else {
+                    selSub.innerHTML = '<option value="">Sin datos</option>';
+                }
+            });
+
+            // Cascada: Subequipo -> Componente
+            selSub.addEventListener('change', async function () {
+                contenedorListado.innerHTML = '';
+                selComp.innerHTML = '<option value="">Cargando...</option>';
+                const subId = this.value;
+                if (!subId) { selComp.innerHTML = '<option value="">Seleccione un subequipo primero</option>'; return; }
+
+                const comps = await loadComponentesBySub(subId).catch(() => []);
+                if (Array.isArray(comps)) {
+                    fillSelect(
+                        selComp,
+                        comps.map(c => ({ value: c.ComponenteEquipoID, text: c.Descripcion })),
+                        'Seleccione un componente'
+                    );
+                    if (window.componenteEquipoId) selComp.value = String(window.componenteEquipoId);
+                } else {
+                    selComp.innerHTML = '<option value="">Sin datos</option>';
+                }
+            });
+
+            // Cargar tipos de falla cuando hay clasificacion y componente
+            async function tryLoadTipos() {
+                contenedorListado.innerHTML = '';
+                const clasId = selClas.value;
+                const compId = selComp.value;
+                if (!clasId || !compId) return;
+
+                const data = await loadTiposFalla(clasId, compId).catch(() => []);
+                renderTable(
+                    [
+                        { header: '#', value: (row, idx) => idx + 1 },
+                        { header: 'Descripcion', value: (row) => row.Descripcion ?? row.Nombre ?? row.nombre ?? '' }
+                    ],
+                    data
+                );
+            }
+
+            selClas.addEventListener('change', tryLoadTipos);
+            selComp.addEventListener('change', tryLoadTipos);
+
+            if (selEquipo.value) selEquipo.dispatchEvent(new Event('change'));
+        }
+
+        // Evento principal
+        selectListado.addEventListener('change', function () {
+            const tipo = this.value;
+            if (!tipo) {
+                clearUI();
+                return;
+            }
+            if (tipo === 'SubEquipo') return handleSubEquipo();
+            if (tipo === 'Componente') return handleComponente();
+            if (tipo === 'Clasificacion') return handleClasificacion();
+            if (tipo === 'TipoFalla') return handleTipoFalla();
+        });
+    });
+
+
+
+</script>
+
+

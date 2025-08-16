@@ -5,7 +5,7 @@
 
 <h2>Index</h2>
 
-@model DVP.Models.EnergyViewModel
+@model DVP.Models.TagViewModel
 
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -110,13 +110,11 @@
                                         <table class="table table-bordered mb-0" style="background-color: #ffffff;">
                                             <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
                                                 <tr>
-                                                    <th class="text-center">Status</th>
-                                                    <th class="text-center">Plant</th>
-                                                    <th class="text-center">Equipment</th>
-                                                    <th class="text-center">Old SAP code</th>
-                                                    <th class="text-center">New detail code </th>
-                                                    <th class="text-center">Send to SAP</th>
-                                                    <th class="text-center">Buscar en PI</th>
+                                                    <th class="text-center">Activo</th>
+                                                    <th class="text-center">Tag Name</th>
+                                                    <th class="text-center">Activo</th>
+                                                    <th class="text-center">Tipo Operacion</th>
+                                                    <th class="text-center">Equipo</th>
                                                     <th class="text-center">Actions</th>
                                                 </tr>
                                             </thead>
@@ -147,9 +145,9 @@
         </div>
 
 
-        @*______________________________________________________________________Modal crear equipo _________________________________________________________________________*@
+        @*______________________________________________________________________Modal crear tag _________________________________________________________________________*@
 
-        <div class="modal fade" id="newEquipment" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal fade" id="newTag" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -160,7 +158,7 @@
                             <div class="card">
                                 <form>
                                     <div class="card-body">
-                                        <h4 class="card-title fw-semibold mb-2">Add New Equipment</h4>
+                                        <h4 class="card-title fw-semibold mb-2">Add New Tag</h4>
                                         <br />
                                     </div>
                                     <div class="row">
@@ -171,17 +169,17 @@
                                                 <input type="text" class="form-control" id="_descripcion" required>
                                             </div>
                                             <div class="mb-3">
-                                                <label class="form-label">Código Detalle</label>
-                                                <input type="text" class="form-control" id="_condigoDetalle" required>
+                                                <label class="form-label">Tag Name</label>
+                                                <input type="text" class="form-control" id="_tagName" required>
                                             </div>
                                             <div class="mb-3">
-                                                <label class="form-label">Código SAP</label>
-                                                <input type="text" class="form-control" id="_codigoSAP" required>
+                                                <label class="form-label">Tag Code</label>
+                                                <input type="text" class="form-control" id="_tagCode" required>
                                             </div>
                                             <div class="mb-3">
-                                                <label class="form-label">Proceso</label>
-                                                <select class="form-select" id="_procesoId">
-                                                    <option value="">Seleccione un proceso</option>
+                                                <label class="form-label">Tipo de Operación</label>
+                                                <select class="form-select" id="_tipoOperacionId">
+                                                    <option value="">Seleccione un tipo de operación</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -189,43 +187,23 @@
                                         <!-- Columna derecha -->
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">Planta</label>
-                                                <select class="form-select" id="_plantaId">
-                                                    <option value="">Seleccione una planta</option>
+                                                <label class="form-label">Equipo</label>
+                                                <select class="form-select" id="_equipoId">
+                                                    <option value="">Seleccione un equipo</option>
                                                 </select>
                                             </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Unidad Operativa</label>
-                                                <select class="form-select" id="_unidadOperativaId">
-                                                    <option value="">Seleccione una Unidad Operativa</option>
-                                                </select>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">País</label>
-                                                <select class="form-select" id="_paisId">
-                                                    <option value="">Seleccione un país</option>
-                                                </select>
-                                            </div>
-                                            <!-- Switches -->
                                             <div class="form-check form-switch mb-3">
-                                                <input class="form-check-input" type="checkbox" id="_buscarParo">
-                                                <label class="form-check-label" for="_buscarParo">Buscar Paro</label>
-                                            </div>
-                                            <div class="form-check form-switch mb-3">
-                                                <input class="form-check-input" type="checkbox" id="_active">
-                                                <label class="form-check-label" for="_active">Activo</label>
-                                            </div>
-                                            <div class="form-check form-switch mb-3">
-                                                <input class="form-check-input" type="checkbox" id="_enviarASAP">
-                                                <label class="form-check-label" for="_enviarASAP">Enviar a SAP</label>
+                                                <input class="form-check-input" type="checkbox" id="_activo">
+                                                <label class="form-check-label" for="_activo">Activo</label>
                                             </div>
                                         </div>
                                     </div>
 
+
                                     <!-- Botón y alerta -->
                                     <div class="text-end mt-3">
-                                        <button type="button" id="crearequipo" class="btn btn-outline-success m-1"
-                                                data-url="@Url.Action("CreateEquipment", "Equipo")">
+                                        <button type="button" id="creartag" class="btn btn-outline-success m-1"
+                                                data-url="@Url.Action("CreateTag", "Tag")">
                                             Crear <span class="text-success ms-2">&#10004;</span>
                                         </button>
                                     </div>
@@ -244,7 +222,7 @@
         @*_____________________________________________________________________________ Modal para Editar equipo ___________________________________________________________________*@
 
 
-        <div class="modal fade" id="editEquipment" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal fade" id="editTag" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -257,9 +235,9 @@
                                 <div class="card-body">
                                     <form>
                                         <div class="card-body">
-                                            <h4 class="card-title fw-semibold mb-2">Edit New Equipment</h4>
+                                            <h4 class="card-title fw-semibold mb-2">Edit Tag</h4>
                                             <br />
-                                            <input type="hidden" id="equipoIdhidden" value=""/>
+                                            <input type="hidden" id="tagIdhidden" value="" />
                                         </div>
                                         <div class="row">
                                             <!-- Columna izquierda -->
@@ -269,17 +247,17 @@
                                                     <input type="text" class="form-control" id="_descripcioneditar" required>
                                                 </div>
                                                 <div class="mb-3">
-                                                    <label class="form-label">Código Detalle</label>
-                                                    <input type="text" class="form-control" id="_condigoDetalleeditar" required>
+                                                    <label class="form-label">Tag Name</label>
+                                                    <input type="text" class="form-control" id="_tagNameeditar" required>
                                                 </div>
                                                 <div class="mb-3">
-                                                    <label class="form-label">Código SAP</label>
-                                                    <input type="text" class="form-control" id="_codigoSAPeditar" required>
+                                                    <label class="form-label">Tag Code</label>
+                                                    <input type="text" class="form-control" id="_tagCodeeditar" required>
                                                 </div>
                                                 <div class="mb-3">
-                                                    <label class="form-label">Proceso</label>
-                                                    <select class="form-select" id="_procesoIdeditar">
-                                                        <option value="">Seleccione un proceso</option>
+                                                    <label class="form-label">Tipo de Operación</label>
+                                                    <select class="form-select" id="_tipoOperacionIdeditar">
+                                                        <option value="">Seleccione un tipo de operación</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -287,44 +265,24 @@
                                             <!-- Columna derecha -->
                                             <div class="col-md-6">
                                                 <div class="mb-3">
-                                                    <label class="form-label">Planta</label>
-                                                    <select class="form-select" id="_plantaIdeditar">
-                                                        <option value="">Seleccione una planta</option>
+                                                    <label class="form-label">Equipo</label>
+                                                    <select class="form-select" id="_equipoIdeditar">
+                                                        <option value="">Seleccione un equipo</option>
                                                     </select>
                                                 </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">Unidad Operativa</label>
-                                                    <select class="form-select" id="_unidadOperativaIdeditar">
-                                                        <option value="">Seleccione una Unidad Operativa</option>
-                                                    </select>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">País</label>
-                                                    <select class="form-select" id="_paisIdeditar">
-                                                        <option value="">Seleccione un país</option>
-                                                    </select>
-                                                </div>
-                                                <!-- Switches -->
                                                 <div class="form-check form-switch mb-3">
-                                                    <input class="form-check-input" type="checkbox" id="_buscarParoeditar">
-                                                    <label class="form-check-label" for="_buscarParoeditar">Buscar Paro</label>
-                                                </div>
-                                                <div class="form-check form-switch mb-3">
-                                                    <input class="form-check-input" type="checkbox" id="_activeeditar">
-                                                    <label class="form-check-label" for="_activeeditar">Activo</label>
-                                                </div>
-                                                <div class="form-check form-switch mb-3">
-                                                    <input class="form-check-input" type="checkbox" id="_enviarASAPeditar">
-                                                    <label class="form-check-label" for="_enviarASAPeditar">Enviar a SAP</label>
+                                                    <input class="form-check-input" type="checkbox" id="_activoeditar">
+                                                    <label class="form-check-label" for="_activoeditar">Activo</label>
                                                 </div>
                                             </div>
                                         </div>
 
+
                                         <!-- Botón y alerta -->
                                         <div class="text-end mt-3">
-                                            <button type="button" id="editarequipo"
+                                            <button type="button" id="editartag"
                                                     class="btn btn-outline-success m-1"
-                                                    data-url="@Url.Action("EditEquipment", "Equipo")"
+                                                    data-url="@Url.Action("EditTag", "Tag")"
                                                     onclick="submitEditEquipmentForm()">
                                                 Editar <span class="text-success ms-2">&#10004;</span>
                                             </button>
@@ -368,7 +326,7 @@
 
     function newEquipment() {
     // Mostrar el modal
-    const modalElement = document.getElementById("newEquipment");
+    const modalElement = document.getElementById("newTag");
     const modal = new bootstrap.Modal(modalElement);
     modal.show();
 
@@ -378,27 +336,19 @@
 
     function cargarCombosEquipo() {
     // Limpiar selects
-    limpiarSelect("_procesoId");
-    limpiarSelect("_plantaId");
-    limpiarSelect("_unidadOperativaId");
-    limpiarSelect("_paisId");
+    limpiarSelect("_tipoOperacionId");
+    limpiarSelect("_equipoId");
 
-    // Llamadas AJAX a cada endpoint
-    fetch('@Url.Action("GetProceso", "Equipo")')
-        .then(response => response.json())
-        .then(data => llenarSelect("_procesoId", data, "ProcesoID", "Descripcion"));
 
-    fetch('@Url.Action("GetPlanta", "Equipo")')
+    // Llamadas cada endpoint
+    fetch('@Url.Action("GetEquiposporPaislogguedUser", "Equipo")')
         .then(response => response.json())
-        .then(data => llenarSelect("_plantaId", data, "PlantaID", "Descripcion"));
+        .then(data => llenarSelect("_equipoId", data, "EquipoID", "Descripcion"));
 
-    fetch('@Url.Action("GetUnidadOperativa", "Equipo")')
+    fetch('@Url.Action("GetTipoOperacion", "Tag")')
         .then(response => response.json())
-        .then(data => llenarSelect("_unidadOperativaId", data, "UnidadOperativaID", "Descripcion"));
+        .then(data => llenarSelect("_tipoOperacionId", data, "TipoOperacionID", "Descripcion"));
 
-    fetch('@Url.Action("GetPais", "Equipo")')
-        .then(response => response.json())
-        .then(data => llenarSelect("_paisId", data, "PaisID", "Descripcion"));
 }
 
     function llenarSelect(selectId, data, valueField, textField) {
@@ -418,36 +368,30 @@
 
 
 
-    document.getElementById("crearequipo").addEventListener("click", crearEquipoNuevo);
+    document.getElementById("creartag").addEventListener("click", crearEquipoNuevo);
 
     function crearEquipoNuevo() {
         // Obtener valores del formulario
         const descripcion = document.getElementById("_descripcion").value.trim();
-        const condigoDetalle = document.getElementById("_condigoDetalle").value.trim();
-        const condigoSAP = document.getElementById("_codigoSAP").value.trim();
-        const procesoId = document.getElementById("_procesoId").value;
-        const plantaId = document.getElementById("_plantaId").value;
-        const unidadOperativaId = document.getElementById("_unidadOperativaId").value;
-        const paisId = document.getElementById("_paisId").value;
-        const buscarParo = document.getElementById("_buscarParo").checked;
-        const active = document.getElementById("_active").checked;
-        const enviarASAP = document.getElementById("_enviarASAP").checked;
+        const tagName = document.getElementById("_tagName").value.trim();
+        const tagCode = document.getElementById("_tagCode").value.trim();
+        const tipoOperacionId = parseInt(document.getElementById("_tipoOperacionId").value) || null;
+        const equipoId = parseInt(document.getElementById("_equipoId").value) || null;
+        const activo = document.getElementById("_activo").checked;
 
-        const url = document.getElementById("crearequipo").getAttribute("data-url");
+
+        const url = document.getElementById("creartag").getAttribute("data-url");
 
         // Construir el objeto que será enviado al controlador
         const data = {
             _descripcion: descripcion,
-            _condigoDetalle: condigoDetalle,
-            _condigoSAP: condigoSAP,
-            _procesoId: parseInt(procesoId),
-            _plantaId: parseInt(plantaId),
-            _unidadOperativaId: parseInt(unidadOperativaId),
-            _paisId: parseInt(paisId),
-            _buscarParo: buscarParo,
-            _active: active,
-            _enviarASAP: enviarASAP
+            _tagName: tagName,
+            _tagCode: tagCode,
+            _tipoOperacionId: tipoOperacionId,
+            _equipoId: equipoId,
+            _activo: activo
         };
+
 
         // Enviar al backend vía fetch
         fetch(url, {
@@ -466,9 +410,9 @@
                     // Ocultar modal y limpiar formulario después de unos segundos
                     setTimeout(() => {
                         document.getElementById("alertSuccess").style.display = "none";
-                        var modal = bootstrap.Modal.getInstance(document.getElementById("newEquipment"));
+                        var modal = bootstrap.Modal.getInstance(document.getElementById("newTag"));
                         modal.hide();
-                        document.querySelector("#newEquipment form").reset();
+                        document.querySelector("#newTag form").reset();
 
                         // Puedes recargar la tabla de equipos si es necesario
                         loadEquipmentTable();
@@ -489,63 +433,53 @@
 
     function loadEquipmentTable() {
     const tbody = document.getElementById('downtimeTableBody');
-    tbody.innerHTML = '';
+    tbody.innerHTML = ''; // Limpiar contenido anterior
 
-    cargando(); // mostrar modal de carga
+    cargando(); // Mostrar modal de carga
 
-    fetch('@Url.Action("GetEquipos", "Equipo")')
+    fetch('@Url.Action("GetTags", "Tag")')
         .then(response => {
-            if (!response.ok) throw new Error('Error al obtener los datos.');
+            if (!response.ok) throw new Error("Error al obtener los datos.");
             return response.json();
         })
         .then(data => {
-            if (!data || !data.success || !Array.isArray(data.data)) {
-                alert('La respuesta del servidor no es valida.');
+            if (!data.success || !Array.isArray(data.data)) {
+                alert("La respuesta del servidor no es válida.");
                 return;
             }
 
-            // traer TODOS (activos e inactivos)
-            const equipos = data.data;
+            // Filtrar solo los que tienen _activo === true
+            const equiposActivos = data.data.filter(item => item._activo === true);
 
-            equipos.forEach(item => {
+            equiposActivos.forEach(item => {
                 const row = document.createElement('tr');
 
-                const isActive = item._active === true;
-                const estadoIcon = isActive
-                    ? '<i class="bi bi-check-circle-fill text-success" title="Activo"></i>'
-                    : '<i class="bi bi-x-circle-fill text-danger" title="Inactivo"></i>';
-
                 row.innerHTML = `
-                    <td class="text-center">${estadoIcon}</td>
-                    <td class="text-center">${item._plantaDescripcion ?? ''}</td>
-                    <td class="text-center">${item._descripcion ?? ''}</td>
-                    <td class="text-center">${item._condigoSAP ?? ''}</td>
-                    <td class="text-center">${item._condigoDetalle ?? ''}</td>
                     <td class="text-center">
-                        ${item._enviarASAP ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}
+                        <i class="bi bi-check-circle-fill text-success"></i>
                     </td>
-                    <td class="text-center">
-                        ${item._buscarParo ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}
-                    </td>
+                    <td class="text-center">${item._descripcion || ''}</td>
+                    <td class="text-center">${item._tagName || ''}</td>
+                    <td class="text-center">${item._tipoOperacionDescripcion || ''}</td>
+                    <td class="text-center">${item._equipoDescripcion || ''}</td>
                     <td class="text-center bg-white">
-                        <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditarEquipo(${item._equipoId})">
-                            <i class="bi bi-pencil me-2"></i>
-                        </a>
+                        <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditarTag(${item._tagEquipoId})"><i class="bi bi-pencil me-2"></i></a>
                     </td>
                 `;
 
                 tbody.appendChild(row);
             });
+
         })
         .catch(error => {
-            console.error('Error cargando la tabla de equipos:', error);
-            alert('Ocurrio un error al cargar los equipos.');
+            console.error("Error cargando la tabla de equipos:", error);
+            alert("Ocurrió un error al cargar los equipos.");
         })
         .finally(() => {
-            document.getElementById('loadingModal').style.display = 'none';
+            // Ocultar modal de carga al final
+            document.getElementById("loadingModal").style.display = "none";
         });
 }
-
 
 
 
@@ -553,43 +487,35 @@
     //____________________________________________________________________ Editar Equipo_________________________________________________________________//
 
 
-    function abrirModalEditarEquipo(equipoId) {
+    function abrirModalEditarTag(tagId) {
     Promise.all([
-        fetch('@Url.Action("GetProceso", "Equipo")').then(res => res.json()),
-        fetch('@Url.Action("GetPlanta", "Equipo")').then(res => res.json()),
-        fetch('@Url.Action("GetUnidadOperativa", "Equipo")').then(res => res.json()),
-        fetch('@Url.Action("GetPais", "Equipo")').then(res => res.json())
+        fetch('@Url.Action("GetEquiposporPaislogguedUser", "Equipo")').then(res => res.json()),
+        fetch('@Url.Action("GetTipoOperacion", "Tag")').then(res => res.json())
     ])
-    .then(([procesos, plantas, unidades, paises]) => {
-        llenarSelect('_procesoIdeditar', procesos, 'ProcesoID', 'Descripcion');
-        llenarSelect('_plantaIdeditar', plantas, 'PlantaID', 'Descripcion');
-        llenarSelect('_unidadOperativaIdeditar', unidades, 'UnidadOperativaID', 'Descripcion');
-        llenarSelect('_paisIdeditar', paises, 'PaisID', 'Descripcion');
+        .then(([equipos, tiposOperacion]) => {
+        llenarSelect('_equipoIdeditar', equipos, 'EquipoID', 'Descripcion');
+        llenarSelect('_tipoOperacionIdeditar', tiposOperacion, 'TipoOperacionID', 'Descripcion');
 
-        return fetch('@Url.Action("GetEquipoId", "Equipo")' + '?equipoId=' + equipoId);
+        return fetch('@Url.Action("GetTagId", "Tag")' + '?tagId=' + tagId);
     })
     .then(res => res.json())
     .then(result => {
         if (result.success) {
             const data = result.data;
 
-            document.getElementById("equipoIdhidden").value = data._equipoId;
+            document.getElementById("tagIdhidden").value = data._tagEquipoId;
             document.getElementById("_descripcioneditar").value = data._descripcion;
-            document.getElementById("_condigoDetalleeditar").value = data._condigoDetalle;
-            document.getElementById("_codigoSAPeditar").value = data._condigoSAP;
-            document.getElementById("_buscarParoeditar").checked = data._buscarParo;
-            document.getElementById("_activeeditar").checked = data._active;
-            document.getElementById("_enviarASAPeditar").checked = data._enviarASAP;
+            document.getElementById("_tagNameeditar").value = data._tagName;
+            document.getElementById("_tagCodeeditar").value = data._tagCode;
+            document.getElementById("_activoeditar").checked = data._activo;
 
             // Asignar valores a los selects
             setTimeout(() => {
-                document.getElementById("_procesoIdeditar").value = data._procesoID?.toString();
-                document.getElementById("_plantaIdeditar").value = data._plantaID?.toString();
-                document.getElementById("_unidadOperativaIdeditar").value = data._unidadOperativaID?.toString();
-                document.getElementById("_paisIdeditar").value = data._paisID?.toString();
+                document.getElementById("_tipoOperacionIdeditar").value = data._tipoOperacionId?.toString();
+                document.getElementById("_equipoIdeditar").value = data._equipoId?.toString();
             }, 100);
 
-            const modalElement = document.getElementById("editEquipment");
+            const modalElement = document.getElementById("editTag");
             const modal = new bootstrap.Modal(modalElement);
             modal.show();
         } else {
@@ -622,20 +548,16 @@
     cargando();
 
     const data = {
-        _equipoId: document.getElementById("equipoIdhidden").value,
+        _tagEquipoId: document.getElementById("tagIdhidden").value,
         _descripcion: document.getElementById("_descripcioneditar").value,
-        _condigoDetalle: document.getElementById("_condigoDetalleeditar").value,
-        _condigoSAP: document.getElementById("_codigoSAPeditar").value,
-        _procesoId: document.getElementById("_procesoIdeditar").value,
-        _plantaId: document.getElementById("_plantaIdeditar").value,
-        _unidadOperativaId: document.getElementById("_unidadOperativaIdeditar").value,
-        _paisId: document.getElementById("_paisIdeditar").value,
-        _buscarParo: document.getElementById("_buscarParoeditar").checked,
-        _active: document.getElementById("_activeeditar").checked,
-        _enviarASAP: document.getElementById("_enviarASAPeditar").checked
+        _tagName: document.getElementById("_tagNameeditar").value,
+        _tagCode: document.getElementById("_tagCodeeditar").value,
+        _tipoOperacionId: document.getElementById("_tipoOperacionIdeditar").value,
+        _equipoId: document.getElementById("_equipoIdeditar").value,
+        _activo: document.getElementById("_activoeditar").checked
     };
 
-    fetch('@Url.Action("EditEquipment", "Equipo")', {
+    fetch('@Url.Action("EditTag", "Tag")', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -651,7 +573,7 @@
             // Ocultar el modal y mensaje después de un tiempo
             setTimeout(() => {
                 document.getElementById("alertEditeSuccesseditar").style.display = "none";
-                const modal = bootstrap.Modal.getInstance(document.getElementById("editEquipment"));
+                const modal = bootstrap.Modal.getInstance(document.getElementById("editTag"));
                 modal.hide();
 
                 // Opcional: recargar para ver cambios reflejados

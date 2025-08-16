@@ -23,33 +23,32 @@ namespace DVP.Controllers
         DataAccess.DVPEntities _dvpEntities = new DataAccess.DVPEntities();
 
         // GET: Downtime
-        public ActionResult Index()
+        public ActionResult Index(int? plantaId)   
         {
             var tokenEnSession = Session["token"]?.ToString();
-
             if (string.IsNullOrEmpty(tokenEnSession))
-            {
                 return RedirectToAction("Index", "Account");
-            }
 
             var usuario = _dvpEntities.Usuario.FirstOrDefault(u => u.Token == tokenEnSession);
             if (usuario == null)
-            {
                 return RedirectToAction("Index", "Account");
-            }
 
             var paisId = usuario.PaisID ?? 0;
-            var plantaId = usuario.PlantaID ?? 0;
+
+            var plantaIdEfectivo = plantaId ?? (usuario.PlantaID ?? 0);
+
+            var vmBase = new DowntimeViewModel();
             DowntimeViewModel viewModel = new DowntimeViewModel
             {
-                _plantaId = plantaId,
+                _plantaId = plantaIdEfectivo,
                 _paisId = paisId,
-                Equipos = new DowntimeViewModel().GetEquiposPorPais(paisId,plantaId).ToList()
+                _usuarioCreadorID = usuario.UsuarioID,
+                Equipos = vmBase.GetEquiposPorPlanta(plantaIdEfectivo).ToList()
             };
 
             return View(viewModel);
-
         }
+
 
         [HttpGet]
         public JsonResult GetSubEquipos(int _equipoId)
@@ -110,6 +109,22 @@ namespace DVP.Controllers
 
             return Json(subEquipos, JsonRequestBehavior.AllowGet);
         }
+
+        [HttpGet]
+        public JsonResult GetClasificacion()
+        {
+
+            var clasificaciones = _dvpEntities.Clasificacion
+                                     .Select(s => new
+                                     {
+                                         ClasificacionID = s.ClasificacionID,
+                                         Descripcion = s.Descripcion
+                                     })
+                                     .ToList();
+
+            return Json(clasificaciones, JsonRequestBehavior.AllowGet);
+        }
+
 
         [HttpGet]
         public JsonResult GetParoById(int paroId)
@@ -957,19 +972,19 @@ namespace DVP.Controllers
             if (eventoInactive != null && eventoActive != null)
             {
                 // Caso normal: existe INACTIVE y ACTIVE
-                resultado = Math.Abs((eventoInactive.FechaEvento - eventoActive.FechaEvento)?.TotalHours ?? 0);
+                resultado = Math.Abs((eventoInactive.FechaEvento - eventoActive.FechaEvento)?.TotalMinutes ?? 0);
             }
             else
             {
                 if (eventoActive == null && eventoPendingActive == null)
                 {
-                    resultado = Math.Abs((eventoInactive.FechaEvento - fechaRestaEventoInactive)?.TotalHours ?? 0);
+                    resultado = Math.Abs((eventoInactive.FechaEvento - fechaRestaEventoInactive)?.TotalMinutes ?? 0);
 
                 }
                 else
                 {
                     // Caso alterno: NO existe ACTIVE => restamos eventoInactive - paro
-                    resultado = Math.Abs((eventoInactive.FechaEvento - eventoPendingActive.FechaEvento)?.TotalHours ?? 0);
+                    resultado = Math.Abs((eventoInactive.FechaEvento - eventoPendingActive.FechaEvento)?.TotalMinutes ?? 0);
                 }
             }
             

@@ -4,7 +4,7 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-    <Schema Namespace="DVPModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+      <Schema Namespace="DVPModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
         <EntityType Name="BillOfMaterial">
           <Key>
             <PropertyRef Name="BillOfMaterialID" />
@@ -177,6 +177,15 @@
           <Property Name="CodigoSAPProgreso" Type="nvarchar" MaxLength="30" Nullable="false" />
           <Property Name="Active" Type="bit" />
         </EntityType>
+        <EntityType Name="PlantaAsignada">
+          <Key>
+            <PropertyRef Name="PlantaAsignadaID" />
+          </Key>
+          <Property Name="PlantaAsignadaID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="UsuarioID" Type="int" Nullable="false" />
+          <Property Name="PlantaID" Type="int" Nullable="false" />
+          <Property Name="FechaAsignacion" Type="datetime" />
+        </EntityType>
         <EntityType Name="Proceso">
           <Key>
             <PropertyRef Name="ProcesoID" />
@@ -231,6 +240,9 @@
           <Property Name="Descripcion" Type="nvarchar(max)" />
           <Property Name="TagName" Type="nvarchar(max)" />
           <Property Name="TagCode" Type="nvarchar(max)" />
+          <Property Name="Activo" Type="bit" />
+          <Property Name="TipoOperacionID" Type="int" />
+          <Property Name="EquipoID" Type="int" />
         </EntityType>
         <EntityType Name="TipoEvento">
           <Key>
@@ -589,6 +601,34 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
+        <Association Name="FK_PlantaAsignada_Planta">
+          <End Role="Planta" Type="Self.Planta" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="PlantaAsignada" Type="Self.PlantaAsignada" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Planta">
+              <PropertyRef Name="PlantaID" />
+            </Principal>
+            <Dependent Role="PlantaAsignada">
+              <PropertyRef Name="PlantaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_PlantaAsignada_Usuario">
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="PlantaAsignada" Type="Self.PlantaAsignada" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Usuario">
+              <PropertyRef Name="UsuarioID" />
+            </Principal>
+            <Dependent Role="PlantaAsignada">
+              <PropertyRef Name="UsuarioID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
         <Association Name="FK_Proceso_Equipo">
           <End Role="Proceso" Type="Self.Proceso" Multiplicity="0..1" />
           <End Role="Equipo" Type="Self.Equipo" Multiplicity="*" />
@@ -622,6 +662,30 @@
             </Principal>
             <Dependent Role="Paros">
               <PropertyRef Name="SubEquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TagEquipo_Equipo">
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="0..1" />
+          <End Role="TagEquipo" Type="Self.TagEquipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Equipo">
+              <PropertyRef Name="EquipoID" />
+            </Principal>
+            <Dependent Role="TagEquipo">
+              <PropertyRef Name="EquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TagEquipo_TipoOperacion">
+          <End Role="TipoOperacion" Type="Self.TipoOperacion" Multiplicity="0..1" />
+          <End Role="TagEquipo" Type="Self.TagEquipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoOperacion">
+              <PropertyRef Name="TipoOperacionID" />
+            </Principal>
+            <Dependent Role="TagEquipo">
+              <PropertyRef Name="TipoOperacionID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -757,6 +821,37 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
+        <Function Name="fn_diagramobjects" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="true" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo" ReturnType="int" />
+        <Function Name="sp_alterdiagram" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="diagramname" Type="nvarchar" Mode="In" />
+          <Parameter Name="owner_id" Type="int" Mode="In" />
+          <Parameter Name="version" Type="int" Mode="In" />
+          <Parameter Name="definition" Type="varbinary(max)" Mode="In" />
+        </Function>
+        <Function Name="sp_creatediagram" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="diagramname" Type="nvarchar" Mode="In" />
+          <Parameter Name="owner_id" Type="int" Mode="In" />
+          <Parameter Name="version" Type="int" Mode="In" />
+          <Parameter Name="definition" Type="varbinary(max)" Mode="In" />
+        </Function>
+        <Function Name="sp_dropdiagram" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="diagramname" Type="nvarchar" Mode="In" />
+          <Parameter Name="owner_id" Type="int" Mode="In" />
+        </Function>
+        <Function Name="sp_helpdiagramdefinition" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="diagramname" Type="nvarchar" Mode="In" />
+          <Parameter Name="owner_id" Type="int" Mode="In" />
+        </Function>
+        <Function Name="sp_helpdiagrams" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="diagramname" Type="nvarchar" Mode="In" />
+          <Parameter Name="owner_id" Type="int" Mode="In" />
+        </Function>
+        <Function Name="sp_renamediagram" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="diagramname" Type="nvarchar" Mode="In" />
+          <Parameter Name="owner_id" Type="int" Mode="In" />
+          <Parameter Name="new_diagramname" Type="nvarchar" Mode="In" />
+        </Function>
+        <Function Name="sp_upgraddiagrams" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo" />
         <EntityContainer Name="DVPModelStoreContainer">
           <EntitySet Name="BillOfMaterial" EntityType="Self.BillOfMaterial" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="CierreStatus" EntityType="Self.CierreStatus" Schema="dbo" store:Type="Tables" />
@@ -772,6 +867,7 @@
           <EntitySet Name="Pais" EntityType="Self.Pais" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Paros" EntityType="Self.Paros" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Planta" EntityType="Self.Planta" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="PlantaAsignada" EntityType="Self.PlantaAsignada" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Proceso" EntityType="Self.Proceso" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Rol" EntityType="Self.Rol" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Salidas" EntityType="Self.Salidas" Schema="dbo" store:Type="Tables" />
@@ -876,6 +972,14 @@
             <End Role="Planta" EntitySet="Planta" />
             <End Role="Usuario" EntitySet="Usuario" />
           </AssociationSet>
+          <AssociationSet Name="FK_PlantaAsignada_Planta" Association="Self.FK_PlantaAsignada_Planta">
+            <End Role="Planta" EntitySet="Planta" />
+            <End Role="PlantaAsignada" EntitySet="PlantaAsignada" />
+          </AssociationSet>
+          <AssociationSet Name="FK_PlantaAsignada_Usuario" Association="Self.FK_PlantaAsignada_Usuario">
+            <End Role="Usuario" EntitySet="Usuario" />
+            <End Role="PlantaAsignada" EntitySet="PlantaAsignada" />
+          </AssociationSet>
           <AssociationSet Name="FK_Proceso_Equipo" Association="Self.FK_Proceso_Equipo">
             <End Role="Proceso" EntitySet="Proceso" />
             <End Role="Equipo" EntitySet="Equipo" />
@@ -887,6 +991,14 @@
           <AssociationSet Name="FK_SubEquipo_Paros" Association="Self.FK_SubEquipo_Paros">
             <End Role="SubEquipo" EntitySet="SubEquipo" />
             <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TagEquipo_Equipo" Association="Self.FK_TagEquipo_Equipo">
+            <End Role="Equipo" EntitySet="Equipo" />
+            <End Role="TagEquipo" EntitySet="TagEquipo" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TagEquipo_TipoOperacion" Association="Self.FK_TagEquipo_TipoOperacion">
+            <End Role="TipoOperacion" EntitySet="TipoOperacion" />
+            <End Role="TagEquipo" EntitySet="TagEquipo" />
           </AssociationSet>
           <AssociationSet Name="FK_TipoEvento_Paros" Association="Self.FK_TipoEvento_Paros">
             <End Role="TipoEvento" EntitySet="TipoEvento" />
@@ -933,7 +1045,8 @@
             <End Role="CierreStatus" EntitySet="CierreStatus" />
           </AssociationSet>
         </EntityContainer>
-      </Schema></edmx:StorageModels>
+      </Schema>
+    </edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
       <Schema Namespace="DVPModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
@@ -1055,9 +1168,10 @@
           <NavigationProperty Name="Paros" Relationship="Self.FK_Equipo_Paros" FromRole="Equipo" ToRole="Paros" />
           <NavigationProperty Name="SubEquipo" Relationship="Self.FK_Equipo_SeccionEquipo" FromRole="Equipo" ToRole="SubEquipo" />
           <NavigationProperty Name="Pais" Relationship="Self.FK_Pais_Equipo" FromRole="Equipo" ToRole="Pais" />
+          <NavigationProperty Name="Planta" Relationship="Self.FK_Planta_Equipo" FromRole="Equipo" ToRole="Planta" />
           <NavigationProperty Name="Proceso" Relationship="Self.FK_Proceso_Equipo" FromRole="Equipo" ToRole="Proceso" />
+          <NavigationProperty Name="TagEquipo" Relationship="Self.FK_TagEquipo_Equipo" FromRole="Equipo" ToRole="TagEquipo" />
           <NavigationProperty Name="UnidadOperativa" Relationship="Self.FK_UnidadOperativa_Equipo" FromRole="Equipo" ToRole="UnidadOperativa" />
-          <NavigationProperty Name="Planta" Relationship="DVPModel.FK_Planta_Equipo" FromRole="Equipo" ToRole="Planta" />
         </EntityType>
         <EntityType Name="Gerencia">
           <Key>
@@ -1093,12 +1207,12 @@
           <Property Name="Alterno" Type="Boolean" />
           <Property Name="AfectaInventario" Type="Boolean" />
           <Property Name="IDStock" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
+          <Property Name="Activo" Type="Boolean" />
           <NavigationProperty Name="BillOfMaterial" Relationship="Self.FK_BillOfMaterial_MaterialConsumo" FromRole="Material" ToRole="BillOfMaterial" />
           <NavigationProperty Name="BillOfMaterial1" Relationship="Self.FK_Material_BillOfMaterial" FromRole="Material" ToRole="BillOfMaterial" />
           <NavigationProperty Name="ClasificacionMaterial" Relationship="Self.FK_ClasificacionMaterial_Material" FromRole="Material" ToRole="ClasificacionMaterial" />
           <NavigationProperty Name="DataOperacion" Relationship="Self.FK_CantidadReal_DataOperacion" FromRole="Material" ToRole="DataOperacion" />
           <NavigationProperty Name="DataOperacion1" Relationship="Self.FK_Material_DataOperacion" FromRole="Material" ToRole="DataOperacion" />
-          <Property Name="Activo" Type="Boolean" />
         </EntityType>
         <EntityType Name="Pais">
           <Key>
@@ -1141,6 +1255,30 @@
           <NavigationProperty Name="TipoEvento" Relationship="Self.FK_TipoEvento_Paros" FromRole="Paros" ToRole="TipoEvento" />
           <NavigationProperty Name="TipoFalla" Relationship="Self.FK_TipoFalla_Paros" FromRole="Paros" ToRole="TipoFalla" />
           <NavigationProperty Name="Usuario" Relationship="Self.FK_UsuarioValidador_Paros" FromRole="Paros" ToRole="Usuario" />
+        </EntityType>
+        <EntityType Name="Planta">
+          <Key>
+            <PropertyRef Name="PlantaID" />
+          </Key>
+          <Property Name="PlantaID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="CodigoSAP" Type="String" MaxLength="30" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="CodigoSAPProgreso" Type="String" MaxLength="30" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Active" Type="Boolean" />
+          <NavigationProperty Name="Equipo" Relationship="Self.FK_Planta_Equipo" FromRole="Planta" ToRole="Equipo" />
+          <NavigationProperty Name="Usuario" Relationship="Self.FK_Planta_Usuario" FromRole="Planta" ToRole="Usuario" />
+          <NavigationProperty Name="PlantaAsignada" Relationship="Self.FK_PlantaAsignada_Planta" FromRole="Planta" ToRole="PlantaAsignada" />
+        </EntityType>
+        <EntityType Name="PlantaAsignada">
+          <Key>
+            <PropertyRef Name="PlantaAsignadaID" />
+          </Key>
+          <Property Name="PlantaAsignadaID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="UsuarioID" Type="Int32" Nullable="false" />
+          <Property Name="PlantaID" Type="Int32" Nullable="false" />
+          <Property Name="FechaAsignacion" Type="DateTime" Precision="3" />
+          <NavigationProperty Name="Planta" Relationship="Self.FK_PlantaAsignada_Planta" FromRole="PlantaAsignada" ToRole="Planta" />
+          <NavigationProperty Name="Usuario" Relationship="Self.FK_PlantaAsignada_Usuario" FromRole="PlantaAsignada" ToRole="Usuario" />
         </EntityType>
         <EntityType Name="Proceso">
           <Key>
@@ -1201,6 +1339,11 @@
           <Property Name="Descripcion" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
           <Property Name="TagName" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
           <Property Name="TagCode" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
+          <Property Name="Activo" Type="Boolean" />
+          <Property Name="TipoOperacionID" Type="Int32" />
+          <Property Name="EquipoID" Type="Int32" />
+          <NavigationProperty Name="Equipo" Relationship="Self.FK_TagEquipo_Equipo" FromRole="TagEquipo" ToRole="Equipo" />
+          <NavigationProperty Name="TipoOperacion" Relationship="Self.FK_TagEquipo_TipoOperacion" FromRole="TagEquipo" ToRole="TipoOperacion" />
         </EntityType>
         <EntityType Name="TipoEvento">
           <Key>
@@ -1240,6 +1383,7 @@
           <Property Name="MovimientoSAP" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
           <NavigationProperty Name="BillOfMaterial" Relationship="Self.FK_TipoOperacion_BillOfMaterial" FromRole="TipoOperacion" ToRole="BillOfMaterial" />
           <NavigationProperty Name="DataOperacion" Relationship="Self.FK_TipoOperacion_DataOperacion" FromRole="TipoOperacion" ToRole="DataOperacion" />
+          <NavigationProperty Name="TagEquipo" Relationship="Self.FK_TagEquipo_TipoOperacion" FromRole="TipoOperacion" ToRole="TagEquipo" />
         </EntityType>
         <EntityType Name="TokenRegistro">
           <Key>
@@ -1289,15 +1433,16 @@
           <Property Name="PaisID" Type="Int32" />
           <Property Name="GerenciaID" Type="Int32" />
           <Property Name="Active" Type="Boolean" Nullable="false" />
+          <Property Name="UserIdProgreso" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Name="Salt" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
           <NavigationProperty Name="Gerencia" Relationship="Self.FK_Gerencia_Usuario" FromRole="Usuario" ToRole="Gerencia" />
           <NavigationProperty Name="Pais" Relationship="Self.FK_Pais_Usuario" FromRole="Usuario" ToRole="Pais" />
           <NavigationProperty Name="Paros" Relationship="Self.FK_UsuarioValidador_Paros" FromRole="Usuario" ToRole="Paros" />
+          <NavigationProperty Name="Planta" Relationship="Self.FK_Planta_Usuario" FromRole="Usuario" ToRole="Planta" />
+          <NavigationProperty Name="PlantaAsignada" Relationship="Self.FK_PlantaAsignada_Usuario" FromRole="Usuario" ToRole="PlantaAsignada" />
           <NavigationProperty Name="TokenRegistro" Relationship="Self.FK__TokenRegi__Usuar__6754599E" FromRole="Usuario" ToRole="TokenRegistro" />
           <NavigationProperty Name="UnidadOperativa" Relationship="Self.FK_UnidadOperativa_Usuario" FromRole="Usuario" ToRole="UnidadOperativa" />
           <NavigationProperty Name="UsuarioRol" Relationship="Self.FK__UsuarioRo__Usuar__6383C8BA" FromRole="Usuario" ToRole="UsuarioRol" />
-          <Property Name="UserIdProgreso" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
-          <Property Name="Salt" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
-          <NavigationProperty Name="Planta" Relationship="DVPModel.FK_Planta_Usuario" FromRole="Usuario" ToRole="Planta" />
         </EntityType>
         <EntityType Name="UsuarioRol">
           <Key>
@@ -1581,6 +1726,18 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
+        <Association Name="FK_Planta_Equipo">
+          <End Role="Planta" Type="Self.Planta" Multiplicity="0..1" />
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Planta">
+              <PropertyRef Name="PlantaID" />
+            </Principal>
+            <Dependent Role="Equipo">
+              <PropertyRef Name="PlantaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
         <Association Name="FK_Proceso_Equipo">
           <End Role="Proceso" Type="Self.Proceso" Multiplicity="0..1" />
           <End Role="Equipo" Type="Self.Equipo" Multiplicity="*" />
@@ -1590,6 +1747,18 @@
             </Principal>
             <Dependent Role="Equipo">
               <PropertyRef Name="ProcesoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TagEquipo_Equipo">
+          <End Role="Equipo" Type="Self.Equipo" Multiplicity="0..1" />
+          <End Role="TagEquipo" Type="Self.TagEquipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Equipo">
+              <PropertyRef Name="EquipoID" />
+            </Principal>
+            <Dependent Role="TagEquipo">
+              <PropertyRef Name="EquipoID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -1677,6 +1846,46 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
+        <Association Name="FK_Planta_Usuario">
+          <End Role="Planta" Type="Self.Planta" Multiplicity="0..1" />
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Planta">
+              <PropertyRef Name="PlantaID" />
+            </Principal>
+            <Dependent Role="Usuario">
+              <PropertyRef Name="PlantaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_PlantaAsignada_Planta">
+          <End Role="Planta" Type="Self.Planta" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="PlantaAsignada" Type="Self.PlantaAsignada" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Planta">
+              <PropertyRef Name="PlantaID" />
+            </Principal>
+            <Dependent Role="PlantaAsignada">
+              <PropertyRef Name="PlantaID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_PlantaAsignada_Usuario">
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="PlantaAsignada" Type="Self.PlantaAsignada" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Usuario">
+              <PropertyRef Name="UsuarioID" />
+            </Principal>
+            <Dependent Role="PlantaAsignada">
+              <PropertyRef Name="UsuarioID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
         <Association Name="FK__UsuarioRo__RolID__6477ECF3">
           <End Role="Rol" Type="Self.Rol" Multiplicity="1" />
           <End Role="UsuarioRol" Type="Self.UsuarioRol" Multiplicity="*" />
@@ -1686,6 +1895,18 @@
             </Principal>
             <Dependent Role="UsuarioRol">
               <PropertyRef Name="RolID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TagEquipo_TipoOperacion">
+          <End Role="TipoOperacion" Type="Self.TipoOperacion" Multiplicity="0..1" />
+          <End Role="TagEquipo" Type="Self.TagEquipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoOperacion">
+              <PropertyRef Name="TipoOperacionID" />
+            </Principal>
+            <Dependent Role="TagEquipo">
+              <PropertyRef Name="TipoOperacionID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -1739,6 +1960,8 @@
           <EntitySet Name="Material" EntityType="Self.Material" />
           <EntitySet Name="Pais" EntityType="Self.Pais" />
           <EntitySet Name="Paros" EntityType="Self.Paros" />
+          <EntitySet Name="Planta" EntityType="Self.Planta" />
+          <EntitySet Name="PlantaAsignada" EntityType="Self.PlantaAsignada" />
           <EntitySet Name="Proceso" EntityType="Self.Proceso" />
           <EntitySet Name="Rol" EntityType="Self.Rol" />
           <EntitySet Name="Salidas" EntityType="Self.Salidas" />
@@ -1843,9 +2066,17 @@
             <End Role="Pais" EntitySet="Pais" />
             <End Role="Equipo" EntitySet="Equipo" />
           </AssociationSet>
+          <AssociationSet Name="FK_Planta_Equipo" Association="Self.FK_Planta_Equipo">
+            <End Role="Planta" EntitySet="Planta" />
+            <End Role="Equipo" EntitySet="Equipo" />
+          </AssociationSet>
           <AssociationSet Name="FK_Proceso_Equipo" Association="Self.FK_Proceso_Equipo">
             <End Role="Proceso" EntitySet="Proceso" />
             <End Role="Equipo" EntitySet="Equipo" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TagEquipo_Equipo" Association="Self.FK_TagEquipo_Equipo">
+            <End Role="Equipo" EntitySet="Equipo" />
+            <End Role="TagEquipo" EntitySet="TagEquipo" />
           </AssociationSet>
           <AssociationSet Name="FK_UnidadOperativa_Equipo" Association="Self.FK_UnidadOperativa_Equipo">
             <End Role="UnidadOperativa" EntitySet="UnidadOperativa" />
@@ -1875,9 +2106,25 @@
             <End Role="Usuario" EntitySet="Usuario" />
             <End Role="Paros" EntitySet="Paros" />
           </AssociationSet>
+          <AssociationSet Name="FK_Planta_Usuario" Association="Self.FK_Planta_Usuario">
+            <End Role="Planta" EntitySet="Planta" />
+            <End Role="Usuario" EntitySet="Usuario" />
+          </AssociationSet>
+          <AssociationSet Name="FK_PlantaAsignada_Planta" Association="Self.FK_PlantaAsignada_Planta">
+            <End Role="Planta" EntitySet="Planta" />
+            <End Role="PlantaAsignada" EntitySet="PlantaAsignada" />
+          </AssociationSet>
+          <AssociationSet Name="FK_PlantaAsignada_Usuario" Association="Self.FK_PlantaAsignada_Usuario">
+            <End Role="Usuario" EntitySet="Usuario" />
+            <End Role="PlantaAsignada" EntitySet="PlantaAsignada" />
+          </AssociationSet>
           <AssociationSet Name="FK__UsuarioRo__RolID__6477ECF3" Association="Self.FK__UsuarioRo__RolID__6477ECF3">
             <End Role="Rol" EntitySet="Rol" />
             <End Role="UsuarioRol" EntitySet="UsuarioRol" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TagEquipo_TipoOperacion" Association="Self.FK_TagEquipo_TipoOperacion">
+            <End Role="TipoOperacion" EntitySet="TipoOperacion" />
+            <End Role="TagEquipo" EntitySet="TagEquipo" />
           </AssociationSet>
           <AssociationSet Name="FK__TokenRegi__Usuar__6754599E" Association="Self.FK__TokenRegi__Usuar__6754599E">
             <End Role="Usuario" EntitySet="Usuario" />
@@ -1891,52 +2138,48 @@
             <End Role="Usuario" EntitySet="Usuario" />
             <End Role="UsuarioRol" EntitySet="UsuarioRol" />
           </AssociationSet>
-          <EntitySet Name="Planta" EntityType="DVPModel.Planta" />
-          <AssociationSet Name="FK_Planta_Equipo" Association="DVPModel.FK_Planta_Equipo">
-            <End Role="Planta" EntitySet="Planta" />
-            <End Role="Equipo" EntitySet="Equipo" />
-          </AssociationSet>
-          <AssociationSet Name="FK_Planta_Usuario" Association="DVPModel.FK_Planta_Usuario">
-            <End Role="Planta" EntitySet="Planta" />
-            <End Role="Usuario" EntitySet="Usuario" />
-          </AssociationSet>
+          <FunctionImport Name="sp_alterdiagram">
+            <Parameter Name="diagramname" Mode="In" Type="String" />
+            <Parameter Name="owner_id" Mode="In" Type="Int32" />
+            <Parameter Name="version" Mode="In" Type="Int32" />
+            <Parameter Name="definition" Mode="In" Type="Binary" />
+          </FunctionImport>
+          <FunctionImport Name="sp_creatediagram">
+            <Parameter Name="diagramname" Mode="In" Type="String" />
+            <Parameter Name="owner_id" Mode="In" Type="Int32" />
+            <Parameter Name="version" Mode="In" Type="Int32" />
+            <Parameter Name="definition" Mode="In" Type="Binary" />
+          </FunctionImport>
+          <FunctionImport Name="sp_dropdiagram">
+            <Parameter Name="diagramname" Mode="In" Type="String" />
+            <Parameter Name="owner_id" Mode="In" Type="Int32" />
+          </FunctionImport>
+          <FunctionImport Name="sp_helpdiagramdefinition" ReturnType="Collection(DVPModel.sp_helpdiagramdefinition_Result)">
+            <Parameter Name="diagramname" Mode="In" Type="String" />
+            <Parameter Name="owner_id" Mode="In" Type="Int32" />
+          </FunctionImport>
+          <FunctionImport Name="sp_helpdiagrams" ReturnType="Collection(DVPModel.sp_helpdiagrams_Result)">
+            <Parameter Name="diagramname" Mode="In" Type="String" />
+            <Parameter Name="owner_id" Mode="In" Type="Int32" />
+          </FunctionImport>
+          <FunctionImport Name="sp_renamediagram">
+            <Parameter Name="diagramname" Mode="In" Type="String" />
+            <Parameter Name="owner_id" Mode="In" Type="Int32" />
+            <Parameter Name="new_diagramname" Mode="In" Type="String" />
+          </FunctionImport>
+          <FunctionImport Name="sp_upgraddiagrams" />
         </EntityContainer>
-        <EntityType Name="Planta">
-          <Key>
-            <PropertyRef Name="PlantaID" />
-          </Key>
-          <Property Name="PlantaID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="Descripcion" Type="String" Nullable="false" MaxLength="50" FixedLength="false" Unicode="true" />
-          <Property Name="CodigoSAP" Type="String" Nullable="false" MaxLength="30" FixedLength="false" Unicode="true" />
-          <Property Name="CodigoSAPProgreso" Type="String" Nullable="false" MaxLength="30" FixedLength="false" Unicode="true" />
-          <Property Name="Active" Type="Boolean" />
-          <NavigationProperty Name="Equipo" Relationship="DVPModel.FK_Planta_Equipo" FromRole="Planta" ToRole="Equipo" />
-          <NavigationProperty Name="Usuario" Relationship="DVPModel.FK_Planta_Usuario" FromRole="Planta" ToRole="Usuario" />
-        </EntityType>
-        <Association Name="FK_Planta_Equipo">
-          <End Type="DVPModel.Planta" Role="Planta" Multiplicity="0..1" />
-          <End Type="DVPModel.Equipo" Role="Equipo" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Planta">
-              <PropertyRef Name="PlantaID" />
-            </Principal>
-            <Dependent Role="Equipo">
-              <PropertyRef Name="PlantaID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_Planta_Usuario">
-          <End Type="DVPModel.Planta" Role="Planta" Multiplicity="0..1" />
-          <End Type="DVPModel.Usuario" Role="Usuario" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Planta">
-              <PropertyRef Name="PlantaID" />
-            </Principal>
-            <Dependent Role="Usuario">
-              <PropertyRef Name="PlantaID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
+        <ComplexType Name="sp_helpdiagramdefinition_Result">
+          <Property Type="Int32" Name="version" Nullable="true" />
+          <Property Type="Binary" Name="definition" Nullable="true" />
+        </ComplexType>
+        <ComplexType Name="sp_helpdiagrams_Result">
+          <Property Type="String" Name="Database" Nullable="true" MaxLength="128" />
+          <Property Type="String" Name="Name" Nullable="false" MaxLength="128" />
+          <Property Type="Int32" Name="ID" Nullable="false" />
+          <Property Type="String" Name="Owner" Nullable="true" MaxLength="128" />
+          <Property Type="Int32" Name="OwnerID" Nullable="false" />
+        </ComplexType>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -2071,7 +2314,6 @@
           <EntitySetMapping Name="Material">
             <EntityTypeMapping TypeName="DVPModel.Material">
               <MappingFragment StoreEntitySet="Material">
-                <ScalarProperty Name="Activo" ColumnName="Activo" />
                 <ScalarProperty Name="MaterialID" ColumnName="MaterialID" />
                 <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
                 <ScalarProperty Name="CodSAPNuevo" ColumnName="CodSAPNuevo" />
@@ -2081,6 +2323,7 @@
                 <ScalarProperty Name="Alterno" ColumnName="Alterno" />
                 <ScalarProperty Name="AfectaInventario" ColumnName="AfectaInventario" />
                 <ScalarProperty Name="IDStock" ColumnName="IDStock" />
+                <ScalarProperty Name="Activo" ColumnName="Activo" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -2115,6 +2358,27 @@
                 <ScalarProperty Name="ParoRelacionadoID" ColumnName="ParoRelacionadoID" />
                 <ScalarProperty Name="Cerrado" ColumnName="Cerrado" />
                 <ScalarProperty Name="FechaCierre" ColumnName="FechaCierre" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Planta">
+            <EntityTypeMapping TypeName="DVPModel.Planta">
+              <MappingFragment StoreEntitySet="Planta">
+                <ScalarProperty Name="PlantaID" ColumnName="PlantaID" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="CodigoSAP" ColumnName="CodigoSAP" />
+                <ScalarProperty Name="CodigoSAPProgreso" ColumnName="CodigoSAPProgreso" />
+                <ScalarProperty Name="Active" ColumnName="Active" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="PlantaAsignada">
+            <EntityTypeMapping TypeName="DVPModel.PlantaAsignada">
+              <MappingFragment StoreEntitySet="PlantaAsignada">
+                <ScalarProperty Name="PlantaAsignadaID" ColumnName="PlantaAsignadaID" />
+                <ScalarProperty Name="UsuarioID" ColumnName="UsuarioID" />
+                <ScalarProperty Name="PlantaID" ColumnName="PlantaID" />
+                <ScalarProperty Name="FechaAsignacion" ColumnName="FechaAsignacion" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -2176,6 +2440,9 @@
                 <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
                 <ScalarProperty Name="TagName" ColumnName="TagName" />
                 <ScalarProperty Name="TagCode" ColumnName="TagCode" />
+                <ScalarProperty Name="Activo" ColumnName="Activo" />
+                <ScalarProperty Name="TipoOperacionID" ColumnName="TipoOperacionID" />
+                <ScalarProperty Name="EquipoID" ColumnName="EquipoID" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -2244,8 +2511,6 @@
           <EntitySetMapping Name="Usuario">
             <EntityTypeMapping TypeName="DVPModel.Usuario">
               <MappingFragment StoreEntitySet="Usuario">
-                <ScalarProperty Name="Salt" ColumnName="Salt" />
-                <ScalarProperty Name="UserIdProgreso" ColumnName="UserIdProgreso" />
                 <ScalarProperty Name="UsuarioID" ColumnName="UsuarioID" />
                 <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
                 <ScalarProperty Name="Email" ColumnName="Email" />
@@ -2262,6 +2527,8 @@
                 <ScalarProperty Name="PaisID" ColumnName="PaisID" />
                 <ScalarProperty Name="GerenciaID" ColumnName="GerenciaID" />
                 <ScalarProperty Name="Active" ColumnName="Active" />
+                <ScalarProperty Name="UserIdProgreso" ColumnName="UserIdProgreso" />
+                <ScalarProperty Name="Salt" ColumnName="Salt" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -2282,17 +2549,30 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="Planta">
-            <EntityTypeMapping TypeName="DVPModel.Planta">
-              <MappingFragment StoreEntitySet="Planta">
-                <ScalarProperty Name="Active" ColumnName="Active" />
-                <ScalarProperty Name="CodigoSAPProgreso" ColumnName="CodigoSAPProgreso" />
-                <ScalarProperty Name="CodigoSAP" ColumnName="CodigoSAP" />
-                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
-                <ScalarProperty Name="PlantaID" ColumnName="PlantaID" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
+          <FunctionImportMapping FunctionImportName="sp_alterdiagram" FunctionName="DVPModel.Store.sp_alterdiagram" />
+          <FunctionImportMapping FunctionImportName="sp_creatediagram" FunctionName="DVPModel.Store.sp_creatediagram" />
+          <FunctionImportMapping FunctionImportName="sp_dropdiagram" FunctionName="DVPModel.Store.sp_dropdiagram" />
+          <FunctionImportMapping FunctionImportName="sp_helpdiagramdefinition" FunctionName="DVPModel.Store.sp_helpdiagramdefinition">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="DVPModel.sp_helpdiagramdefinition_Result">
+                <ScalarProperty Name="version" ColumnName="version" />
+                <ScalarProperty Name="definition" ColumnName="definition" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
+          <FunctionImportMapping FunctionImportName="sp_helpdiagrams" FunctionName="DVPModel.Store.sp_helpdiagrams">
+            <ResultMapping>
+              <ComplexTypeMapping TypeName="DVPModel.sp_helpdiagrams_Result">
+                <ScalarProperty Name="Database" ColumnName="Database" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+                <ScalarProperty Name="Owner" ColumnName="Owner" />
+                <ScalarProperty Name="OwnerID" ColumnName="OwnerID" />
+              </ComplexTypeMapping>
+            </ResultMapping>
+          </FunctionImportMapping>
+          <FunctionImportMapping FunctionImportName="sp_renamediagram" FunctionName="DVPModel.Store.sp_renamediagram" />
+          <FunctionImportMapping FunctionImportName="sp_upgraddiagrams" FunctionName="DVPModel.Store.sp_upgraddiagrams" />
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>

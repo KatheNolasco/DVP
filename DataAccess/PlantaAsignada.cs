@@ -12,17 +12,14 @@ namespace DataAccess
     using System;
     using System.Collections.Generic;
     
-    public partial class TagEquipo
+    public partial class PlantaAsignada
     {
-        public int TagEquipoID { get; set; }
-        public string Descripcion { get; set; }
-        public string TagName { get; set; }
-        public string TagCode { get; set; }
-        public Nullable<bool> Activo { get; set; }
-        public Nullable<int> TipoOperacionID { get; set; }
-        public Nullable<int> EquipoID { get; set; }
+        public int PlantaAsignadaID { get; set; }
+        public int UsuarioID { get; set; }
+        public int PlantaID { get; set; }
+        public Nullable<System.DateTime> FechaAsignacion { get; set; }
     
-        public virtual Equipo Equipo { get; set; }
-        public virtual TipoOperacion TipoOperacion { get; set; }
+        public virtual Planta Planta { get; set; }
+        public virtual Usuario Usuario { get; set; }
     }
 }

@@ -14,12 +14,16 @@ using System.Text;
 using System.Web.UI.WebControls.WebParts;
 using System.Data.Entity;
 using System.Security.Cryptography;
+using System.Data.Entity.Validation;
+
+
 
 
 namespace DVP.Controllers
 {
     public class UserController : Controller
     {
+
         DataAccess.DVPEntities _dvpEntities = new DataAccess.DVPEntities();
 
         public ActionResult Index()
@@ -45,7 +49,7 @@ namespace DVP.Controllers
 
             var query = _dvpEntities.Usuario.AsQueryable();
 
-            if (rol != "Desarrollador de Software")
+            if (rol != "Desarrollador de Software" && rol != "Administrador de la información")
             {
                 return RedirectToAction("Index", "Account");
             }
@@ -136,7 +140,7 @@ namespace DVP.Controllers
         }
 
         [HttpPost]
-        public JsonResult Create(UserViewModel model)
+        public JsonResult Create(DVP.Models.UserViewModel model)
         {
             try
             {
@@ -203,8 +207,8 @@ namespace DVP.Controllers
         }
 
         [HttpPost]
-        public JsonResult Edit(UserViewModel data)
-         {
+        public JsonResult Edit(DVP.Models.UserViewModel data)
+        {
             try
             {
                 if (ModelState.IsValid)
@@ -330,17 +334,22 @@ namespace DVP.Controllers
 
 
         [HttpPost]
-        public JsonResult GuardarElementoConfiguracion(UserViewModel model)
+        public JsonResult GuardarElementoConfiguracion(DVP.Models.UserViewModel model)
         {
             try
             {
+                // Validación mínima de entrada
+                var desc = (model._descripcion ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(desc))
+                    return Json(new { success = false, message = "La descripción es obligatoria." });
+
                 switch (model._tipo)
                 {
                     case "Planta":
                         var planta = new Planta
                         {
-                            Descripcion = model._descripcion,
-                            CodigoSAPProgreso = model._codigoSAPProgreso,
+                            Descripcion = desc,
+                            CodigoSAPProgreso = model._codigoSAPProgreso, 
                             CodigoSAP = "N/A",
                             Active = true
                         };
@@ -350,7 +359,7 @@ namespace DVP.Controllers
                     case "UnidadOperativa":
                         var unidad = new UnidadOperativa
                         {
-                            Descripcion = model._descripcion,
+                            Descripcion = desc,
                             Active = true
                         };
                         _dvpEntities.UnidadOperativa.Add(unidad);
@@ -359,7 +368,9 @@ namespace DVP.Controllers
                     case "Pais":
                         var pais = new Pais
                         {
-                            Descripcion = model._descripcion,
+                            Descripcion = desc,
+                            CodigoSAPNuevo = model._codigoSAPProgreso,
+                            CodigoSAP = "N/A",
                             Active = true
                         };
                         _dvpEntities.Pais.Add(pais);
@@ -368,32 +379,44 @@ namespace DVP.Controllers
                     case "Gerencia":
                         var gerencia = new Gerencia
                         {
-                            Descripcion = model._descripcion,
+                            Descripcion = desc,
                             Active = true
                         };
                         _dvpEntities.Gerencia.Add(gerencia);
                         break;
 
-                    case "Rol":
-                        var rol = new Rol
-                        {
-                            Descripcion = model._descripcion,
-                            Active = true
-                        };
-                        _dvpEntities.Rol.Add(rol);
-                        break;
-
                     default:
-                        return Json(new { success = false, message = "Tipo desconocido" });
+                        return Json(new { success = false, message = "Tipo desconocido." });
+                }
+
+                // (opcional) inspeccionar validaciones antes de guardar
+                var pre = _dvpEntities.GetValidationErrors();
+                if (pre.Any())
+                {
+                    var detallesPre = string.Join("; ",
+                        pre.SelectMany(v => v.ValidationErrors)
+                           .Select(e => $"{e.PropertyName}: {e.ErrorMessage}")
+                    );
+                    return Json(new { success = false, message = "Validación falló: " + detallesPre });
                 }
 
                 _dvpEntities.SaveChanges();
-
-                return Json(new { success = true });
+                return Json(new { success = true, message = "Guardado correctamente." });
+            }
+            catch (DbEntityValidationException vex)
+            {
+                var detalles = string.Join("; ",
+                    vex.EntityValidationErrors.SelectMany(x => x.ValidationErrors)
+                       .Select(e => $"{e.PropertyName}: {e.ErrorMessage}")
+                );
+                var entidades = string.Join("; ",
+                    vex.EntityValidationErrors.Select(x => $"{x.Entry.Entity.GetType().Name} ({x.Entry.State})")
+                );
+                return Json(new { success = false, message = "Validación falló: " + detalles, entities = entidades });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = ex.Message });
+                return Json(new { success = false, message = "Error: " + ex.Message });
             }
         }
 
@@ -421,7 +444,7 @@ namespace DVP.Controllers
 
                     case "Pais":
                         listado = _dvpEntities.Pais
-                            .Select(p => new { _descripcion = p.Descripcion, _codigoSAPProgreso = "", _active = p.Active })
+                            .Select(p => new { _descripcion = p.Descripcion, _codigoSAPProgreso = p.CodigoSAPNuevo, _active = p.Active })
                             .ToList<object>();
                         break;
 
@@ -452,7 +475,7 @@ namespace DVP.Controllers
 
 
         [HttpPost]
-        public JsonResult ActualizarElementoConfiguracion(UserViewModel model)
+        public JsonResult ActualizarElementoConfiguracion(DVP.Models.UserViewModel model)
         {
             try
             {
@@ -495,15 +518,6 @@ namespace DVP.Controllers
                         gerencia.Active = model._active;
                         break;
 
-                    case "Rol":
-                        var rol = _dvpEntities.Rol.FirstOrDefault(r => r.Descripcion == model._descripcion);
-                        if (rol == null)
-                            return Json(new { success = false, message = "Rol no encontrado" });
-
-                        rol.Descripcion = model._descripcion;
-                        rol.Active = model._active;
-                        break;
-
                     default:
                         return Json(new { success = false, message = "Tipo inválido" });
                 }
@@ -518,10 +532,95 @@ namespace DVP.Controllers
         }
 
 
+        private bool ExistsAsignacion(int usuarioId, int plantaId)
+        {
+            return _dvpEntities.PlantaAsignada
+                .Any(p => p.UsuarioID == usuarioId && p.PlantaID == plantaId);
+        }
 
+        [HttpGet]
+        public JsonResult GetPlantasAsignadas(int userId)
+        {
+            try
+            {
+                if (userId <= 0)
+                    return Json(new object[0], JsonRequestBehavior.AllowGet);
+
+                var plantas = _dvpEntities.PlantaAsignada
+                    .Where(pa => pa.UsuarioID == userId)
+                    .Select(pa => new { pa.PlantaID, pa.Planta.Descripcion })
+                    .ToList();
+
+                return Json(plantas, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                Response.StatusCode = 500;
+                return Json(new { error = "Error al obtener plantas asignadas", detail = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+
+        [HttpPost]
+        public JsonResult AsignarPlanta(DVP.Models.UserViewModel.PlantaAsignada req)
+        {
+            try
+            {
+                if (req == null || req._usuarioId <= 0)
+                    return Json(new { success = false, message = "Datos inválidos." });
+
+                var usuarioId = req._usuarioId;
+                var seleccionadas = (req._plantaIds ?? new List<int>()).Distinct().ToList();
+
+                // Obtener actuales en BD
+                var actuales = _dvpEntities.PlantaAsignada
+                    .Where(p => p.UsuarioID == usuarioId)
+                    .Select(p => p.PlantaID)
+                    .ToList();
+
+                // Calcular diferencias
+                var aAgregar = seleccionadas.Except(actuales).ToList();
+                var aEliminar = actuales.Except(seleccionadas).ToList();
+
+                // Agregar nuevas
+                var ahora = DateTime.Now;
+                foreach (var pid in aAgregar)
+                {
+                    _dvpEntities.PlantaAsignada.Add(new PlantaAsignada
+                    {
+                        UsuarioID = usuarioId.Value,
+                        PlantaID = pid,
+                        FechaAsignacion = ahora
+                    });
+                }
+
+                // Eliminar las que ya no están marcadas
+                if (aEliminar.Any())
+                {
+                    var rowsEliminar = _dvpEntities.PlantaAsignada
+                        .Where(p => p.UsuarioID == usuarioId && aEliminar.Contains(p.PlantaID))
+                        .ToList();
+
+                    _dvpEntities.PlantaAsignada.RemoveRange(rowsEliminar);
+                }
+
+                _dvpEntities.SaveChanges();
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Asignaciones sincronizadas.",
+                    added = aAgregar,
+                    removed = aEliminar
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al asignar plantas: " + ex.Message });
+            }
+        }
 
     }
-
 
 
 

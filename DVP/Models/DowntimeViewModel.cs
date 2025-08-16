@@ -89,10 +89,10 @@ namespace DVP.Models
 
 
 
-        public IEnumerable<Equipo> GetEquiposPorPais(int paisId, int plantaId)
+        public IEnumerable<Equipo> GetEquiposPorPlanta(int plantaId)
         {
             IEnumerable<Equipo> listaEquipos = _dvpEntities.Equipo
-                .Where(e => e.PaisID == paisId && e.PlantaID == plantaId)
+                .Where(e => e.PlantaID == plantaId)
                 .ToList();
 
             return listaEquipos;

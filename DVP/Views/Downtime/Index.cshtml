@@ -62,82 +62,95 @@
         <br />
         <br />
         <div class="card">
+            <input type="hidden" id="usuarioId" value="@Model._usuarioCreadorID" />
             <div class="container-fluid">
-                            <!-- Fecha de validación -->
-                            <h5 class="card-title fw-semibold mb-4 text-end">
-                                <span id="candado">
-                                    <button onclick="cerrarReporte()" id="btnCerrarReporte" class="btn btn-link p-0 m-0 align-baseline">
-                                        <i class="bi bi-unlock-fill text-warning ms-2"></i>
-                                    </button>
-                                </span>
-                                Downtime Validation Date:
-                                <input type="date" id="fechaReporte" onchange="filtrarPorFecha()">
-                                <a id="btnenergy" onclick="sendtoenergyvalidation()" class="btn btn-link p-0 m-0 align-baseline" style="display: none;" role="button">
-                                    <i class="bi bi-arrow-right-circle-fill text-danger"></i>
-                                </a>
-                            </h5>
-                            <h5 class="card-title fw-semibold mb-4">Equipments</h5>
-                            <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
-                                Paros cerrados correctamente!
-                            </div>
-                            <!-- Equipos -->
-                            <div class="text-end mb-3">
-                                <button type="button" onclick="newdowntime()" class="btn btn-outline-dark m-1">
-                                    New Downtime
-                                </button>
-                            </div>
-                            <div class="card">
-                                <div class="card-body p-4">
-                                    @foreach (var equipo in Model.Equipos)
-                                    {
-                                        <button type="button"
-                                                value="@equipo.EquipoID"
-                                                onclick="filtrarPorEquipo(@equipo.EquipoID)"
-                                                class="btn btn-outline-dark m-1 equipo-btn">
-                                            @equipo.Descripcion
-                                        </button>
-                                    }
-                                </div>
-                                <!-- Contador arriba de la tabla -->
-                                <div id="downtimeCountContainer" class="alert alert-success p-2 my-2" style="display:none;">
-                                    Total downtime: <strong id="countEventosRelacionados">0</strong>
-                                </div>
-                                <div class="d-flex gap-3">
-                                    <!-- Tabla izquierda (downtimes inactivos) -->
-                                    <div class="table-responsive w-25" style="max-height: 400px; width: 5px; overflow-y: auto; background-color: #ffffff;  border-radius: 10px;">
-                                        <table class="table table-bordered mb-0" style="background-color: #ffffff;">
-                                            <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
-                                                <tr>
-                                                    <th class="text-center">Downtime</th>
-                                                    <th class="text-center">Downtime hours</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="downtimeTableBodyInactiveList">
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <!-- Tabla derecha (downtimes activos) -->
-                                    <div class="table-responsive w-75" style="max-height: 400px; overflow-y: auto; background-color: #ffffff; padding: 10px; border-radius: 10px;">
-                                        <table class="table table-bordered mb-0" style="background-color: #ffffff;">
-                                            <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
-                                                <tr>
-                                                    <th class="text-center">Status</th>
-                                                    <th class="text-center">Event type</th>
-                                                    <th class="text-center">Event date</th>
-                                                    <th class="text-center">Clasification</th>
-                                                    <th class="text-center">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="downtimeTableBody">
-                                            </tbody>
-                                        </table>
-                                    </div>
+                <!-- Fecha de validación -->
+                <h5 class="card-title fw-semibold mb-4">
+                    <div class="d-flex flex-column align-items-end gap-2">
+                        <br />
+                        <select class="form-select" id="_plantaAsignada" style="width: auto; min-width: 200px;">
+                            <option value="">Seleccione una planta</option>
+                        </select>
+                        <div class="d-flex align-items-center gap-2">
+                            <button onclick="cerrarReporte()" id="btnCerrarReporte" class="btn btn-link p-0 m-0 align-baseline">
+                                <i class="bi bi-unlock-fill text-warning ms-2"></i>
+                            </button>
 
-                                </div>
-                            </div>
+                            <span>Downtime Validation Date:</span>
+                            <input type="date" id="fechaReporte" onchange="filtrarPorFecha()">
+
+                            <a id="btnenergy" onclick="sendtoenergyvalidation()"
+                               class="btn btn-link p-0 m-0 align-baseline"
+                               style="display: none;" role="button">
+                                <i class="bi bi-arrow-right-circle-fill text-danger"></i>
+                            </a>
                         </div>
                     </div>
+                </h5>
+
+
+                <h5 class="card-title fw-semibold mb-4">Equipments</h5>
+                <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
+                    Paros cerrados correctamente!
                 </div>
+                <!-- Equipos -->
+                <div class="text-end mb-3">
+                    <button type="button" onclick="newdowntime()" class="btn btn-outline-dark m-1">
+                        New Downtime
+                    </button>
+                </div>
+                <div class="card">
+                    <div class="card-body p-4">
+                        @foreach (var equipo in Model.Equipos)
+                        {
+                            <button type="button"
+                                    value="@equipo.EquipoID"
+                                    onclick="filtrarPorEquipo(@equipo.EquipoID)"
+                                    class="btn btn-outline-dark m-1 equipo-btn">
+                                @equipo.Descripcion
+                            </button>
+                        }
+                    </div>
+                    <!-- Contador arriba de la tabla -->
+                    <div id="downtimeCountContainer" class="alert alert-success p-2 my-2" style="display:none;">
+                        Total downtime: <strong id="countEventosRelacionados">0</strong>
+                    </div>
+                    <div class="d-flex gap-3">
+                        <!-- Tabla izquierda (downtimes inactivos) -->
+                        <div class="table-responsive w-25" style="max-height: 400px; width: 5px; overflow-y: auto; background-color: #ffffff;  border-radius: 10px;">
+                            <table class="table table-bordered mb-0" style="background-color: #ffffff;">
+                                <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
+                                    <tr>
+                                        <th class="text-center">Downtime</th>
+                                        <th class="text-center">Downtime minutes</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="downtimeTableBodyInactiveList">
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Tabla derecha (downtimes activos) -->
+                        <div class="table-responsive w-75" style="max-height: 400px; overflow-y: auto; background-color: #ffffff; padding: 10px; border-radius: 10px;">
+                            <table class="table table-bordered mb-0" style="background-color: #ffffff;">
+                                <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
+                                    <tr>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-center">Event type</th>
+                                        <th class="text-center">Event date</th>
+                                        <th class="text-center">Clasification</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="downtimeTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
             @*___________________________________________________________________Modal Cargando__________________________________________________*@
             <div id="loadingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: rgba(0, 0, 0, 0.5);">
                 <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 25px 35px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.3); min-width: 250px;">
@@ -2259,7 +2272,7 @@ document.getElementById('deleteParo').addEventListener('click', function () {
 
 
     function sendtoenergyvalidation() {
-      cargando(); 
+      cargando();
 
       setTimeout(() => {
         window.location.href = '@Url.Action("Index", "Energy")';
@@ -2268,5 +2281,73 @@ document.getElementById('deleteParo').addEventListener('click', function () {
 
 
 
+    //________________________________________________________________________ Asignar una planta___________________________________________________________________//
+
+
+    async function cargarPlantasAsignadas(usuarioId) {
+        try {
+            const select = document.getElementById("_plantaAsignada");
+            if (!select) return;
+
+            // limpiar y poner opción por defecto
+            select.innerHTML = '<option value="">Seleccione una planta</option>';
+
+            if (!usuarioId || isNaN(usuarioId)) {
+                console.warn("usuarioId inválido:", usuarioId);
+                return;
+            }
+
+            const res = await fetch(`/User/GetPlantasAsignadas?userId=${encodeURIComponent(usuarioId)}`, {
+                credentials: "same-origin"
+            });
+            if (!res.ok) throw new Error("Error al obtener plantas asignadas");
+
+            const data = await res.json();
+
+            // Normaliza: admite [1,2,3] o [{PlantaID, Descripcion}]
+            const items = (data || []).map(x => {
+                if (typeof x === "number") return { id: x, text: `Planta ${x}` };
+                const id = x.PlantaID ?? x.Id ?? x.plantaId ?? x.plantaID;
+                const text = x.Descripcion ?? x.Nombre ?? `Planta ${id}`;
+                return { id: Number(id), text };
+            }).filter(it => Number.isInteger(it.id));
+
+            // Rellenar select
+            items.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.id;
+                opt.textContent = p.text;
+                select.appendChild(opt);
+            });
+
+        } catch (err) {
+            console.error("Error cargando plantas asignadas", err);
+        }
+    }
+
+    // Cargar al iniciar con el usuario real del hidden
+    document.addEventListener("DOMContentLoaded", function () {
+        const hidden = document.getElementById("usuarioId");
+        const userId = parseInt(hidden?.value, 10);
+        cargarPlantasAsignadas(userId);
+    });
+
+  document.addEventListener("DOMContentLoaded", function () {
+  const sel = document.getElementById("_plantaAsignada");
+  if (!sel) return;
+
+  // preseleccionar si el modelo ya trae una planta elegida
+  const currentPlantaId = "@Model._plantaId";
+  if (currentPlantaId && !isNaN(parseInt(currentPlantaId))) {
+    sel.value = currentPlantaId;
+  }
+
+  sel.addEventListener("change", function () {
+    const val = this.value;
+    // redirige a Index con el filtro (ajusta el controller si no es Downtime)
+    const url = '@Url.Action("Index","Downtime")' + (val ? ('?plantaId=' + encodeURIComponent(val)) : '');
+    window.location.href = url;
+  });
+});
 
 </script>

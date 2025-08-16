@@ -103,7 +103,8 @@
                                                     <th class="text-center">User Id Progreso</th>
                                                     <th class="text-center">Planta</th>
                                                     <th class="text-center">Email</th>
-                                                    <th class="text-center">Acciones</th>
+                                                    <th class="text-center">Editar</th>
+                                                    <th class="text-center">Asignar planta</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="downtimeTableBody">
@@ -360,6 +361,60 @@
             </div>
         </div>
 
+        @*____________________________________________________________________ Modal asignar planta _________________________________________________________________*@
+        <div class="modal fade"
+             id="asignarPlanta"
+             tabindex="-1"
+             aria-labelledby="labelAsignarPlanta"
+             aria-hidden="true"
+             data-url-plantas="@Url.Action("GetPlanta","Equipo")"
+             data-url-post="@Url.Action("AsignarPlanta","User")"
+             data-url-asignadas="@Url.Action("GetPlantasAsignadas","User")">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 id="labelAsignarPlanta" class="modal-title">Asignar plantas a usuario</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        @Html.AntiForgeryToken()
+
+                        <!-- guardo el usuarioId aquí -->
+                        <input type="hidden" id="hiddenUsuarioId" value="">
+
+                        <div class="mb-2">
+                            <strong>Usuario: </strong><span id="txtUsuarioNombre">—</span>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label d-block">Plantas</label>
+                                <input id="filtroPlantas" type="text" class="form-control mb-2" placeholder="Buscar planta...">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="chkAll">
+                                    <label class="form-check-label" for="chkAll">Seleccionar todo</label>
+                                </div>
+                                <div id="listaPlantas" class="border rounded p-2" style="max-height: 320px; overflow-y: auto;">
+                                    <!-- checkboxes dinamicos -->
+                                </div>
+                                <div class="mt-2"><small id="selCount" class="text-muted">0 seleccionadas</small></div>
+                            </div>
+                        </div>
+
+                        <div id="alertOK" class="alert alert-success mt-3 d-none"></div>
+                        <div id="alertERR" class="alert alert-danger mt-3 d-none"></div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" id="btnAsignarPlantas" class="btn btn-outline-success">Asignar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
     </div>
 </body>
 
@@ -451,6 +506,9 @@
     document.getElementById("crear").addEventListener("click", crearEquipoNuevo);
 
     function crearEquipoNuevo() {
+        // Mostrar modal de carga antes de iniciar el proceso
+        cargando();
+
         // Obtener valores del formulario
         const descripcion = document.getElementById("_descripcion").value.trim();
         const email = document.getElementById("_email").value.trim();
@@ -466,7 +524,6 @@
         const active = document.getElementById("_active").checked;
         const rolId = document.getElementById("_rolId").value;
         const userIdProgreso = document.getElementById("_userIdProgreso").value;
-
 
         const url = document.getElementById("crear").getAttribute("data-url");
 
@@ -499,28 +556,24 @@
             .then(response => response.json())
             .then(result => {
                 if (result.success) {
-                    // Mostrar alerta
                     document.getElementById("alertSuccess").style.display = "block";
 
-                    // Ocultar modal y limpiar formulario después de unos segundos
+                    // Esperar un poco antes de recargar la página
                     setTimeout(() => {
-                        document.getElementById("alertSuccess").style.display = "none";
-                        var modal = bootstrap.Modal.getInstance(document.getElementById("newUser"));
-                        modal.hide();
-                        document.querySelector("#newUser form").reset();
-
-
-                        loadEquipmentTable();
+                        location.reload();
                     }, 1500);
                 } else {
                     alert(result.message || "Ocurrió un error al crear el equipo.");
+                    document.getElementById("loadingModal").style.display = "none"; // Ocultar carga si falla
                 }
             })
             .catch(error => {
                 console.error("Error al enviar el formulario:", error);
                 alert("Ocurrió un error al enviar los datos.");
+                document.getElementById("loadingModal").style.display = "none"; // Ocultar carga si falla
             });
     }
+
 
 
     //______________________________________________________________ Validación de contraseña desde el frontend ____________________________________//
@@ -612,6 +665,11 @@
                         <td class="text-center">${user._email || ''}</td>
                         <td class="text-center bg-white">
                             <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditar(${user._usuarioId})">
+                                <i class="bi bi-pencil me-2"></i>
+                            </a>
+                        </td>
+                        <td class="text-center bg-white">
+                            <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalAsignar(${user._usuarioId},'${user._nombre}')">
                                 <i class="bi bi-pencil me-2"></i>
                             </a>
                         </td>
@@ -776,6 +834,217 @@ document.getElementById("_buscar").addEventListener("keyup", function () {
     });
 });
 
+
+    //____________________________________________________________________ Asignar planta ____________________________________________________________//
+
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const $ = (s) => document.querySelector(s);
+        const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+        const getToken = () => {
+            const el = document.querySelector('input[name="__RequestVerificationToken"]');
+            return el ? el.value : null;
+        };
+
+        const showOK = (msg) => {
+            const ok = $("#alertOK");
+            ok.textContent = msg || "Operacion exitosa";
+            ok.classList.remove("d-none");
+            $("#alertERR").classList.add("d-none");
+        };
+
+        const showERR = (msg) => {
+            const er = $("#alertERR");
+            er.textContent = msg || "Ocurrio un error";
+            er.classList.remove("d-none");
+            $("#alertOK").classList.add("d-none");
+        };
+
+        const renderPlantas = (items) => {
+            const cont = $("#listaPlantas");
+            cont.innerHTML = "";
+            (items || []).forEach(p => {
+                const id = `pl_${p.PlantaID}`;
+                const row = document.createElement("div");
+                row.className = "form-check";
+                row.dataset.nombre = (p.Descripcion || "").toLowerCase();
+
+                const input = document.createElement("input");
+                input.className = "form-check-input chk-planta";
+                input.type = "checkbox";
+                input.value = p.PlantaID;
+                input.id = id;
+
+                const label = document.createElement("label");
+                label.className = "form-check-label";
+                label.htmlFor = id;
+                label.textContent = p.Descripcion;
+
+                row.appendChild(input);
+                row.appendChild(label);
+                cont.appendChild(row);
+            });
+            updateSelCount();
+        };
+
+        const updateSelCount = () => {
+            const n = $$(".chk-planta:checked").length;
+            $("#selCount").textContent = `${n} seleccionadas`;
+            const all = $("#chkAll");
+            all.checked = n > 0 && n === $$(".chk-planta").length;
+        };
+
+        // === NUEVO: llenar el <select id="_plantaAsignada"> con las asignadas ===
+        const fillSelectAsignadas = (asignadasIds, plantas) => {
+            const sel = document.getElementById("_plantaAsignada");
+            if (!sel) return;
+
+            sel.innerHTML = '<option value="">Seleccione una planta</option>';
+
+            // diccionario id -> descripcion desde "plantas"
+            const dic = new Map((plantas || []).map(p => [Number(p.PlantaID), p.Descripcion]));
+
+            (asignadasIds || []).forEach(id => {
+                const opt = document.createElement("option");
+                opt.value = id;
+                opt.textContent = dic.get(Number(id)) || `Planta ${id}`;
+                sel.appendChild(opt);
+            });
+        };
+
+        // FUNCION GLOBAL: se llama desde el onclick del lápiz
+        window.abrirModalAsignar = async function (usuarioId, usuarioNombre) {
+            try {
+                if (typeof bootstrap === "undefined" || !bootstrap.Modal) {
+                    showERR("Bootstrap JS no está cargado");
+                    return;
+                }
+
+                // Guarda usuario
+                $("#hiddenUsuarioId").value = usuarioId;
+                $("#txtUsuarioNombre").textContent = usuarioNombre;
+
+                const modalEl = document.getElementById("asignarPlanta");
+                const urlPlantas = modalEl.getAttribute("data-url-plantas");
+                const urlAsignadas = modalEl.getAttribute("data-url-asignadas");
+
+                // 1) Cargar listas en paralelo
+                const [rPlantas, rAsignadas] = await Promise.all([
+                    fetch(urlPlantas, { credentials: "same-origin" }),
+                    fetch(`${urlAsignadas}?userId=${encodeURIComponent(usuarioId)}`, { credentials: "same-origin" })
+                ]);
+
+                if (!rPlantas.ok) throw new Error("No se pudo obtener plantas");
+                // Si rAsignadas falla, continuamos sin preseleccion
+                const plantas = await rPlantas.json();
+                let asignadasRaw = [];
+                try { asignadasRaw = rAsignadas.ok ? await rAsignadas.json() : []; } catch { asignadasRaw = []; }
+
+                // 2) Renderizar plantas
+                renderPlantas(plantas);
+
+                // 3) Normalizar IDs asignados (admite dos formatos comunes)
+                // a) [1,2,3]  ó  b) [{PlantaID: 1}, {PlantaID: 2}]
+                const asignadasIds = (asignadasRaw || []).map(x => {
+                    if (typeof x === "number") return x;
+                    if (x && typeof x === "object") return x.PlantaID ?? x.Id ?? x.plantaId ?? x.plantaID;
+                    return null;
+                }).filter(v => Number.isInteger(v));
+
+                // 4) Pre-marcar checkboxes
+                if (asignadasIds.length > 0) {
+                    document.querySelectorAll(".chk-planta").forEach(chk => {
+                        const id = parseInt(chk.value, 10);
+                        chk.checked = asignadasIds.includes(id);
+                    });
+                }
+
+                // === NUEVO: llenar el select con las asignadas ===
+                fillSelectAsignadas(asignadasIds, plantas);
+
+                // 5) Actualizar contador / seleccionar todo
+                updateSelCount();
+
+                // 6) Mostrar modal
+                new bootstrap.Modal(modalEl).show();
+
+            } catch (e) {
+                console.error(e);
+                showERR("No se pudieron cargar las plantas");
+            }
+        };
+
+        // seleccionar todo
+        $("#chkAll").addEventListener("change", function () {
+            const checked = this.checked;
+            $$(".chk-planta").forEach(chk => chk.checked = checked);
+            updateSelCount();
+        });
+
+        // contador por selección individual
+        $("#listaPlantas").addEventListener("change", function (e) {
+            if (e.target && e.target.classList.contains("chk-planta")) {
+                updateSelCount();
+            }
+        });
+
+        // filtro de plantas
+        $("#filtroPlantas").addEventListener("input", function () {
+            const q = this.value.trim().toLowerCase();
+            $$("#listaPlantas .form-check").forEach(row => {
+                const nombre = row.dataset.nombre || "";
+                row.style.display = nombre.includes(q) ? "" : "none";
+            });
+        });
+
+        // enviar asignaciones (SINCRONIZAR: envia la lista completa _plantaIds)
+        $("#btnAsignarPlantas").addEventListener("click", async function () {
+            const usuarioId = parseInt($("#hiddenUsuarioId").value || "0", 10);
+            const plantaIds = $$(".chk-planta:checked").map(chk => parseInt(chk.value, 10));
+
+            if (!usuarioId) { showERR("Usuario no válido"); return; }
+            // Permitimos 0 seleccionadas para eliminar todas
+
+            const token = getToken();
+            const modalEl = document.getElementById("asignarPlanta");
+            const urlPost = modalEl.getAttribute("data-url-post");
+
+            const payload = { _usuarioId: usuarioId, _plantaIds: plantaIds }; // <- lista completa
+
+            this.disabled = true;
+            const oldTxt = this.textContent;
+            this.textContent = "Asignando...";
+
+            try {
+                const res = await fetch(urlPost, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(token ? { "RequestVerificationToken": token } : {})
+                    },
+                    body: JSON.stringify(payload),
+                    credentials: "same-origin"
+                });
+
+                const data = await res.json();
+
+                if (data?.success) {
+                    showOK(data.message || "Asignaciones sincronizadas");
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    showERR(data?.message || "No se pudo sincronizar");
+                }
+            } catch (err) {
+                console.error(err);
+                showERR("Error de red o servidor");
+            } finally {
+                this.disabled = false;
+                this.textContent = oldTxt;
+            }
+        });
+
+    });
 
 
 

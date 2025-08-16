@@ -18,6 +18,7 @@ namespace DataAccess
         public Usuario()
         {
             this.Paros = new HashSet<Paros>();
+            this.PlantaAsignada = new HashSet<PlantaAsignada>();
             this.TokenRegistro = new HashSet<TokenRegistro>();
             this.UsuarioRol = new HashSet<UsuarioRol>();
         }
@@ -45,11 +46,13 @@ namespace DataAccess
         public virtual Pais Pais { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<Paros> Paros { get; set; }
+        public virtual Planta Planta { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<PlantaAsignada> PlantaAsignada { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<TokenRegistro> TokenRegistro { get; set; }
         public virtual UnidadOperativa UnidadOperativa { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<UsuarioRol> UsuarioRol { get; set; }
-        public virtual Planta Planta { get; set; }
     }
 }

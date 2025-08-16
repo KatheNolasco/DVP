@@ -38,7 +38,7 @@ namespace DVP.Controllers
 
             var query = _dvpEntities.Usuario.AsQueryable();
 
-            if (rol != "Desarrollador de Software")
+            if (rol != "Desarrollador de Software" && rol != "Administrador de la información")
             {
                 return RedirectToAction("Index", "Account");
             }
@@ -238,6 +238,35 @@ namespace DVP.Controllers
             {
                 return Json(new { success = false, message = "Error al editar el equipo: " + ex.Message });
             }
+        }
+
+        [HttpGet]
+        public JsonResult GetEquiposporPaislogguedUser()
+        {
+
+            var tokenEnSession = Session["token"]?.ToString();
+
+            if (string.IsNullOrEmpty(tokenEnSession))
+            {
+                return Json(new { success = false, message = "Sesión no iniciada" }, JsonRequestBehavior.AllowGet);
+            }
+
+            var usuario = _dvpEntities.Usuario.FirstOrDefault(u => u.Token == tokenEnSession);
+
+            if (usuario == null)
+            {
+                return Json(new { success = false, message = "Usuario no encontrado" }, JsonRequestBehavior.AllowGet);
+            }
+            var equipos= _dvpEntities.Equipo
+                                     .Select(s => new
+                                     {
+                                         EquipoID = s.EquipoID,
+                                         Descripcion = s.Descripcion,
+                                         PaisID = s.PaisID
+                                     }).Where(p => p.PaisID == usuario.PaisID)
+                                     .ToList();
+
+            return Json(equipos, JsonRequestBehavior.AllowGet);
         }
 
 
