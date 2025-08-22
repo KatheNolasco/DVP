@@ -14,7 +14,8 @@ using System.Text;
 using System.Web.UI.WebControls.WebParts;
 using System.Data.Entity;
 using System.Web.Helpers;
-
+using System.Diagnostics;
+using System.Configuration;
 
 namespace DVP.Controllers
 {
@@ -1735,6 +1736,51 @@ namespace DVP.Controllers
             return parosSinArranque;
         }
 
+
+        public static string RunPythonScript(string fecha = null)
+        {
+            var exePath = ConfigurationManager.AppSettings["PythonExePath"];
+            var scriptPath = ConfigurationManager.AppSettings["PythonScriptPath"];
+
+            if (string.IsNullOrEmpty(fecha))
+                fecha = DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd");
+
+            var start = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = exePath,
+                Arguments = $"\"{scriptPath}\" {fecha}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+                StandardOutputEncoding = System.Text.Encoding.UTF8,
+                StandardErrorEncoding = System.Text.Encoding.UTF8,
+                WorkingDirectory = System.IO.Path.GetDirectoryName(scriptPath)
+            };
+
+            using (var process = System.Diagnostics.Process.Start(start))
+            {
+                string stdout = process.StandardOutput.ReadToEnd();
+                string stderr = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                    stdout += $"\nEXIT CODE: {process.ExitCode}";
+
+                if (!string.IsNullOrEmpty(stderr))
+                    stdout += "\nERROR: " + stderr;
+
+                return stdout;
+            }
+        }
+
+
+        [HttpGet]
+        public JsonResult EjecutarScript(string fecha = null)
+        {
+            string resultado = RunPythonScript(fecha);
+            return Json(new { success = true, output = resultado }, JsonRequestBehavior.AllowGet);
+        }
 
 
 

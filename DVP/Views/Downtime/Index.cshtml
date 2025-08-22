@@ -72,13 +72,17 @@
                             <option value="">Seleccione una planta</option>
                         </select>
                         <div class="d-flex align-items-center gap-2">
-                            <button onclick="cerrarReporte()" id="btnCerrarReporte" class="btn btn-link p-0 m-0 align-baseline">
+                            <button onclick="" id="btnDescargarDowntime" class="btn btn-link p-0 m-0 align-baseline" title="Download downtime">
+                                <i class="bi bi-arrow-down-circle-fill text-success ms-2"></i>
+                            </button>
+                            <button type="button" onclick="newdowntime()" class="btn btn-link p-0 m-0" title="New downtime">
+                                <i class="bi bi-plus-circle-fill fs-4 text-dark"></i>
+                            </button>
+                            <span>Downtime Validation Date:</span>
+                            <button onclick="cerrarReporte()" id="btnCerrarReporte" class="btn btn-link p-0 m-0 align-baseline" title="Close report">
                                 <i class="bi bi-unlock-fill text-warning ms-2"></i>
                             </button>
-
-                            <span>Downtime Validation Date:</span>
                             <input type="date" id="fechaReporte" onchange="filtrarPorFecha()">
-
                             <a id="btnenergy" onclick="sendtoenergyvalidation()"
                                class="btn btn-link p-0 m-0 align-baseline"
                                style="display: none;" role="button">
@@ -87,17 +91,8 @@
                         </div>
                     </div>
                 </h5>
-
-
-                <h5 class="card-title fw-semibold mb-4">Equipments</h5>
                 <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
-                    Paros cerrados correctamente!
-                </div>
-                <!-- Equipos -->
-                <div class="text-end mb-3">
-                    <button type="button" onclick="newdowntime()" class="btn btn-outline-dark m-1">
-                        New Downtime
-                    </button>
+                     Done!
                 </div>
                 <div class="card">
                     <div class="card-body p-4">
@@ -562,8 +557,6 @@
     <script src="~/Content/Modernize-1.0.0/src/assets/js/app.min.js"></script>
     <script src="~/Content/Modernize-1.0.0/src/assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/Content/Modernize-1.0.0/src/assets/libs/simplebar/dist/simplebar.js"></script>
-
-
 
 }
 
@@ -1256,7 +1249,7 @@
 
     function cargando() {
         document.getElementById("loadingModal").style.display = "block";
-    }
+    };
 
     //*************************************************** Estas funciones rellenan el datatable ********************************************/
 
@@ -1339,8 +1332,16 @@
                 activeTbody.innerHTML = "";
                 inactiveTbody.innerHTML = "";
 
+                // Reiniciar contador al cambiar la fecha
+                const countWrap = document.getElementById("downtimeCountContainer");
+                const countSpan = document.getElementById("countEventosRelacionados");
+                if (countWrap && countSpan) {
+                    countSpan.textContent = "0";
+                    countWrap.style.display = "none";
+                }
+
+                // Poblar con los datos recibidos
                 data.forEach(item => {
-                    // Solo llenar la tabla de inactivos si el tipoEventoId === 1
                     if (item._tipoEventoId === 1) {
                         const rowHtmlInactivo = `
                             <tr data-equipo-id="${item._equipoId}" data-paro-id="${item._paroId}">
@@ -1358,12 +1359,18 @@
                         inactiveTbody.insertAdjacentHTML("beforeend", rowHtmlInactivo);
                     }
                 });
+
+                // Si ya había un equipo seleccionado, reaplicar el filtro
+                if (equipoSeleccionadoId !== null) {
+                    filtrarPorEquipo(equipoSeleccionadoId);
+                }
             })
             .catch(error => {
                 console.error("Error al obtener los paros:", error);
             });
     }
 }
+
 
 
 
@@ -2332,7 +2339,7 @@ document.getElementById('deleteParo').addEventListener('click', function () {
         cargarPlantasAsignadas(userId);
     });
 
-  document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function () {
   const sel = document.getElementById("_plantaAsignada");
   if (!sel) return;
 
@@ -2348,6 +2355,59 @@ document.getElementById('deleteParo').addEventListener('click', function () {
     const url = '@Url.Action("Index","Downtime")' + (val ? ('?plantaId=' + encodeURIComponent(val)) : '');
     window.location.href = url;
   });
-});
+  });
+
+    //________________________________________________________________________ Llamar el script de python para descargar paros _____________________________________//
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const btn = document.getElementById("btnDescargarDowntime");
+        const fechaInput = document.getElementById("fechaReporte");
+        const alertaOk = document.getElementById("alertsuccesclose");
+
+        btn.addEventListener("click", async function () {
+            // Tomar fecha o usar hoy
+            let fecha = fechaInput?.value;
+            if (!fecha) {
+                const hoy = new Date();
+                const yyyy = hoy.getFullYear();
+                const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+                const dd = String(hoy.getDate()).padStart(2, '0');
+                fecha = `${yyyy}-${mm}-${dd}`;
+            }
+
+            const url = `/Downtime/EjecutarScript?fecha=${encodeURIComponent(fecha)}`;
+
+            // Mostrar cargando
+            cargando();
+            btn.disabled = true;
+
+            try {
+                const resp = await fetch(url, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
+                });
+                if (!resp.ok) throw new Error(`Status ${resp.status}`);
+
+                const data = await resp.json();
+                if (!data?.success) throw new Error(data?.error || "Fallo al ejecutar el script.");
+
+                // ÉXITO: mostrar alerta y recargar
+                alertaOk.style.display = "block";
+                setTimeout(() => {
+                    location.reload();
+                }, 1200);
+            } catch (err) {
+                console.error(err);
+                alert("Ocurrió un error al ejecutar el script. Revisa la consola.");
+            } finally {
+                // Ocultar cargando en el mismo bloque
+                document.getElementById("loadingModal").style.display = "none";
+                btn.disabled = false;
+            }
+        });
+    });
+
+
+
 
 </script>

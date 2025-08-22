@@ -112,9 +112,8 @@
                                                 <tr>
                                                     <th class="text-center">Activo</th>
                                                     <th class="text-center">Tag Name</th>
-                                                    <th class="text-center">Activo</th>
-                                                    <th class="text-center">Tipo Operacion</th>
-                                                    <th class="text-center">Equipo</th>
+                                                    <th class="text-center">Operation Type</th>
+                                                    <th class="text-center">Equipment</th>
                                                     <th class="text-center">Actions</th>
                                                 </tr>
                                             </thead>
@@ -209,7 +208,7 @@
                                     </div>
 
                                     <div id="alertSuccess" class="alert alert-success mt-3" role="alert" style="display: none;">
-                                        ¡Equipo creado exitosamente!
+                                        ¡Creado exitosamente!
                                     </div>
                                 </form>
                             </div>
@@ -448,28 +447,30 @@
                 return;
             }
 
-            // Filtrar solo los que tienen _activo === true
-            const equiposActivos = data.data.filter(item => item._activo === true);
-
-            equiposActivos.forEach(item => {
+            // Mostrar todos (activos e inactivos)
+            data.data.forEach(item => {
                 const row = document.createElement('tr');
 
                 row.innerHTML = `
                     <td class="text-center">
-                        <i class="bi bi-check-circle-fill text-success"></i>
+                        ${
+                            item._activo
+                                ? '<i class="bi bi-check-circle-fill text-success"></i>'
+                                : '<i class="bi bi-x-circle-fill text-danger"></i>'
+                        }
                     </td>
                     <td class="text-center">${item._descripcion || ''}</td>
-                    <td class="text-center">${item._tagName || ''}</td>
                     <td class="text-center">${item._tipoOperacionDescripcion || ''}</td>
                     <td class="text-center">${item._equipoDescripcion || ''}</td>
                     <td class="text-center bg-white">
-                        <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditarTag(${item._tagEquipoId})"><i class="bi bi-pencil me-2"></i></a>
+                        <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditarTag(${item._tagEquipoId})">
+                            <i class="bi bi-pencil me-2"></i>
+                        </a>
                     </td>
                 `;
 
                 tbody.appendChild(row);
             });
-
         })
         .catch(error => {
             console.error("Error cargando la tabla de equipos:", error);
@@ -480,6 +481,7 @@
             document.getElementById("loadingModal").style.display = "none";
         });
 }
+
 
 
 
@@ -570,14 +572,16 @@
             // Mostrar mensaje de éxito
             document.getElementById("alertEditeSuccesseditar").style.display = "block";
 
-            // Ocultar el modal y mensaje después de un tiempo
             setTimeout(() => {
+                // Ocultar el mensaje
                 document.getElementById("alertEditeSuccesseditar").style.display = "none";
+
+                // Cerrar modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById("editTag"));
                 modal.hide();
 
-                // Opcional: recargar para ver cambios reflejados
-                location.reload();
+                // Recargar página
+                window.location.reload();
             }, 2000);
         } else {
             alert("Error: " + response.message);
@@ -587,7 +591,8 @@
         console.error("Error al enviar datos:", error);
         alert("Ocurrió un error al enviar los datos.");
     });
-    }
+}
+
 
 
 
