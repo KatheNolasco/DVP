@@ -145,7 +145,7 @@
                             <option value="">Seleccione un tipo</option>
                             <option value="SubEquipo">Sub Equipo</option>
                             <option value="Componente">Componente</option>
-                            <option value="Clasificacion">Clasificación</option>
+                            <option value="Clasificacion">Clasificacion</option>
                             <option value="TipoFalla">Tipo Falla</option>
                         </select>
                     </div>
@@ -566,7 +566,7 @@
         const filtros = document.getElementById('filtrosListado');
         const contenedorListado = document.getElementById('contenedorListado');
 
-        // ------- Helpers de fetch -------
+        // ------- helpers fetch -------
         const loadEquipos = () => fetch('/Equipo/GetEquiposporPaislogguedUser').then(r => r.json());
         const loadSubEquipos = (equipoId) => fetch(`/Downtime/GetSubEquipos?_equipoId=${encodeURIComponent(equipoId)}`).then(r => r.json());
         const loadComponentesBySub = (subEquipoId) => fetch(`/Downtime/GetComponenteEquipo?_subEquipoId=${encodeURIComponent(subEquipoId)}`).then(r => r.json());
@@ -574,8 +574,31 @@
         const loadTiposFalla = (clasificacionId, componenteId) =>
             fetch(`/Downtime/GetTiposFalla?_clasificacionId=${encodeURIComponent(clasificacionId)}&_componenteEquipoId=${encodeURIComponent(componenteId)}`).then(r => r.json());
 
-        // ------- Render generico de tablas -------
-        function renderTable(columns, data) {
+        // ------- bloqueo de palabras -------
+        const BLOCKED_PATTERNS = ['PI', 'EQUIPO COMPLETO', 'PARO DVM'];
+        function isBlocked(desc) {
+            const up = String(desc || '').toUpperCase();
+            return BLOCKED_PATTERNS.some(p => up.includes(p));
+        }
+
+        // ------- config por tipo (id, campo descripcion y endpoint update) -------
+        function getConfig(tipo) {
+            const base = {
+                descField: 'Descripcion',
+                headers: {
+                    'Content-Type': 'application/json'
+                    // ,'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                }
+            };
+            if (tipo === 'SubEquipo') return { ...base, tipo, idField: 'SubEquipoID', updateUrl: '/ArbolFallas/UpdateSubEquipo' };
+            if (tipo === 'Componente') return { ...base, tipo, idField: 'ComponenteEquipoID', updateUrl: '/ArbolFallas/UpdateComponente' };
+            if (tipo === 'Clasificacion') return { ...base, tipo, idField: 'ClasificacionID', updateUrl: '/ArbolFallas/UpdateClasificacion' };
+            if (tipo === 'TipoFalla') return { ...base, tipo, idField: 'TipoFallaID', updateUrl: '/ArbolFallas/UpdateTipoFalla' };
+            return null;
+        }
+
+        // ------- render editable con bloqueo -------
+        function renderEditableTable(data, config) {
             if (data?.error) {
                 contenedorListado.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
                 return;
@@ -584,20 +607,143 @@
                 contenedorListado.innerHTML = '<div class="alert alert-warning">No hay registros disponibles.</div>';
                 return;
             }
-            const thead = columns.map(c => `<th>${c.header}</th>`).join('');
-            const tbody = data.map((item, idx) => {
-                const tds = columns.map(c => {
-                    const raw = typeof c.value === 'function' ? c.value(item, idx) : (item[c.value] ?? '');
-                    return `<td>${raw}</td>`;
-                }).join('');
-                return `<tr>${tds}</tr>`;
+
+            const rowsHtml = data.map((item, idx) => {
+                const id = item[config.idField];
+                const desc = item[config.descField] ?? item.Nombre ?? item.nombre ?? '';
+                const bloqueado = isBlocked(desc);
+
+                return `
+        <tr data-row-id="${id}">
+            <td class="text-center">${idx + 1}</td>
+            <td>
+                <span class="cell-text">${escapeHtml(desc)}</span>
+                <input class="form-control form-control-sm cell-input" type="text" value="${escapeAttr(desc)}" style="display:none;">
+            </td>
+            <td class="text-nowrap text-center">
+                ${bloqueado
+                        ? `<span class="badge bg-secondary">No editable</span>`
+                        : `
+                        <button type="button" class="btn btn-sm btn-outline-primary btn-edit">Editar</button>
+                        <button type="button" class="btn btn-sm btn-success btn-save" style="display:none;">Guardar</button>
+                        <button type="button" class="btn btn-sm btn-secondary btn-cancel" style="display:none;">Cancelar</button>
+                      `
+                    }
+            </td>
+        </tr>`;
             }).join('');
+
             contenedorListado.innerHTML = `
-      <table class="table table-bordered table-sm table-striped">
-        <thead><tr>${thead}</tr></thead>
-        <tbody>${tbody}</tbody>
-      </table>
-    `;
+    <table class="table table-bordered table-sm table-striped align-middle">
+        <thead>
+            <tr>
+                <th style="width:60px;">#</th>
+                <th>Descripcion</th>
+                <th style="width:210px;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+    </table>`;
+
+            // wire events SOLO para filas no bloqueadas (porque las bloqueadas no tienen botones)
+            contenedorListado.querySelectorAll('.btn-edit').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tr = btn.closest('tr');
+                    setEditMode(tr, true);
+                });
+            });
+            contenedorListado.querySelectorAll('.btn-cancel').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tr = btn.closest('tr');
+                    const span = tr.querySelector('.cell-text');
+                    const input = tr.querySelector('.cell-input');
+                    input.value = span.textContent || '';
+                    setEditMode(tr, false);
+                });
+            });
+            contenedorListado.querySelectorAll('.btn-save').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const tr = btn.closest('tr');
+                    await saveRow(tr, config);
+                });
+            });
+        }
+
+        function setEditMode(tr, editing) {
+            const span = tr.querySelector('.cell-text');
+            const input = tr.querySelector('.cell-input');
+            const btnEdit = tr.querySelector('.btn-edit');
+            const btnSave = tr.querySelector('.btn-save');
+            const btnCancel = tr.querySelector('.btn-cancel');
+
+            if (editing) {
+                span.style.display = 'none';
+                input.style.display = '';
+                if (btnEdit) btnEdit.style.display = 'none';
+                if (btnSave) btnSave.style.display = '';
+                if (btnCancel) btnCancel.style.display = '';
+                input.focus();
+                input.select();
+            } else {
+                span.style.display = '';
+                input.style.display = 'none';
+                if (btnEdit) btnEdit.style.display = '';
+                if (btnSave) btnSave.style.display = 'none';
+                if (btnCancel) btnCancel.style.display = 'none';
+            }
+        }
+
+        async function saveRow(tr, config) {
+            const id = tr.getAttribute('data-row-id');
+            const span = tr.querySelector('.cell-text');
+            const input = tr.querySelector('.cell-input');
+            const descripcionNueva = (input.value || '').trim();
+
+            // Salvaguarda adicional: bloquear si la fila actual es de las restringidas
+            if (isBlocked(span.textContent)) {
+                alert('Este registro no es editable.');
+                return;
+            }
+
+            if (!descripcionNueva) {
+                alert('La descripcion no puede estar vacia.');
+                return;
+            }
+
+            const payload = { Descripcion: descripcionNueva };
+            payload[config.idField] = isNaN(Number(id)) ? id : Number(id);
+
+            try {
+                const resp = await fetch(config.updateUrl, {
+                    method: 'POST', // cambia a PUT si tu accion lo requiere
+                    headers: config.headers,
+                    body: JSON.stringify(payload)
+                });
+                if (!resp.ok) throw new Error('Error de red/servidor');
+                const result = await resp.json().catch(() => ({}));
+
+                if (result?.success === false) {
+                    alert(result?.message || 'No se pudo guardar.');
+                    return;
+                }
+
+                span.textContent = descripcionNueva;
+                setEditMode(tr, false);
+            } catch (err) {
+                console.error(err);
+                alert('Error guardando el registro.');
+            }
+        }
+
+        // helpers de html safe
+        function escapeHtml(s) {
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+        function escapeAttr(s) {
+            return String(s).replace(/"/g, '&quot;');
         }
 
         function clearUI() {
@@ -605,7 +751,7 @@
             contenedorListado.innerHTML = '';
         }
 
-        // Crea un select simple
+        // select simple
         function createSelect({ id, label, placeholder, col = 'col-md-4' }) {
             const colDiv = document.createElement('div');
             colDiv.className = col;
@@ -615,12 +761,10 @@
         <select id="${id}" class="form-select">
           <option value="">${placeholder}</option>
         </select>
-      </div>
-    `;
+      </div>`;
             return colDiv;
         }
 
-        // Llena un select con items [{value, text}]
         function fillSelect(selectEl, items, firstOptionText) {
             selectEl.innerHTML = `<option value="">${firstOptionText}</option>`;
             items.forEach(i => {
@@ -631,9 +775,11 @@
             });
         }
 
-        // ------- Handlers por tipo -------
+        // ------- handlers por tipo (usan renderEditableTable) -------
         async function handleSubEquipo() {
             clearUI();
+            const config = getConfig('SubEquipo');
+
             const selEquipoWrap = createSelect({ id: 'filtroEquipo', label: 'Equipo', placeholder: 'Seleccione un equipo' });
             filtros.appendChild(selEquipoWrap);
             const selEquipo = document.getElementById('filtroEquipo');
@@ -655,21 +801,16 @@
                 const id = this.value;
                 if (!id) return;
                 const data = await loadSubEquipos(id).catch(() => []);
-                renderTable(
-                    [
-                        { header: '#', value: (row, idx) => idx + 1 },
-                        { header: 'Descripcion', value: (row) => row.Descripcion ?? row.Nombre ?? row.nombre ?? '' }
-                    ],
-                    data
-                );
+                renderEditableTable(data, config);
             });
 
             if (selEquipo.value) selEquipo.dispatchEvent(new Event('change'));
         }
 
-        // Componente por Subequipo
         async function handleComponente() {
             clearUI();
+            const config = getConfig('Componente');
+
             const selEquipoWrap = createSelect({ id: 'filtroEquipo', label: 'Equipo', placeholder: 'Seleccione un equipo' });
             const selSubWrap = createSelect({ id: 'filtroSubequipo', label: 'Subequipo', placeholder: 'Seleccione un subequipo' });
             filtros.appendChild(selEquipoWrap);
@@ -712,34 +853,23 @@
                 if (!subId) return;
 
                 const comps = await loadComponentesBySub(subId).catch(() => []);
-                renderTable(
-                    [
-                        { header: '#', value: (row, idx) => idx + 1 },
-                        { header: 'Descripcion', value: (row) => row.Descripcion ?? row.Nombre ?? row.nombre ?? '' }
-                    ],
-                    comps
-                );
+                renderEditableTable(comps, config);
             });
 
             if (selEquipo.value) selEquipo.dispatchEvent(new Event('change'));
         }
 
-        // Clasificacion sin filtro
         async function handleClasificacion() {
             clearUI();
+            const config = getConfig('Clasificacion');
             const data = await loadClasificaciones().catch(() => []);
-            renderTable(
-                [
-                    { header: '#', value: (row, idx) => idx + 1 },
-                    { header: 'Descripcion', value: (row) => row.Descripcion ?? row.Nombre ?? row.nombre ?? '' }
-                ],
-                data
-            );
+            renderEditableTable(data, config);
         }
 
-        // TipoFalla: requiere Clasificacion y Componente (Componente depende de Subequipo)
         async function handleTipoFalla() {
             clearUI();
+            const config = getConfig('TipoFalla');
+
             const selEquipoWrap = createSelect({ id: 'filtroEquipoTF', label: 'Equipo', placeholder: 'Seleccione un equipo' });
             const selSubWrap = createSelect({ id: 'filtroSubTF', label: 'Subequipo', placeholder: 'Seleccione un subequipo' });
             const selCompWrap = createSelect({ id: 'filtroCompTF', label: 'Componente', placeholder: 'Seleccione un componente' });
@@ -776,7 +906,7 @@
                 if (window.clasificacionId) selClas.value = String(window.clasificacionId);
             }
 
-            // Cascada: Equipo -> Subequipo
+            // Cascadas
             selEquipo.addEventListener('change', async function () {
                 contenedorListado.innerHTML = '';
                 selSub.innerHTML = '<option value="">Cargando...</option>';
@@ -797,7 +927,6 @@
                 }
             });
 
-            // Cascada: Subequipo -> Componente
             selSub.addEventListener('change', async function () {
                 contenedorListado.innerHTML = '';
                 selComp.innerHTML = '<option value="">Cargando...</option>';
@@ -817,7 +946,6 @@
                 }
             });
 
-            // Cargar tipos de falla cuando hay clasificacion y componente
             async function tryLoadTipos() {
                 contenedorListado.innerHTML = '';
                 const clasId = selClas.value;
@@ -825,13 +953,7 @@
                 if (!clasId || !compId) return;
 
                 const data = await loadTiposFalla(clasId, compId).catch(() => []);
-                renderTable(
-                    [
-                        { header: '#', value: (row, idx) => idx + 1 },
-                        { header: 'Descripcion', value: (row) => row.Descripcion ?? row.Nombre ?? row.nombre ?? '' }
-                    ],
-                    data
-                );
+                renderEditableTable(data, config);
             }
 
             selClas.addEventListener('change', tryLoadTipos);
@@ -840,7 +962,7 @@
             if (selEquipo.value) selEquipo.dispatchEvent(new Event('change'));
         }
 
-        // Evento principal
+        // evento principal
         selectListado.addEventListener('change', function () {
             const tipo = this.value;
             if (!tipo) {
@@ -853,6 +975,10 @@
             if (tipo === 'TipoFalla') return handleTipoFalla();
         });
     });
+
+
+
+
 
 
 

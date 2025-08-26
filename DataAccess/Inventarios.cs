@@ -14,7 +14,7 @@ namespace DataAccess
     
     public partial class Inventarios
     {
-        public int SalidasID { get; set; }
+        public int InventariosID { get; set; }
         public Nullable<int> MaterialSAP { get; set; }
         public string Descripcion { get; set; }
         public Nullable<decimal> Cantidad { get; set; }

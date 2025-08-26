@@ -4,7 +4,7 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-      <Schema Namespace="DVPModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+    <Schema Namespace="DVPModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
         <EntityType Name="BillOfMaterial">
           <Key>
             <PropertyRef Name="BillOfMaterialID" />
@@ -110,9 +110,9 @@
         </EntityType>
         <EntityType Name="Inventarios">
           <Key>
-            <PropertyRef Name="SalidasID" />
+            <PropertyRef Name="InventariosID" />
           </Key>
-          <Property Name="SalidasID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="InventariosID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="MaterialSAP" Type="int" />
           <Property Name="Descripcion" Type="nvarchar" MaxLength="200" />
           <Property Name="Cantidad" Type="decimal" Precision="20" Scale="5" />
@@ -1045,8 +1045,7 @@
             <End Role="CierreStatus" EntitySet="CierreStatus" />
           </AssociationSet>
         </EntityContainer>
-      </Schema>
-    </edmx:StorageModels>
+      </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
       <Schema Namespace="DVPModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
@@ -1181,18 +1180,6 @@
           <Property Name="Descripcion" Type="String" MaxLength="100" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="Active" Type="Boolean" />
           <NavigationProperty Name="Usuario" Relationship="Self.FK_Gerencia_Usuario" FromRole="Gerencia" ToRole="Usuario" />
-        </EntityType>
-        <EntityType Name="Inventarios">
-          <Key>
-            <PropertyRef Name="SalidasID" />
-          </Key>
-          <Property Name="SalidasID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="MaterialSAP" Type="Int32" />
-          <Property Name="Descripcion" Type="String" MaxLength="200" FixedLength="false" Unicode="true" />
-          <Property Name="Cantidad" Type="Decimal" Precision="20" Scale="5" />
-          <Property Name="FechaTransaccion" Type="DateTime" Precision="3" />
-          <Property Name="TipoMovimientoSAP" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
-          <Property Name="FehaReporte" Type="DateTime" Precision="3" />
         </EntityType>
         <EntityType Name="Material">
           <Key>
@@ -1956,7 +1943,6 @@
           <EntitySet Name="Entradas" EntityType="Self.Entradas" />
           <EntitySet Name="Equipo" EntityType="Self.Equipo" />
           <EntitySet Name="Gerencia" EntityType="Self.Gerencia" />
-          <EntitySet Name="Inventarios" EntityType="Self.Inventarios" />
           <EntitySet Name="Material" EntityType="Self.Material" />
           <EntitySet Name="Pais" EntityType="Self.Pais" />
           <EntitySet Name="Paros" EntityType="Self.Paros" />
@@ -2168,6 +2154,7 @@
             <Parameter Name="new_diagramname" Mode="In" Type="String" />
           </FunctionImport>
           <FunctionImport Name="sp_upgraddiagrams" />
+          <EntitySet Name="Inventarios" EntityType="DVPModel.Inventarios" />
         </EntityContainer>
         <ComplexType Name="sp_helpdiagramdefinition_Result">
           <Property Type="Int32" Name="version" Nullable="true" />
@@ -2180,6 +2167,18 @@
           <Property Type="String" Name="Owner" Nullable="true" MaxLength="128" />
           <Property Type="Int32" Name="OwnerID" Nullable="false" />
         </ComplexType>
+        <EntityType Name="Inventarios">
+          <Key>
+            <PropertyRef Name="InventariosID" />
+          </Key>
+          <Property Name="InventariosID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="MaterialSAP" Type="Int32" />
+          <Property Name="Descripcion" Type="String" MaxLength="200" FixedLength="false" Unicode="true" />
+          <Property Name="Cantidad" Type="Decimal" Precision="20" Scale="5" />
+          <Property Name="FechaTransaccion" Type="DateTime" Precision="3" />
+          <Property Name="TipoMovimientoSAP" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
+          <Property Name="FehaReporte" Type="DateTime" Precision="3" />
+        </EntityType>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -2295,19 +2294,6 @@
                 <ScalarProperty Name="GerenciaID" ColumnName="GerenciaID" />
                 <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
                 <ScalarProperty Name="Active" ColumnName="Active" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="Inventarios">
-            <EntityTypeMapping TypeName="DVPModel.Inventarios">
-              <MappingFragment StoreEntitySet="Inventarios">
-                <ScalarProperty Name="SalidasID" ColumnName="SalidasID" />
-                <ScalarProperty Name="MaterialSAP" ColumnName="MaterialSAP" />
-                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
-                <ScalarProperty Name="Cantidad" ColumnName="Cantidad" />
-                <ScalarProperty Name="FechaTransaccion" ColumnName="FechaTransaccion" />
-                <ScalarProperty Name="TipoMovimientoSAP" ColumnName="TipoMovimientoSAP" />
-                <ScalarProperty Name="FehaReporte" ColumnName="FehaReporte" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -2573,6 +2559,19 @@
           </FunctionImportMapping>
           <FunctionImportMapping FunctionImportName="sp_renamediagram" FunctionName="DVPModel.Store.sp_renamediagram" />
           <FunctionImportMapping FunctionImportName="sp_upgraddiagrams" FunctionName="DVPModel.Store.sp_upgraddiagrams" />
+          <EntitySetMapping Name="Inventarios">
+            <EntityTypeMapping TypeName="DVPModel.Inventarios">
+              <MappingFragment StoreEntitySet="Inventarios">
+                <ScalarProperty Name="FehaReporte" ColumnName="FehaReporte" />
+                <ScalarProperty Name="TipoMovimientoSAP" ColumnName="TipoMovimientoSAP" />
+                <ScalarProperty Name="FechaTransaccion" ColumnName="FechaTransaccion" />
+                <ScalarProperty Name="Cantidad" ColumnName="Cantidad" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="MaterialSAP" ColumnName="MaterialSAP" />
+                <ScalarProperty Name="InventariosID" ColumnName="InventariosID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
         </EntityContainerMapping>
       </Mapping>
     </edmx:Mappings>

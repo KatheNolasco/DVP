@@ -161,6 +161,47 @@ namespace DVP.Controllers
             }
         }
 
+        [HttpPost]
+        public JsonResult UpdateSubEquipo(int SubEquipoID, string Descripcion)
+        {
+            var row = _dvpEntities.SubEquipo.FirstOrDefault(x => x.SubEquipoID == SubEquipoID);
+            if (row == null) return Json(new { success = false, message = "No encontrado" });
+            row.Descripcion = Descripcion;
+            _dvpEntities.SaveChanges();
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public JsonResult UpdateComponente(int ComponenteEquipoID, string Descripcion)
+        {
+            var row = _dvpEntities.ComponenteEquipo.FirstOrDefault(x => x.ComponenteEquipoID == ComponenteEquipoID);
+            if (row == null) return Json(new { success = false, message = "No encontrado" });
+            row.Descripcion = Descripcion;
+            _dvpEntities.SaveChanges();
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public JsonResult UpdateClasificacion(int ClasificacionID, string Descripcion)
+        {
+            var row = _dvpEntities.Clasificacion.FirstOrDefault(x => x.ClasificacionID == ClasificacionID);
+            if (row == null) return Json(new { success = false, message = "No encontrado" });
+            row.Descripcion = Descripcion;
+            _dvpEntities.SaveChanges();
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public JsonResult UpdateTipoFalla(int TipoFallaID, string Descripcion)
+        {
+            var row = _dvpEntities.TipoFalla.FirstOrDefault(x => x.TipoFallaID == TipoFallaID);
+            if (row == null) return Json(new { success = false, message = "No encontrado" });
+            row.Descripcion = Descripcion;
+            _dvpEntities.SaveChanges();
+            return Json(new { success = true });
+        }
+
+
 
 
 
