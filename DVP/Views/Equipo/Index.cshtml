@@ -554,6 +554,9 @@
 
 
     function abrirModalEditarEquipo(equipoId) {
+    // Mostrar cargando
+    document.getElementById("loadingModal").style.display = "block";
+
     Promise.all([
         fetch('@Url.Action("GetProceso", "Equipo")').then(res => res.json()),
         fetch('@Url.Action("GetPlanta", "Equipo")').then(res => res.json()),
@@ -581,7 +584,6 @@
             document.getElementById("_activeeditar").checked = data._active;
             document.getElementById("_enviarASAPeditar").checked = data._enviarASAP;
 
-            // Asignar valores a los selects
             setTimeout(() => {
                 document.getElementById("_procesoIdeditar").value = data._procesoID?.toString();
                 document.getElementById("_plantaIdeditar").value = data._plantaID?.toString();
@@ -589,6 +591,7 @@
                 document.getElementById("_paisIdeditar").value = data._paisID?.toString();
             }, 100);
 
+            // Abrir modal de edición
             const modalElement = document.getElementById("editEquipment");
             const modal = new bootstrap.Modal(modalElement);
             modal.show();
@@ -599,6 +602,10 @@
     .catch(error => {
         console.error("Error:", error);
         alert("Error al cargar el formulario de edición.");
+    })
+    .finally(() => {
+        // Ocultar cargando siempre al final
+        document.getElementById("loadingModal").style.display = "none";
     });
 }
 

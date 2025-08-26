@@ -842,6 +842,15 @@ document.getElementById("_buscar").addEventListener("keyup", function () {
         const $ = (s) => document.querySelector(s);
         const $$ = (s) => Array.from(document.querySelectorAll(s));
 
+        const showLoading = () => {
+            const el = document.getElementById("loadingModal");
+            if (el) el.style.display = "block";
+        };
+        const hideLoading = () => {
+            const el = document.getElementById("loadingModal");
+            if (el) el.style.display = "none";
+        };
+
         const getToken = () => {
             const el = document.querySelector('input[name="__RequestVerificationToken"]');
             return el ? el.value : null;
@@ -895,14 +904,13 @@ document.getElementById("_buscar").addEventListener("keyup", function () {
             all.checked = n > 0 && n === $$(".chk-planta").length;
         };
 
-        // === NUEVO: llenar el <select id="_plantaAsignada"> con las asignadas ===
+        // Llena el <select id="_plantaAsignada"> con las asignadas
         const fillSelectAsignadas = (asignadasIds, plantas) => {
             const sel = document.getElementById("_plantaAsignada");
             if (!sel) return;
 
             sel.innerHTML = '<option value="">Seleccione una planta</option>';
 
-            // diccionario id -> descripcion desde "plantas"
             const dic = new Map((plantas || []).map(p => [Number(p.PlantaID), p.Descripcion]));
 
             (asignadasIds || []).forEach(id => {
@@ -913,8 +921,9 @@ document.getElementById("_buscar").addEventListener("keyup", function () {
             });
         };
 
-        // FUNCION GLOBAL: se llama desde el onclick del lápiz
+        // === abrir modal (muestra loading antes y lo oculta al final) ===
         window.abrirModalAsignar = async function (usuarioId, usuarioNombre) {
+            showLoading();
             try {
                 if (typeof bootstrap === "undefined" || !bootstrap.Modal) {
                     showERR("Bootstrap JS no está cargado");
@@ -936,7 +945,7 @@ document.getElementById("_buscar").addEventListener("keyup", function () {
                 ]);
 
                 if (!rPlantas.ok) throw new Error("No se pudo obtener plantas");
-                // Si rAsignadas falla, continuamos sin preseleccion
+
                 const plantas = await rPlantas.json();
                 let asignadasRaw = [];
                 try { asignadasRaw = rAsignadas.ok ? await rAsignadas.json() : []; } catch { asignadasRaw = []; }
@@ -944,8 +953,7 @@ document.getElementById("_buscar").addEventListener("keyup", function () {
                 // 2) Renderizar plantas
                 renderPlantas(plantas);
 
-                // 3) Normalizar IDs asignados (admite dos formatos comunes)
-                // a) [1,2,3]  ó  b) [{PlantaID: 1}, {PlantaID: 2}]
+                // 3) Normalizar IDs asignados
                 const asignadasIds = (asignadasRaw || []).map(x => {
                     if (typeof x === "number") return x;
                     if (x && typeof x === "object") return x.PlantaID ?? x.Id ?? x.plantaId ?? x.plantaID;
@@ -960,18 +968,20 @@ document.getElementById("_buscar").addEventListener("keyup", function () {
                     });
                 }
 
-                // === NUEVO: llenar el select con las asignadas ===
+                // 5) Llenar select de asignadas
                 fillSelectAsignadas(asignadasIds, plantas);
 
-                // 5) Actualizar contador / seleccionar todo
+                // 6) Actualizar contador
                 updateSelCount();
 
-                // 6) Mostrar modal
+                // 7) Mostrar modal
                 new bootstrap.Modal(modalEl).show();
 
             } catch (e) {
                 console.error(e);
                 showERR("No se pudieron cargar las plantas");
+            } finally {
+                hideLoading(); // ocultar siempre al final
             }
         };
 
@@ -998,23 +1008,23 @@ document.getElementById("_buscar").addEventListener("keyup", function () {
             });
         });
 
-        // enviar asignaciones (SINCRONIZAR: envia la lista completa _plantaIds)
+        // enviar asignaciones (muestra loading durante el POST)
         $("#btnAsignarPlantas").addEventListener("click", async function () {
             const usuarioId = parseInt($("#hiddenUsuarioId").value || "0", 10);
             const plantaIds = $$(".chk-planta:checked").map(chk => parseInt(chk.value, 10));
 
             if (!usuarioId) { showERR("Usuario no válido"); return; }
-            // Permitimos 0 seleccionadas para eliminar todas
 
             const token = getToken();
             const modalEl = document.getElementById("asignarPlanta");
             const urlPost = modalEl.getAttribute("data-url-post");
 
-            const payload = { _usuarioId: usuarioId, _plantaIds: plantaIds }; // <- lista completa
+            const payload = { _usuarioId: usuarioId, _plantaIds: plantaIds };
 
             this.disabled = true;
             const oldTxt = this.textContent;
             this.textContent = "Asignando...";
+            showLoading();
 
             try {
                 const res = await fetch(urlPost, {
@@ -1041,10 +1051,12 @@ document.getElementById("_buscar").addEventListener("keyup", function () {
             } finally {
                 this.disabled = false;
                 this.textContent = oldTxt;
+                hideLoading();
             }
         });
 
     });
+
 
 
 

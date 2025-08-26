@@ -490,11 +490,14 @@
 
 
     function abrirModalEditarTag(tagId) {
+    // Mostrar cargando
+    document.getElementById("loadingModal").style.display = "block";
+
     Promise.all([
         fetch('@Url.Action("GetEquiposporPaislogguedUser", "Equipo")').then(res => res.json()),
         fetch('@Url.Action("GetTipoOperacion", "Tag")').then(res => res.json())
     ])
-        .then(([equipos, tiposOperacion]) => {
+    .then(([equipos, tiposOperacion]) => {
         llenarSelect('_equipoIdeditar', equipos, 'EquipoID', 'Descripcion');
         llenarSelect('_tipoOperacionIdeditar', tiposOperacion, 'TipoOperacionID', 'Descripcion');
 
@@ -517,18 +520,24 @@
                 document.getElementById("_equipoIdeditar").value = data._equipoId?.toString();
             }, 100);
 
+            // Abrir modal de edicion
             const modalElement = document.getElementById("editTag");
             const modal = new bootstrap.Modal(modalElement);
             modal.show();
         } else {
-            alert("Error al obtener datos del equipo: " + result.message);
+            alert("Error al obtener datos del tag: " + result.message);
         }
     })
     .catch(error => {
         console.error("Error:", error);
-        alert("Error al cargar el formulario de edición.");
+        alert("Error al cargar el formulario de edicion.");
+    })
+    .finally(() => {
+        // Ocultar cargando siempre al final
+        document.getElementById("loadingModal").style.display = "none";
     });
 }
+
 
 
 

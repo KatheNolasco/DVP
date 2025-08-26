@@ -513,6 +513,9 @@
 
 
     function abrirModalEditar(materialId) {
+    // Mostrar cargando
+    document.getElementById("loadingModal").style.display = "block";
+
     // Obtener clasificaciones primero
     fetch('@Url.Action("GetClasificacionMaterial", "Material")')
         .then(res => res.json())
@@ -550,7 +553,7 @@
                 document.getElementById("_afectaInventarioeditar").checked = data._afectaInventario;
                 document.getElementById("_idStockeditar").value = data._idStock;
 
-                // Mostrar el modal
+                // Mostrar el modal de edición
                 const modalElement = document.getElementById("editar");
                 const modal = new bootstrap.Modal(modalElement);
                 modal.show();
@@ -561,8 +564,13 @@
         .catch(error => {
             console.error("Error al obtener los datos del material o clasificaciones:", error);
             alert("Ocurrió un error al cargar los datos.");
+        })
+        .finally(() => {
+            // Ocultar cargando siempre al final
+            document.getElementById("loadingModal").style.display = "none";
         });
-    }
+}
+
 
 
 

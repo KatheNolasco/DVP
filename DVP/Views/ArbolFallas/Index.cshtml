@@ -288,6 +288,21 @@
                 });
         };
 
+        // Hace que dos checkboxes sean mutuamente excluyentes (ambos pueden estar apagados)
+        function setMutualExclusive(idA, idB) {
+            const a = document.getElementById(idA);
+            const b = document.getElementById(idB);
+            if (!a || !b) return;
+
+            a.addEventListener('change', () => {
+                if (a.checked) b.checked = false;
+            });
+            b.addEventListener('change', () => {
+                if (b.checked) a.checked = false;
+            });
+        }
+
+
         // Helper: cargar clasificaciones
         const loadClasificaciones = (selectId) => {
             const sel = document.getElementById(selectId);
@@ -425,6 +440,9 @@
                     <input class="form-check-input" type="checkbox" id="_afectaTMEF">
                     <label class="form-check-label" for="_afectaTMEF">Afecta TMEF</label>
                 </div>`;
+
+                    // === NUEVO: hacerlos mutuamente excluyentes
+                    setMutualExclusive('_ajeno', '_afectaTMEF');
                     break;
 
                 case '4':
