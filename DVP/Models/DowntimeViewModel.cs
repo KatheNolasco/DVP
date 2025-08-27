@@ -75,6 +75,8 @@ namespace DVP.Models
         public bool? _statusValidate { get; set; }
         public bool? _statusDelete { get; set; }
         public int _usuarioCreadorID { get; set; }
+        public string _userName { get; set; }
+
 
         public IEnumerable<Equipo> Equipos { get; set; }
         public IEnumerable<TipoEvento> TipoEventos { get; set; }

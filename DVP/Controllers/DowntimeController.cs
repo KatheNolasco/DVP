@@ -145,6 +145,7 @@ namespace DVP.Controllers
                     _fechaEvento = p.FechaEvento,
                     _statusValidate = p.StatusValidate,
                     _statusDelete = p.StatusDelete,
+                    _userName = p.Usuario.Nombre,
                 })
                 .FirstOrDefault();
 
@@ -167,6 +168,7 @@ namespace DVP.Controllers
 
             try
             {
+
                 DateTime fechaEvento = data._fechaEvento.Date;
                 DateTime hoy = DateTime.Now.Date;
 
@@ -248,6 +250,7 @@ namespace DVP.Controllers
                         FechaCreacion = DateTime.Now,
                         StatusValidate = true,
                         StatusDelete = false,
+                        UsuarioCreadorID = data._usuarioCreadorID
                     };
 
                     _dvpEntities.Paros.Add(nuevoParo);
@@ -379,7 +382,8 @@ namespace DVP.Controllers
                         FechaCreacion = DateTime.Now,
                         StatusValidate = true,
                         StatusDelete = false,
-                        ParoRelacionadoID = inactiveOrigen.ParosID
+                        ParoRelacionadoID = inactiveOrigen.ParosID,
+                        UsuarioCreadorID = data._usuarioCreadorID
                     };
 
                     _dvpEntities.Paros.Add(nuevoParo);
@@ -489,6 +493,7 @@ namespace DVP.Controllers
                         StatusValidate = true,
                         StatusDelete = false,
                         ParoRelacionadoID = inactiveOrigen.ParosID,
+                        UsuarioCreadorID = data._usuarioCreadorID
                     };
 
                     _dvpEntities.Paros.Add(nuevoParo);
@@ -673,6 +678,7 @@ namespace DVP.Controllers
                         StatusValidate = true,
                         StatusDelete = false,
                         ParoRelacionadoID = inactiveOrigen.ParosID,
+                        UsuarioCreadorID = data._usuarioCreadorID
                     };
 
                     _dvpEntities.Paros.Add(nuevoParo);
@@ -865,6 +871,7 @@ namespace DVP.Controllers
                         foreach (var paroaborrar in parosaborrar)
                         {
                             paroaborrar.StatusDelete = true;
+                            paroaborrar.UsuarioCreadorID = data._usuarioCreadorID;
                             _dvpEntities.SaveChanges();
                         }
                     }
@@ -1428,7 +1435,7 @@ namespace DVP.Controllers
                 }
 
                 // Validar si la fecha proporcionada cae en ese periodo
-                if (fecha >= inicio && fecha <= fin && paroId != ultimoParoId)
+                if (fecha >= inicio && fecha <= fin && paroId != ultimoParoId )
                 {
                     return Json(new
                     {

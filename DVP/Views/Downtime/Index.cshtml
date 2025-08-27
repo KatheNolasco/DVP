@@ -428,6 +428,10 @@
                                             </select>
                                             <br />
                                             <div class="mb-3">
+                                                <label class="form-label">Usuario Creador</label>
+                                                <input type="text" class="form-control" id="_userName" readonly>
+                                            </div>
+                                            <div class="mb-3">
                                                 <label class="form-label">Comment</label>
                                                 <textarea type="text" class="form-control" id="_commentedit" required></textarea>
                                             </div>
@@ -780,6 +784,7 @@
             _clasificacionId: document.getElementById("_clasificacionId").value,
             _tipoFallaId: document.getElementById("_tipoFallaId").value,
             _comment: document.getElementById("_comment").value,
+            _usuarioCreadorID: document.getElementById("usuarioId").value,
             _fechaEvento: fechaHoraEvento
         };
 
@@ -1062,6 +1067,8 @@
                 document.getElementById('_equipoIdedit').value = paro._equipoId;
                 document.getElementById('paroIdhidden').value = paro._paroId;
                 document.getElementById('_commentedit').value = paro._comment;
+                document.getElementById('_userName').value = paro._userName;
+
 
                 // Fecha y Hora
                 if (paro._fechaEvento) {
@@ -1536,8 +1543,10 @@
 
     const paroId = document.getElementById('paroIdtoAddActiveEventHidden').value;
     const _commentActiveEvent = document.getElementById('_commentActiveEvent').value;
+    const _usuarioCreadorID = document.getElementById('usuarioId').value;
     const fecha = document.getElementById('_fechaActiveEvent').value;
     const hora = document.getElementById('_horaActiveEvent').value;
+
 
     if (!fecha || !hora) {
         alert("Todos los campos son obligatorios.");
@@ -1563,7 +1572,9 @@
     const payload = {
         _paroId: parseInt(paroId),
         _fechaEvento: fechaEvento.toISOString(),
-        _comment: _commentActiveEvent
+        _comment: _commentActiveEvent,
+        _usuarioCreadorID: _usuarioCreadorID
+
     };
 
     cargando();
@@ -1690,6 +1701,7 @@
         _clasificacionId: parseInt(document.getElementById('_clasificacionIdreclasification').value),
         _tipoFallaId: parseInt(document.getElementById('_tipoFallaIdreclasification').value),
         _comment: document.getElementById('_commentreclasification').value,
+        _usuarioCreadorID: document.getElementById('usuarioId').value,
         _fechaEvento: getFechaHoraISOReclasification()
     };
 
@@ -1920,7 +1932,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
- document.getElementById('validatedaydelay').addEventListener('click', function () {
+document.getElementById('validatedaydelay').addEventListener('click', function () {
 
     const button = document.getElementById('validatedaydelay');
     button.disabled = true;
@@ -1936,6 +1948,7 @@ document.addEventListener('DOMContentLoaded', function () {
         _clasificacionId: parseInt(document.getElementById('_clasificacionIddaydelay').value),
         _tipoFallaId: parseInt(document.getElementById('_tipoFallaIddaydelay').value),
         _comment: document.getElementById('_commentdaydelay').value,
+        _usuarioCreadorID: document.getElementById('usuarioId').value,
         _fechaEvento: getFechaHoraISODaydelay()
     };
 
@@ -2152,8 +2165,9 @@ function cargarTiposFallaDaydelay(clasificacionId, componenteEquipoId, tipoFalla
 
 
 
-document.getElementById('deleteParo').addEventListener('click', function () {
+    document.getElementById('deleteParo').addEventListener('click', function () {
     const button = document.getElementById('deleteParo');
+    const _usuarioCreadorID = document.getElementById('usuarioId').value;
     button.disabled = true;
     button.textContent = "Procesando...";
 
@@ -2166,7 +2180,7 @@ document.getElementById('deleteParo').addEventListener('click', function () {
         return;
     }
 
-    const data = { _paroId: paroId };
+    const data = { _paroId: paroId, _usuarioCreadorID: _usuarioCreadorID };
 
     cargando();
 
