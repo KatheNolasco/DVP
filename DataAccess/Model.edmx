@@ -70,6 +70,7 @@
           <Property Name="UnidadMedidaID" Type="int" />
           <Property Name="TipoMovimientoSAPID" Type="int" />
           <Property Name="FechaReporte" Type="datetime" />
+          <Property Name="StatusClose" Type="bit" />
         </EntityType>
         <EntityType Name="Entradas">
           <Key>
@@ -273,7 +274,6 @@
           </Key>
           <Property Name="TipoOperacionID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="Descripcion" Type="nvarchar" MaxLength="100" />
-          <Property Name="MovimientoSAP" Type="nvarchar" MaxLength="50" />
         </EntityType>
         <EntityType Name="TokenRegistro">
           <Key>
@@ -1069,7 +1069,7 @@
           <NavigationProperty Name="Material" Relationship="Self.FK_BillOfMaterial_MaterialConsumo" FromRole="BillOfMaterial" ToRole="Material" />
           <NavigationProperty Name="Material1" Relationship="Self.FK_Material_BillOfMaterial" FromRole="BillOfMaterial" ToRole="Material" />
           <NavigationProperty Name="TipoMovimientoSAP" Relationship="Self.FK_TipoMovimientoSAPID_BillOfMaterial" FromRole="BillOfMaterial" ToRole="TipoMovimientoSAP" />
-          <NavigationProperty Name="TipoOperacion" Relationship="Self.FK_TipoOperacion_BillOfMaterial" FromRole="BillOfMaterial" ToRole="TipoOperacion" />
+          <NavigationProperty Name="TipoOperacion" Relationship="DVPModel.FK_TipoOperacion_BillOfMaterial" FromRole="BillOfMaterial" ToRole="TipoOperacion" />
         </EntityType>
         <EntityType Name="CierreStatus">
           <Key>
@@ -1131,8 +1131,9 @@
           <NavigationProperty Name="Equipo" Relationship="Self.FK_Equipo_DataOperacion" FromRole="DataOperacion" ToRole="Equipo" />
           <NavigationProperty Name="Material1" Relationship="Self.FK_Material_DataOperacion" FromRole="DataOperacion" ToRole="Material" />
           <NavigationProperty Name="TipoMovimientoSAP" Relationship="Self.FK_TipoMovimientoSAPID_DataOperacion" FromRole="DataOperacion" ToRole="TipoMovimientoSAP" />
-          <NavigationProperty Name="TipoOperacion" Relationship="Self.FK_TipoOperacion_DataOperacion" FromRole="DataOperacion" ToRole="TipoOperacion" />
           <NavigationProperty Name="UnidadMedida" Relationship="Self.FK_UnidadMedida_DataOperacion" FromRole="DataOperacion" ToRole="UnidadMedida" />
+          <NavigationProperty Name="TipoOperacion" Relationship="DVPModel.FK_TipoOperacion_DataOperacion" FromRole="DataOperacion" ToRole="TipoOperacion" />
+          <Property Name="StatusClose" Type="Boolean" />
         </EntityType>
         <EntityType Name="Entradas">
           <Key>
@@ -1169,8 +1170,8 @@
           <NavigationProperty Name="Pais" Relationship="Self.FK_Pais_Equipo" FromRole="Equipo" ToRole="Pais" />
           <NavigationProperty Name="Planta" Relationship="Self.FK_Planta_Equipo" FromRole="Equipo" ToRole="Planta" />
           <NavigationProperty Name="Proceso" Relationship="Self.FK_Proceso_Equipo" FromRole="Equipo" ToRole="Proceso" />
-          <NavigationProperty Name="TagEquipo" Relationship="Self.FK_TagEquipo_Equipo" FromRole="Equipo" ToRole="TagEquipo" />
           <NavigationProperty Name="UnidadOperativa" Relationship="Self.FK_UnidadOperativa_Equipo" FromRole="Equipo" ToRole="UnidadOperativa" />
+          <NavigationProperty Name="TagEquipo" Relationship="DVPModel.FK_TagEquipo_Equipo" FromRole="Equipo" ToRole="TagEquipo" />
         </EntityType>
         <EntityType Name="Gerencia">
           <Key>
@@ -1318,20 +1319,6 @@
           <Property Name="version" Type="Int32" />
           <Property Name="definition" Type="Binary" MaxLength="Max" FixedLength="false" />
         </EntityType>
-        <EntityType Name="TagEquipo">
-          <Key>
-            <PropertyRef Name="TagEquipoID" />
-          </Key>
-          <Property Name="TagEquipoID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="Descripcion" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
-          <Property Name="TagName" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
-          <Property Name="TagCode" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
-          <Property Name="Activo" Type="Boolean" />
-          <Property Name="TipoOperacionID" Type="Int32" />
-          <Property Name="EquipoID" Type="Int32" />
-          <NavigationProperty Name="Equipo" Relationship="Self.FK_TagEquipo_Equipo" FromRole="TagEquipo" ToRole="Equipo" />
-          <NavigationProperty Name="TipoOperacion" Relationship="Self.FK_TagEquipo_TipoOperacion" FromRole="TagEquipo" ToRole="TipoOperacion" />
-        </EntityType>
         <EntityType Name="TipoEvento">
           <Key>
             <PropertyRef Name="TipoEventoID" />
@@ -1360,17 +1347,6 @@
           <Property Name="Descripcion" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
           <NavigationProperty Name="BillOfMaterial" Relationship="Self.FK_TipoMovimientoSAPID_BillOfMaterial" FromRole="TipoMovimientoSAP" ToRole="BillOfMaterial" />
           <NavigationProperty Name="DataOperacion" Relationship="Self.FK_TipoMovimientoSAPID_DataOperacion" FromRole="TipoMovimientoSAP" ToRole="DataOperacion" />
-        </EntityType>
-        <EntityType Name="TipoOperacion">
-          <Key>
-            <PropertyRef Name="TipoOperacionID" />
-          </Key>
-          <Property Name="TipoOperacionID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="Descripcion" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
-          <Property Name="MovimientoSAP" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
-          <NavigationProperty Name="BillOfMaterial" Relationship="Self.FK_TipoOperacion_BillOfMaterial" FromRole="TipoOperacion" ToRole="BillOfMaterial" />
-          <NavigationProperty Name="DataOperacion" Relationship="Self.FK_TipoOperacion_DataOperacion" FromRole="TipoOperacion" ToRole="DataOperacion" />
-          <NavigationProperty Name="TagEquipo" Relationship="Self.FK_TagEquipo_TipoOperacion" FromRole="TipoOperacion" ToRole="TagEquipo" />
         </EntityType>
         <EntityType Name="TokenRegistro">
           <Key>
@@ -1494,18 +1470,6 @@
             </Principal>
             <Dependent Role="BillOfMaterial">
               <PropertyRef Name="TipoMovimientoSAPID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_TipoOperacion_BillOfMaterial">
-          <End Role="TipoOperacion" Type="Self.TipoOperacion" Multiplicity="0..1" />
-          <End Role="BillOfMaterial" Type="Self.BillOfMaterial" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="TipoOperacion">
-              <PropertyRef Name="TipoOperacionID" />
-            </Principal>
-            <Dependent Role="BillOfMaterial">
-              <PropertyRef Name="TipoOperacionID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -1653,18 +1617,6 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK_TipoOperacion_DataOperacion">
-          <End Role="TipoOperacion" Type="Self.TipoOperacion" Multiplicity="0..1" />
-          <End Role="DataOperacion" Type="Self.DataOperacion" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="TipoOperacion">
-              <PropertyRef Name="TipoOperacionID" />
-            </Principal>
-            <Dependent Role="DataOperacion">
-              <PropertyRef Name="TipoOperacionID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK_UnidadMedida_DataOperacion">
           <End Role="UnidadMedida" Type="Self.UnidadMedida" Multiplicity="0..1" />
           <End Role="DataOperacion" Type="Self.DataOperacion" Multiplicity="*" />
@@ -1734,18 +1686,6 @@
             </Principal>
             <Dependent Role="Equipo">
               <PropertyRef Name="ProcesoID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_TagEquipo_Equipo">
-          <End Role="Equipo" Type="Self.Equipo" Multiplicity="0..1" />
-          <End Role="TagEquipo" Type="Self.TagEquipo" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Equipo">
-              <PropertyRef Name="EquipoID" />
-            </Principal>
-            <Dependent Role="TagEquipo">
-              <PropertyRef Name="EquipoID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -1885,18 +1825,6 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK_TagEquipo_TipoOperacion">
-          <End Role="TipoOperacion" Type="Self.TipoOperacion" Multiplicity="0..1" />
-          <End Role="TagEquipo" Type="Self.TagEquipo" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="TipoOperacion">
-              <PropertyRef Name="TipoOperacionID" />
-            </Principal>
-            <Dependent Role="TagEquipo">
-              <PropertyRef Name="TipoOperacionID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK__TokenRegi__Usuar__6754599E">
           <End Role="Usuario" Type="Self.Usuario" Multiplicity="1" />
           <End Role="TokenRegistro" Type="Self.TokenRegistro" Multiplicity="*" />
@@ -1953,11 +1881,9 @@
           <EntitySet Name="Salidas" EntityType="Self.Salidas" />
           <EntitySet Name="SubEquipo" EntityType="Self.SubEquipo" />
           <EntitySet Name="sysdiagrams" EntityType="Self.sysdiagrams" />
-          <EntitySet Name="TagEquipo" EntityType="Self.TagEquipo" />
           <EntitySet Name="TipoEvento" EntityType="Self.TipoEvento" />
           <EntitySet Name="TipoFalla" EntityType="Self.TipoFalla" />
           <EntitySet Name="TipoMovimientoSAP" EntityType="Self.TipoMovimientoSAP" />
-          <EntitySet Name="TipoOperacion" EntityType="Self.TipoOperacion" />
           <EntitySet Name="TokenRegistro" EntityType="Self.TokenRegistro" />
           <EntitySet Name="UnidadMedida" EntityType="Self.UnidadMedida" />
           <EntitySet Name="UnidadOperativa" EntityType="Self.UnidadOperativa" />
@@ -1978,10 +1904,6 @@
           </AssociationSet>
           <AssociationSet Name="FK_TipoMovimientoSAPID_BillOfMaterial" Association="Self.FK_TipoMovimientoSAPID_BillOfMaterial">
             <End Role="TipoMovimientoSAP" EntitySet="TipoMovimientoSAP" />
-            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
-          </AssociationSet>
-          <AssociationSet Name="FK_TipoOperacion_BillOfMaterial" Association="Self.FK_TipoOperacion_BillOfMaterial">
-            <End Role="TipoOperacion" EntitySet="TipoOperacion" />
             <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
           </AssociationSet>
           <AssociationSet Name="FK_Paros_CierreStatus" Association="Self.FK_Paros_CierreStatus">
@@ -2032,10 +1954,6 @@
             <End Role="TipoMovimientoSAP" EntitySet="TipoMovimientoSAP" />
             <End Role="DataOperacion" EntitySet="DataOperacion" />
           </AssociationSet>
-          <AssociationSet Name="FK_TipoOperacion_DataOperacion" Association="Self.FK_TipoOperacion_DataOperacion">
-            <End Role="TipoOperacion" EntitySet="TipoOperacion" />
-            <End Role="DataOperacion" EntitySet="DataOperacion" />
-          </AssociationSet>
           <AssociationSet Name="FK_UnidadMedida_DataOperacion" Association="Self.FK_UnidadMedida_DataOperacion">
             <End Role="UnidadMedida" EntitySet="UnidadMedida" />
             <End Role="DataOperacion" EntitySet="DataOperacion" />
@@ -2059,10 +1977,6 @@
           <AssociationSet Name="FK_Proceso_Equipo" Association="Self.FK_Proceso_Equipo">
             <End Role="Proceso" EntitySet="Proceso" />
             <End Role="Equipo" EntitySet="Equipo" />
-          </AssociationSet>
-          <AssociationSet Name="FK_TagEquipo_Equipo" Association="Self.FK_TagEquipo_Equipo">
-            <End Role="Equipo" EntitySet="Equipo" />
-            <End Role="TagEquipo" EntitySet="TagEquipo" />
           </AssociationSet>
           <AssociationSet Name="FK_UnidadOperativa_Equipo" Association="Self.FK_UnidadOperativa_Equipo">
             <End Role="UnidadOperativa" EntitySet="UnidadOperativa" />
@@ -2108,10 +2022,6 @@
             <End Role="Rol" EntitySet="Rol" />
             <End Role="UsuarioRol" EntitySet="UsuarioRol" />
           </AssociationSet>
-          <AssociationSet Name="FK_TagEquipo_TipoOperacion" Association="Self.FK_TagEquipo_TipoOperacion">
-            <End Role="TipoOperacion" EntitySet="TipoOperacion" />
-            <End Role="TagEquipo" EntitySet="TagEquipo" />
-          </AssociationSet>
           <AssociationSet Name="FK__TokenRegi__Usuar__6754599E" Association="Self.FK__TokenRegi__Usuar__6754599E">
             <End Role="Usuario" EntitySet="Usuario" />
             <End Role="TokenRegistro" EntitySet="TokenRegistro" />
@@ -2155,6 +2065,24 @@
           </FunctionImport>
           <FunctionImport Name="sp_upgraddiagrams" />
           <EntitySet Name="Inventarios" EntityType="DVPModel.Inventarios" />
+          <EntitySet Name="TipoOperacion" EntityType="DVPModel.TipoOperacion" />
+          <AssociationSet Name="FK_TipoOperacion_BillOfMaterial" Association="DVPModel.FK_TipoOperacion_BillOfMaterial">
+            <End Role="TipoOperacion" EntitySet="TipoOperacion" />
+            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TipoOperacion_DataOperacion" Association="DVPModel.FK_TipoOperacion_DataOperacion">
+            <End Role="TipoOperacion" EntitySet="TipoOperacion" />
+            <End Role="DataOperacion" EntitySet="DataOperacion" />
+          </AssociationSet>
+          <EntitySet Name="TagEquipo" EntityType="DVPModel.TagEquipo" />
+          <AssociationSet Name="FK_TagEquipo_Equipo" Association="DVPModel.FK_TagEquipo_Equipo">
+            <End Role="Equipo" EntitySet="Equipo" />
+            <End Role="TagEquipo" EntitySet="TagEquipo" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TagEquipo_TipoOperacion" Association="DVPModel.FK_TagEquipo_TipoOperacion">
+            <End Role="TipoOperacion" EntitySet="TipoOperacion" />
+            <End Role="TagEquipo" EntitySet="TagEquipo" />
+          </AssociationSet>
         </EntityContainer>
         <ComplexType Name="sp_helpdiagramdefinition_Result">
           <Property Type="Int32" Name="version" Nullable="true" />
@@ -2179,6 +2107,78 @@
           <Property Name="TipoMovimientoSAP" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
           <Property Name="FehaReporte" Type="DateTime" Precision="3" />
         </EntityType>
+        <EntityType Name="TipoOperacion">
+          <Key>
+            <PropertyRef Name="TipoOperacionID" />
+          </Key>
+          <Property Name="TipoOperacionID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="BillOfMaterial" Relationship="DVPModel.FK_TipoOperacion_BillOfMaterial" FromRole="TipoOperacion" ToRole="BillOfMaterial" />
+          <NavigationProperty Name="DataOperacion" Relationship="DVPModel.FK_TipoOperacion_DataOperacion" FromRole="TipoOperacion" ToRole="DataOperacion" />
+          <NavigationProperty Name="TagEquipo" Relationship="DVPModel.FK_TagEquipo_TipoOperacion" FromRole="TipoOperacion" ToRole="TagEquipo" />
+        </EntityType>
+        <Association Name="FK_TipoOperacion_BillOfMaterial">
+          <End Type="DVPModel.TipoOperacion" Role="TipoOperacion" Multiplicity="0..1" />
+          <End Type="DVPModel.BillOfMaterial" Role="BillOfMaterial" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoOperacion">
+              <PropertyRef Name="TipoOperacionID" />
+            </Principal>
+            <Dependent Role="BillOfMaterial">
+              <PropertyRef Name="TipoOperacionID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TipoOperacion_DataOperacion">
+          <End Type="DVPModel.TipoOperacion" Role="TipoOperacion" Multiplicity="0..1" />
+          <End Type="DVPModel.DataOperacion" Role="DataOperacion" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoOperacion">
+              <PropertyRef Name="TipoOperacionID" />
+            </Principal>
+            <Dependent Role="DataOperacion">
+              <PropertyRef Name="TipoOperacionID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="TagEquipo">
+          <Key>
+            <PropertyRef Name="TagEquipoID" />
+          </Key>
+          <Property Name="TagEquipoID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
+          <Property Name="TagName" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
+          <Property Name="TagCode" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
+          <Property Name="Activo" Type="Boolean" />
+          <Property Name="TipoOperacionID" Type="Int32" />
+          <Property Name="EquipoID" Type="Int32" />
+          <NavigationProperty Name="Equipo" Relationship="DVPModel.FK_TagEquipo_Equipo" FromRole="TagEquipo" ToRole="Equipo" />
+          <NavigationProperty Name="TipoOperacion" Relationship="DVPModel.FK_TagEquipo_TipoOperacion" FromRole="TagEquipo" ToRole="TipoOperacion" />
+        </EntityType>
+        <Association Name="FK_TagEquipo_Equipo">
+          <End Type="DVPModel.Equipo" Role="Equipo" Multiplicity="0..1" />
+          <End Type="DVPModel.TagEquipo" Role="TagEquipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Equipo">
+              <PropertyRef Name="EquipoID" />
+            </Principal>
+            <Dependent Role="TagEquipo">
+              <PropertyRef Name="EquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TagEquipo_TipoOperacion">
+          <End Type="DVPModel.TipoOperacion" Role="TipoOperacion" Multiplicity="0..1" />
+          <End Type="DVPModel.TagEquipo" Role="TagEquipo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoOperacion">
+              <PropertyRef Name="TipoOperacionID" />
+            </Principal>
+            <Dependent Role="TagEquipo">
+              <PropertyRef Name="TipoOperacionID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -2245,6 +2245,7 @@
           <EntitySetMapping Name="DataOperacion">
             <EntityTypeMapping TypeName="DVPModel.DataOperacion">
               <MappingFragment StoreEntitySet="DataOperacion">
+                <ScalarProperty Name="StatusClose" ColumnName="StatusClose" />
                 <ScalarProperty Name="DataOperacionID" ColumnName="DataOperacionID" />
                 <ScalarProperty Name="EquipoID" ColumnName="EquipoID" />
                 <ScalarProperty Name="TipoOperacionID" ColumnName="TipoOperacionID" />
@@ -2419,19 +2420,6 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="TagEquipo">
-            <EntityTypeMapping TypeName="DVPModel.TagEquipo">
-              <MappingFragment StoreEntitySet="TagEquipo">
-                <ScalarProperty Name="TagEquipoID" ColumnName="TagEquipoID" />
-                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
-                <ScalarProperty Name="TagName" ColumnName="TagName" />
-                <ScalarProperty Name="TagCode" ColumnName="TagCode" />
-                <ScalarProperty Name="Activo" ColumnName="Activo" />
-                <ScalarProperty Name="TipoOperacionID" ColumnName="TipoOperacionID" />
-                <ScalarProperty Name="EquipoID" ColumnName="EquipoID" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <EntitySetMapping Name="TipoEvento">
             <EntityTypeMapping TypeName="DVPModel.TipoEvento">
               <MappingFragment StoreEntitySet="TipoEvento">
@@ -2455,15 +2443,6 @@
               <MappingFragment StoreEntitySet="TipoMovimientoSAP">
                 <ScalarProperty Name="TipoMovimientoSAPID" ColumnName="TipoMovimientoSAPID" />
                 <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="TipoOperacion">
-            <EntityTypeMapping TypeName="DVPModel.TipoOperacion">
-              <MappingFragment StoreEntitySet="TipoOperacion">
-                <ScalarProperty Name="TipoOperacionID" ColumnName="TipoOperacionID" />
-                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
-                <ScalarProperty Name="MovimientoSAP" ColumnName="MovimientoSAP" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -2569,6 +2548,27 @@
                 <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
                 <ScalarProperty Name="MaterialSAP" ColumnName="MaterialSAP" />
                 <ScalarProperty Name="InventariosID" ColumnName="InventariosID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="TipoOperacion">
+            <EntityTypeMapping TypeName="DVPModel.TipoOperacion">
+              <MappingFragment StoreEntitySet="TipoOperacion">
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="TipoOperacionID" ColumnName="TipoOperacionID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="TagEquipo">
+            <EntityTypeMapping TypeName="DVPModel.TagEquipo">
+              <MappingFragment StoreEntitySet="TagEquipo">
+                <ScalarProperty Name="EquipoID" ColumnName="EquipoID" />
+                <ScalarProperty Name="TipoOperacionID" ColumnName="TipoOperacionID" />
+                <ScalarProperty Name="Activo" ColumnName="Activo" />
+                <ScalarProperty Name="TagCode" ColumnName="TagCode" />
+                <ScalarProperty Name="TagName" ColumnName="TagName" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="TagEquipoID" ColumnName="TagEquipoID" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>

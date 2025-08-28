@@ -1,0 +1,201 @@
+﻿using DataAccess;
+using DVP.Models;
+using Microsoft.Ajax.Utilities;
+using System;
+using System.Collections.Generic;
+using System.Data.Entity.Validation;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+
+namespace DVP.Controllers
+{
+    public class DatosEnergiaController : Controller
+    {
+        DataAccess.DVPEntities _dvpEntities = new DataAccess.DVPEntities();
+
+        // GET: DataOperacion
+        public ActionResult Index()
+        {
+            var tokenEnSession = Session["token"]?.ToString();
+
+            if (string.IsNullOrEmpty(tokenEnSession))
+            {
+                return RedirectToAction("Index", "Account");
+            }
+
+            var usuario = _dvpEntities.Usuario.FirstOrDefault(u => u.Token == tokenEnSession);
+            if (usuario == null)
+            {
+                return RedirectToAction("Index", "Account");
+            }
+
+            var rol = _dvpEntities.UsuarioRol
+                                  .Where(r => r.UsuarioID == usuario.UsuarioID)
+                                  .Select(r => r.Rol.Descripcion)
+                                  .FirstOrDefault();
+
+            var query = _dvpEntities.Usuario.AsQueryable();
+
+            if (rol != "Desarrollador de Software" && rol != "Administrador de la información")
+            {
+                return RedirectToAction("Index", "Account");
+            }
+
+            return View();
+        }
+
+
+        [HttpPost]
+        public JsonResult CreateTipoOperacion(DatosEnergiaViewModel.TipoOperacion data)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return Json(new { success = false, message = "Datos invalidos." });
+
+                var desc = (data._descripcion ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(desc))
+                    return Json(new { success = false, message = "Descripcion es obligatoria." });
+
+                var nuevo = new TipoOperacion
+                {
+                    Descripcion = desc,
+                };
+
+                _dvpEntities.TipoOperacion.Add(nuevo);
+                _dvpEntities.SaveChanges();
+
+                return Json(new { success = true, message = "Creado exitosamente." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al crear TipoOperacion: " + ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public JsonResult CreateTipoMovimientoSAP(DatosEnergiaViewModel.TipoMovimientoSAP data)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return Json(new { success = false, message = "Datos invalidos." });
+
+                var desc = (data._descripcion ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(desc))
+                    return Json(new { success = false, message = "Descripcion es obligatoria." });
+
+                var nuevo = new TipoMovimientoSAP
+                {
+                    Descripcion = desc
+                };
+
+                _dvpEntities.TipoMovimientoSAP.Add(nuevo);
+                _dvpEntities.SaveChanges();
+
+                return Json(new { success = true, message = "Creado exitosamente." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al crear TipoMovimientoSAP: " + ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public JsonResult CreateUnidadMedida(DatosEnergiaViewModel.UnidadMedida data)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return Json(new { success = false, message = "Datos invalidos." });
+
+                var desc = (data._descripcion ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(desc))
+                    return Json(new { success = false, message = "Descripcion es obligatoria." });
+
+                var nuevo = new UnidadMedida
+                {
+                    Descripcion = desc,
+                };
+
+                _dvpEntities.UnidadMedida.Add(nuevo);
+                _dvpEntities.SaveChanges();
+
+                return Json(new { success = true, message = "Creado exitosamente." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al crear TipoOperacion: " + ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public JsonResult UpdateTipoOperacion(int TipoOperacionID, string Descripcion)
+        {
+            var row = _dvpEntities.TipoOperacion.FirstOrDefault(x => x.TipoOperacionID == TipoOperacionID);
+            if (row == null) return Json(new { success = false, message = "No encontrado" });
+
+            row.Descripcion = Descripcion;
+
+            _dvpEntities.SaveChanges();
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public JsonResult UpdateTipoMovimientoSAP(int TipoMovimientoSAPID, string Descripcion)
+        {
+            var row = _dvpEntities.TipoMovimientoSAP.FirstOrDefault(x => x.TipoMovimientoSAPID == TipoMovimientoSAPID);
+            if (row == null) return Json(new { success = false, message = "No encontrado" });
+
+            row.Descripcion = Descripcion;
+
+            _dvpEntities.SaveChanges();
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public JsonResult UpdateUnidadMedida(int UnidadMedidaID, string Descripcion)
+        {
+            var row = _dvpEntities.UnidadMedida.FirstOrDefault(x => x.UnidadMedidaID == UnidadMedidaID);
+            if (row == null) return Json(new { success = false, message = "No encontrado" });
+
+            row.Descripcion = Descripcion;
+
+            _dvpEntities.SaveChanges();
+            return Json(new { success = true });
+        }
+
+        [HttpGet]
+        public JsonResult GetTipoMovimientoSAP()
+        {
+            var tipos = _dvpEntities.TipoMovimientoSAP
+                                    .Select(s => new
+                                    {
+                                        TipoMovimientoSAPID = s.TipoMovimientoSAPID,
+                                        Descripcion = s.Descripcion
+                                    })
+                                    .ToList();
+
+            return Json(tipos, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult GetUnidadMedida()
+        {
+            var tipos = _dvpEntities.UnidadMedida
+                                    .Select(s => new
+                                    {
+                                        UnidadMedidaID = s.UnidadMedidaID,
+                                        Descripcion = s.Descripcion
+                                    })
+                                    .ToList();
+
+            return Json(tipos, JsonRequestBehavior.AllowGet);
+        }
+
+
+
+
+    }
+}

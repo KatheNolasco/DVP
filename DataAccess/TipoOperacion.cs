@@ -24,7 +24,6 @@ namespace DataAccess
     
         public int TipoOperacionID { get; set; }
         public string Descripcion { get; set; }
-        public string MovimientoSAP { get; set; }
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<BillOfMaterial> BillOfMaterial { get; set; }

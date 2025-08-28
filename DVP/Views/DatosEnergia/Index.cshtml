@@ -1,0 +1,560 @@
+﻿@model DVP.Models.DatosEnergiaViewModel
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Downtime Page";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+
+<style>
+    /* Estilo para el contenedor de la fecha y hora */
+    .container {
+        font-family: Arial, sans-serif;
+        display: flex; /* Usamos flex para alinearlos horizontalmente */
+        justify-content: center; /* Centra los elementos horizontalmente */
+        align-items: center; /* Centra los elementos verticalmente */
+        gap: 20px; /* Espacio entre los divs */
+        margin-top: 20px;
+    }
+    /* Estilo para los divs de fecha y hora */
+    .input-container {
+        font-size: 18px;
+        display: flex;
+        flex-direction: column; /* Los inputs se alinean de arriba hacia abajo */
+        align-items: center;
+    }
+
+    input {
+        padding: 10px;
+        font-size: 16px;
+        margin-top: 10px;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        background-color: #f0f0f0;
+    }
+
+    .scrollable-table {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa; /* color fondo header */
+        z-index: 2;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .table tbody td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 45px;
+        height: 24px;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+            .switch .slider:before {
+                position: absolute;
+                content: "";
+                height: 18px;
+                width: 18px;
+                left: 3px;
+                bottom: 3px;
+                background-color: white;
+                transition: .4s;
+                border-radius: 50%;
+            }
+
+        .switch input:checked + .slider {
+            background-color: #13DEB9; /* Verde menta */
+        }
+
+            .switch input:checked + .slider:before {
+                transform: translateX(21px);
+            }
+
+    .switch-label {
+        font-size: 14px;
+        color: #555;
+        vertical-align: middle;
+    }
+</style>
+
+
+
+
+<body>
+    <div class="container-fluid" style="padding-left: 200px;">
+        <br /><br /><br />
+        <div class="card">
+            <div class="container-fluid">
+                <div class="container-fluid">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
+                                Agregado correctamente!
+                            </div>
+                            <h5 class="card-title fw-semibold mb-4">Energy components</h5>
+                        </div>
+
+                        <div class="mb-3">
+                            <form id="formElemento">
+                                <label class="form-label">New</label>
+                                <select class="form-select" id="_elemento">
+                                    <option value="">Select what you want to add</option>
+                                    <option value="TipoOperacion">Tipo Operación</option>
+                                    <option value="TipoMovimientoSAP">Tipo Movimiento SAP</option>
+                                    <option value="UnidadMedida">Unidad de Medida</option>
+                                </select>
+
+                                <div id="camposContainer" class="mt-3"></div>
+
+                                <button type="submit" id="btnGuardar" class="btn btn-primary mt-2">Guardar</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">List</label>
+                        <select class="form-select" id="selectListado">
+                            <option value="">Select a type</option>
+                            <option value="TipoOperacion">Tipo Operación</option>
+                            <option value="TipoMovimientoSAP">Tipo Movimiento SAP</option>
+                            <option value="UnidadMedida">Unidad de Medida</option>
+                        </select>
+                    </div>
+
+                    <div id="filtrosListado" class="row g-3 mb-2"></div>
+                    <div id="contenedorListado" class="mt-3"></div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // --------------------- helpers UI ---------------------
+        const form = document.getElementById('formElemento');
+        const selectCrear = document.getElementById('_elemento');
+        const contenedor = document.getElementById('camposContainer');
+        const alertSuccessEl = document.getElementById('alertsuccesclose');
+
+        const showSuccess = (msg) => {
+            if (!alertSuccessEl) return;
+            alertSuccessEl.textContent = msg || 'Agregado correctamente!';
+            alertSuccessEl.style.display = 'block';
+            clearTimeout(showSuccess._t);
+            showSuccess._t = setTimeout(() => alertSuccessEl.style.display = 'none', 3500);
+        };
+        const hideSuccess = () => { if (alertSuccessEl) alertSuccessEl.style.display = 'none'; };
+
+        // --------------------- endpoints ----------------------
+        const createEndpoints = {
+            TipoOperacion: '/DatosEnergia/CreateTipoOperacion',
+            TipoMovimientoSAP: '/DatosEnergia/CreateTipoMovimientoSAP',
+            UnidadMedida: '/DatosEnergia/CreateUnidadMedida'
+        };
+        const updateEndpoints = {
+            TipoOperacion: '/DatosEnergia/UpdateTipoOperacion',
+            TipoMovimientoSAP: '/DatosEnergia/UpdateTipoMovimientoSAP',
+            UnidadMedida: '/DatosEnergia/UpdateUnidadMedida'
+        };
+        const listEndpoints = {
+            TipoOperacion: '/Tag/GetTipoOperacion',
+            TipoMovimientoSAP: '/DatosEnergia/GetTipoMovimientoSAP',
+            UnidadMedida: '/DatosEnergia/GetUnidadMedida'
+        };
+
+        // --------------------- fetch utils --------------------
+        const getToken = () => document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        const postJson = async (url, payload, includeDataWrapper = true) => {
+            const headers = { 'Content-Type': 'application/json; charset=utf-8' };
+            const token = getToken(); if (token) headers['RequestVerificationToken'] = token;
+            const body = includeDataWrapper ? JSON.stringify({ data: payload }) : JSON.stringify(payload);
+
+            const res = await fetch(url, { method: 'POST', headers, body });
+            let json = null; try { json = await res.json(); } catch (_) { }
+            if (!res.ok) throw new Error((json && (json.message || json.error)) || ('HTTP ' + res.status));
+            return json || {};
+        };
+        const getJson = async (url) => {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        };
+
+        // --------------------- bloqueo por descripcion (solo TipoOperacion) ---------------------
+        const BLOQUEADAS = [
+            'Explotacion',
+            'Produccion',
+            'Consumo',
+            'Consumo electrico',
+            'Encendido Validado'
+        ];
+        const normalize = (s) => String(s || '')
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .trim().toUpperCase();
+        const BLOQUEADAS_SET = new Set(BLOQUEADAS.map(normalize));
+        const isBlockedTipoOperacion = (desc) => BLOQUEADAS_SET.has(normalize(desc));
+
+        // ===================== CREAR ==========================
+        selectCrear.addEventListener('change', async function () {
+            contenedor.innerHTML = '';
+            const tipo = this.value;
+            if (!tipo) return;
+
+            // TipoOperacion: solo Descripcion (sin Movimiento SAP)
+            if (tipo === 'TipoOperacion') {
+                contenedor.innerHTML = `
+        <div class="mb-3">
+          <label class="form-label">Descripcion</label>
+          <input type="text" class="form-control" id="_descripcion" required />
+        </div>`;
+            }
+
+            if (tipo === 'TipoMovimientoSAP') {
+                contenedor.innerHTML = `
+        <div class="mb-3">
+          <label class="form-label">Descripcion</label>
+          <input type="text" class="form-control" id="_descripcion" required />
+        </div>`;
+            }
+
+            if (tipo === 'UnidadMedida') {
+                contenedor.innerHTML = `
+        <div class="mb-3">
+          <label class="form-label">Descripcion</label>
+          <input type="text" class="form-control" id="_descripcion" required />
+        </div>`;
+            }
+        });
+
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            hideSuccess();
+
+            const tipo = selectCrear.value;
+            if (!tipo || !createEndpoints[tipo]) {
+                alert('Seleccione una opcion valida.');
+                return;
+            }
+
+            let payload = null;
+
+            // Todos estos crean solo con Descripcion
+            if (tipo === 'TipoOperacion' || tipo === 'TipoMovimientoSAP' || tipo === 'UnidadMedida') {
+                const descripcion = document.getElementById('_descripcion')?.value.trim();
+                payload = { _descripcion: descripcion };
+            }
+
+            if (!payload || Object.values(payload).some(v => v === null || v === '' || Number.isNaN(v))) {
+                alert('Complete los datos requeridos.');
+                return;
+            }
+
+            try {
+                const resp = await postJson(createEndpoints[tipo], payload, true);
+                if (resp?.success) {
+                    showSuccess(resp?.message || 'Agregado correctamente!');
+                    contenedor.innerHTML = '';
+                    selectCrear.value = '';
+                } else {
+                    alert(resp?.message || 'No se pudo guardar.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error: ' + (err?.message || 'Fallo al enviar.'));
+            }
+        });
+
+        // ===================== LISTAR / EDITAR ======================
+        const selectListado = document.getElementById('selectListado');
+        const filtros = document.getElementById('filtrosListado');
+        const contenedorListado = document.getElementById('contenedorListado');
+
+        selectListado.addEventListener('change', async function () {
+            filtros.innerHTML = '';
+            contenedorListado.innerHTML = '';
+            const tipo = this.value;
+            if (!tipo) return;
+
+            if (tipo === 'TipoMovimientoSAP') {
+                const data = await getJson(listEndpoints.TipoMovimientoSAP).catch(() => []);
+                renderTablaTipoMovimientoSAP(data);
+            }
+
+            if (tipo === 'TipoOperacion') {
+                const data = await getJson(listEndpoints.TipoOperacion).catch(() => []);
+                renderTablaTipoOperacion(data); // sin columna de Movimiento SAP
+            }
+
+            if (tipo === 'UnidadMedida') {
+                const data = await getJson(listEndpoints.UnidadMedida).catch(() => []);
+                renderTablaUnidadMedida(data);
+            }
+        });
+
+        // ---------- Render tablas ----------
+        function renderTablaTipoMovimientoSAP(data) {
+            if (!Array.isArray(data) || data.length === 0) {
+                contenedorListado.innerHTML = '<div class="alert alert-warning">Sin datos.</div>';
+                return;
+            }
+
+            const rows = data.map((x, i) => `
+      <tr data-id="${x.TipoMovimientoSAPID}">
+        <td class="text-center">${i + 1}</td>
+        <td>
+          <span class="cell-text">${escapeHtml(x.Descripcion || '')}</span>
+          <input class="form-control form-control-sm cell-input" type="text" value="${escapeAttr(x.Descripcion || '')}" style="display:none;">
+        </td>
+        <td class="text-nowrap text-center">
+          <button type="button" class="btn btn-sm btn-outline-primary btn-edit">Editar</button>
+          <button type="button" class="btn btn-sm btn-success btn-save" style="display:none;">Guardar</button>
+          <button type="button" class="btn btn-sm btn-secondary btn-cancel" style="display:none;">Cancelar</button>
+        </td>
+      </tr>
+    `).join('');
+
+            contenedorListado.innerHTML = `
+      <table class="table table-bordered table-sm table-striped align-middle">
+        <thead>
+          <tr>
+            <th style="width:60px;">#</th>
+            <th>Descripcion</th>
+            <th style="width:210px;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+
+            wireRowHandlers('TipoMovimientoSAP');
+        }
+
+        function renderTablaUnidadMedida(data) {
+            if (!Array.isArray(data) || data.length === 0) {
+                contenedorListado.innerHTML = '<div class="alert alert-warning">Sin datos.</div>';
+                return;
+            }
+
+            const rows = data.map((x, i) => `
+      <tr data-id="${x.UnidadMedidaID}">
+        <td class="text-center">${i + 1}</td>
+        <td>
+          <span class="cell-text">${escapeHtml(x.Descripcion || '')}</span>
+          <input class="form-control form-control-sm cell-input" type="text" value="${escapeAttr(x.Descripcion || '')}" style="display:none;">
+        </td>
+        <td class="text-nowrap text-center">
+          <button type="button" class="btn btn-sm btn-outline-primary btn-edit">Editar</button>
+          <button type="button" class="btn btn-sm btn-success btn-save" style="display:none;">Guardar</button>
+          <button type="button" class="btn btn-sm btn-secondary btn-cancel" style="display:none;">Cancelar</button>
+        </td>
+      </tr>
+    `).join('');
+
+            contenedorListado.innerHTML = `
+      <table class="table table-bordered table-sm table-striped align-middle">
+        <thead>
+          <tr>
+            <th style="width:60px;">#</th>
+            <th>Descripcion</th>
+            <th style="width:210px;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+
+            wireRowHandlers('UnidadMedida');
+        }
+
+        // >>> TipoOperacion SIN columna Movimiento SAP <<<
+        function renderTablaTipoOperacion(data) {
+            if (!Array.isArray(data) || data.length === 0) {
+                contenedorListado.innerHTML = '<div class="alert alert-warning">Sin datos.</div>';
+                return;
+            }
+
+            const rows = data.map((x, i) => {
+                const id = Number(x.TipoOperacionID);
+                const blocked = isBlockedTipoOperacion(x.Descripcion);
+
+                return `
+        <tr data-id="${id}">
+          <td class="text-center">${i + 1}</td>
+          <td>
+            <span class="cell-text">${escapeHtml(x.Descripcion || '')}</span>
+            <input class="form-control form-control-sm cell-input" type="text"
+                   value="${escapeAttr(x.Descripcion || '')}"
+                   style="display:none;" ${blocked ? 'disabled' : ''}>
+          </td>
+          <td class="text-nowrap text-center">
+            ${blocked
+                        ? `<span class="badge bg-secondary">No editable</span>`
+                        : `
+                <button type="button" class="btn btn-sm btn-outline-primary btn-edit">Editar</button>
+                <button type="button" class="btn btn-sm btn-success btn-save" style="display:none;">Guardar</button>
+                <button type="button" class="btn btn-sm btn-secondary btn-cancel" style="display:none;">Cancelar</button>
+              `}
+          </td>
+        </tr>`;
+            }).join('');
+
+            contenedorListado.innerHTML = `
+      <table class="table table-bordered table-sm table-striped align-middle">
+        <thead>
+          <tr>
+            <th style="width:60px;">#</th>
+            <th>Descripcion</th>
+            <th style="width:210px;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+
+            wireRowHandlers('TipoOperacion');
+        }
+
+        // ---------- Edicion inline comun ----------
+        function wireRowHandlers(tipo) {
+            contenedorListado.querySelectorAll('.btn-edit').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tr = btn.closest('tr');
+                    setEditMode(tr, tipo, true);
+                });
+            });
+            contenedorListado.querySelectorAll('.btn-cancel').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tr = btn.closest('tr');
+                    setEditMode(tr, tipo, false, true);
+                });
+            });
+            contenedorListado.querySelectorAll('.btn-save').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const tr = btn.closest('tr');
+                    await saveRow(tr, tipo);
+                });
+            });
+        }
+
+        function setEditMode(tr, tipo, editing, resetToSpan = false) {
+            const span = tr.querySelector('.cell-text');
+            const descActual = span?.textContent || '';
+            if (tipo === 'TipoOperacion' && isBlockedTipoOperacion(descActual)) {
+                alert('Este TipoOperacion no es editable.');
+                return;
+            }
+
+            const input = tr.querySelector('.cell-input');
+            const btnEdit = tr.querySelector('.btn-edit');
+            const btnSave = tr.querySelector('.btn-save');
+            const btnCancel = tr.querySelector('.btn-cancel');
+
+            if (editing) {
+                span.style.display = 'none';
+                input.style.display = '';
+                if (btnEdit) btnEdit.style.display = 'none';
+                if (btnSave) btnSave.style.display = '';
+                if (btnCancel) btnCancel.style.display = '';
+                input.focus(); input.select();
+            } else {
+                if (resetToSpan) {
+                    input.value = span.textContent || '';
+                }
+                span.style.display = '';
+                input.style.display = 'none';
+                if (btnEdit) btnEdit.style.display = '';
+                if (btnSave) btnSave.style.display = 'none';
+                if (btnCancel) btnCancel.style.display = 'none';
+            }
+        }
+
+        async function saveRow(tr, tipo) {
+            const span = tr.querySelector('.cell-text');
+            const descActual = span?.textContent || '';
+            if (tipo === 'TipoOperacion' && isBlockedTipoOperacion(descActual)) {
+                alert('Este TipoOperacion no es editable.');
+                return;
+            }
+
+            const id = Number(tr.getAttribute('data-id'));
+            const input = tr.querySelector('.cell-input');
+            const newDesc = (input.value || '').trim();
+            if (!newDesc) { alert('La descripcion no puede estar vacia.'); return; }
+
+            let payload = { Descripcion: newDesc };
+
+            if (tipo === 'TipoMovimientoSAP') {
+                payload['TipoMovimientoSAPID'] = id;
+            }
+
+            if (tipo === 'UnidadMedida') {
+                payload['UnidadMedidaID'] = id;
+            }
+
+            // >>> TipoOperacion: actualizar solo Descripcion (sin Movimiento SAP)
+            if (tipo === 'TipoOperacion') {
+                payload['TipoOperacionID'] = id;
+            }
+
+            try {
+                const resp = await postJson(updateEndpoints[tipo], payload, false);
+                if (resp?.success === false) {
+                    alert(resp?.message || 'No se pudo guardar.');
+                    return;
+                }
+
+                span.textContent = newDesc;
+
+                // Si cambia a una descripcion bloqueada, inmoviliza la fila
+                if (tipo === 'TipoOperacion' && isBlockedTipoOperacion(newDesc)) {
+                    input.setAttribute('disabled', 'disabled');
+                    const actions = tr.querySelector('td.text-nowrap.text-center');
+                    if (actions) actions.innerHTML = `<span class="badge bg-secondary">No editable</span>`;
+                }
+
+                setEditMode(tr, tipo, false);
+            } catch (err) {
+                console.error(err);
+                alert('Error guardando el registro.');
+            }
+        }
+
+        // ---------- util html ----------
+        function escapeHtml(s) {
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        function escapeAttr(s) {
+            return String(s).replace(/"/g, '&quot;');
+        }
+    });
+</script>
