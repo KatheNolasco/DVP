@@ -24,6 +24,7 @@ namespace DataAccess
         public string Descripcion { get; set; }
         public Nullable<int> ClasificacionID { get; set; }
         public Nullable<int> ComponenteEquipoID { get; set; }
+        public string CodigoDet { get; set; }
     
         public virtual Clasificacion Clasificacion { get; set; }
         public virtual ComponenteEquipo ComponenteEquipo { get; set; }

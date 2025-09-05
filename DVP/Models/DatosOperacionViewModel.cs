@@ -7,7 +7,7 @@ using System.Web;
 
 namespace DVP.Models
 {
-    public class DatosEnergiaViewModel
+    public class DatosOperacionViewModel
     {
         DataAccess.DVPEntities _dvpEntities = new DataAccess.DVPEntities();
 
@@ -20,6 +20,9 @@ namespace DVP.Models
 
             [Column("Descripcion")]
             public string _descripcion { get; set; }
+
+            [Column("AfectaInventario")]
+            public bool _afectaInventario { get; set; }
         }
 
         [Table("TipoMovimientoSAP")]
@@ -43,7 +46,5 @@ namespace DVP.Models
             [Column("Descripcion")]
             public string _descripcion { get; set; }
         }
-
-
     }
 }

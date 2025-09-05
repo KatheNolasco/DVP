@@ -131,6 +131,7 @@
                                     <option value="2">Unidad Operativa</option>
                                     <option value="3">País</option>
                                     <option value="4">Gerencia</option>
+                                    <option value="5">Proceso</option>
                                 </select>
 
                                 <div id="camposContainer" class="mt-3"></div>
@@ -147,12 +148,24 @@
                             <option value="UnidadOperativa">Unidad Operativa</option>
                             <option value="Pais">País</option>
                             <option value="Gerencia">Gerencia</option>
+                            <option value="Proceso">Proceso</option>
+
                         </select>
                     </div>
 
                     <div id="contenedorListado" class="mt-3"></div>
 
                 </div>
+            </div>
+        </div>
+    </div>
+
+    @*___________________________________________________________________Modal Cargando__________________________________________________*@
+    <div id="loadingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: rgba(0, 0, 0, 0.5);">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 25px 35px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.3); min-width: 250px;">
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <img src="/Content/loading-green-loading.gif" alt="Cargando..." style="width: 40px; height: 40px; margin-right: 15px;" />
+                <span style="color: black; font-size: 16px;">Cargando...</span>
             </div>
         </div>
     </div>
@@ -164,6 +177,7 @@
         const select = document.getElementById('_elememnto');
         const contenedor = document.getElementById('camposContainer');
         const form = document.getElementById('formElemento');
+        const successAlert = document.getElementById('alertsuccesclose');
 
         select.addEventListener('change', function () {
             const valor = this.value;
@@ -172,51 +186,61 @@
             switch (valor) {
                 case '1':
                     contenedor.innerHTML = `
-                    <div class="mb-3">
-                        <label class="form-label">Nombre de la planta</label>
-                        <input type="text" class="form-control" id="_descripcion" required />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Código de planta</label>
-                        <input type="text" class="form-control" id="_codigoSAPProgreso" required />
-                    </div>
-                `;
+                <div class="mb-3">
+                    <label class="form-label">Nombre de la planta</label>
+                    <input type="text" class="form-control" id="_descripcion" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Codigo de planta</label>
+                    <input type="text" class="form-control" id="_codigoSAPProgreso" required />
+                </div>`;
                     break;
+
                 case '2':
                     contenedor.innerHTML = `
-                    <div class="mb-3">
-                        <label class="form-label">Nombre unidad operativa</label>
-                        <input type="text" class="form-control" id="_descripcion" required />
-                    </div>
-                `;
+                <div class="mb-3">
+                    <label class="form-label">Nombre unidad operativa</label>
+                    <input type="text" class="form-control" id="_descripcion" required />
+                </div>`;
                     break;
+
                 case '3':
                     contenedor.innerHTML = `
-                    <div class="mb-3">
-                        <label class="form-label">Nombre del país</label>
-                        <input type="text" class="form-control" id="_descripcion" required />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Código</label>
-                        <input type="text" class="form-control" id="_codigoSAPProgreso" required />
-                    </div>
-                `;
+                <div class="mb-3">
+                    <label class="form-label">Nombre del pais</label>
+                    <input type="text" class="form-control" id="_descripcion" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Codigo</label>
+                    <input type="text" class="form-control" id="_codigoSAPProgreso" required />
+                </div>`;
                     break;
+
                 case '4':
                     contenedor.innerHTML = `
-                    <div class="mb-3">
-                        <label class="form-label">Nombre de la gerencia</label>
-                        <input type="text" class="form-control" id="_descripcion" required />
-                    </div>
-                `;
+                <div class="mb-3">
+                    <label class="form-label">Nombre de la gerencia</label>
+                    <input type="text" class="form-control" id="_descripcion" required />
+                </div>`;
+                    break;
+
+                case '5': // Proceso
+                    contenedor.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label">Nombre del proceso</label>
+                    <input type="text" class="form-control" id="_descripcion" required />
+                </div>
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="_active" checked>
+                    <label class="form-check-label visually-hidden" for="_active">Activo</label>
+                </div>`;
                     break;
             }
         });
 
         form.addEventListener('submit', function (e) {
-            e.preventDefault(); // evitar recarga
+            e.preventDefault();
 
-            // Validación nativa del navegador
             if (!form.checkValidity()) {
                 form.reportValidity();
                 return;
@@ -233,12 +257,14 @@
                         _codigoSAPProgreso: document.getElementById('_codigoSAPProgreso').value
                     };
                     break;
+
                 case '2':
                     data = {
                         _tipo: 'UnidadOperativa',
                         _descripcion: document.getElementById('_descripcion').value
                     };
                     break;
+
                 case '3':
                     data = {
                         _tipo: 'Pais',
@@ -246,37 +272,52 @@
                         _codigoSAPProgreso: document.getElementById('_codigoSAPProgreso').value
                     };
                     break;
+
                 case '4':
                     data = {
                         _tipo: 'Gerencia',
                         _descripcion: document.getElementById('_descripcion').value
                     };
                     break;
+
+                case '5': // Proceso
+                    data = {
+                        _tipo: 'Proceso',
+                        _descripcion: document.getElementById('_descripcion').value,
+                        _active: (document.getElementById('_active')?.checked ?? true)
+                    };
+                    break;
+
                 default:
-                    alert('Seleccione una opción válida');
+                    alert('Seleccione una opcion valida');
                     return;
             }
 
             fetch('/User/GuardarElementoConfiguracion', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             })
                 .then(res => res.json())
                 .then(res => {
                     if (res.success) {
-                        alert('Guardado exitosamente');
-                        form.reset(); // limpia todos los campos
+                        if (successAlert) {
+                            successAlert.textContent = 'Agregado correctamente!';
+                            successAlert.style.display = 'block';
+                            setTimeout(() => { successAlert.style.display = 'none'; }, 2000);
+                        } else {
+                            alert('Guardado exitosamente');
+                        }
+                        form.reset();
                         contenedor.innerHTML = '';
+                        select.value = '';
                     } else {
-                        alert('Error al guardar: ' + res.message);
+                        alert('Error al guardar: ' + (res.message || ''));
                     }
                 })
                 .catch(err => {
                     console.error(err);
-                    alert('Error en la petición');
+                    alert('Error en la peticion');
                 });
         });
     });
@@ -285,115 +326,163 @@
     document.addEventListener('DOMContentLoaded', function () {
         const selectListado = document.getElementById('selectListado');
         const contenedorListado = document.getElementById('contenedorListado');
+        const successAlert = document.getElementById('alertsuccesclose');
+
+        // Mapa: tipo -> nombre de propiedad de ID que espera el backend
+        const idPayloadKeyByTipo = {
+            'Planta': '_plantaId',
+            'UnidadOperativa': '_unidadOperativaId',
+            'Pais': '_paisId',
+            'Gerencia': '_gerenciaId',
+            'Proceso': '_procesoId'
+            // 'Rol': '_rolId' // si luego agregas soporte en backend
+        };
 
         selectListado.addEventListener('change', function () {
             const _tipo = this.value;
 
-            if (!_tipo) {
-                contenedorListado.innerHTML = '';
-                return;
-            }
+            contenedorListado.innerHTML = '';
+            if (!_tipo) return;
 
-            fetch(`/User/GetListadoConfiguracion?_tipo=${_tipo}`)
+            fetch(`/User/GetListadoConfiguracion?_tipo=${encodeURIComponent(_tipo)}`)
                 .then(res => res.json())
                 .then(data => {
-                    if (!data.success || !data.items || data.items.length === 0) {
+                    if (!data?.success || !Array.isArray(data.items) || data.items.length === 0) {
                         contenedorListado.innerHTML = '<div class="alert alert-warning">No hay registros disponibles.</div>';
                         return;
                     }
 
+                    const showCodigoColumn = (_tipo === 'Planta' || _tipo === 'Pais');
+                    const codigoEditable = (_tipo === 'Planta'); // solo Planta actualiza codigo
+                    const idPayloadKey = idPayloadKeyByTipo[_tipo];
+
                     let html = `
-                <table class="table table-bordered table-sm table-striped">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Descripción</th>
-                            <th>Código</th>
-                            <th>Activo</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                    <table class="table table-bordered table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Descripción</th>
+                                ${showCodigoColumn ? '<th>Código</th>' : ''}
+                                <th>Activo</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
                 `;
 
                     data.items.forEach((item, index) => {
+                        const entityId = item[idPayloadKey]; // ya viene con el nombre correcto
+                        const descripcion = (item._descripcion ?? '').toString();
+                        // _codigoSAPProgreso puede venir vacio segun tipo
+                        const codigo = (item._codigoSAPProgreso ?? '');
+                        const activo = !!(item._active);
+
                         html += `
-                    <tr data-index="${index}">
-                        <td>${index + 1}</td>
-                        <td class="descripcion">${item._descripcion || item.descripcion || item.nombre}</td>
-                        <td class="codigo">${item._codigoSAPProgreso || '-'}</td>
-                        <td class="activo">${item._active ? 'Sí' : 'No'}</td>
-                        <td>
-                            <button class="btn btn-sm btn-primary btn-editar">Editar</button>
-                        </td>
-                    </tr>
+                        <tr data-index="${index}"
+                            data-entity-id="${escapeAttr(entityId ?? '')}"
+                            data-id-prop="${escapeAttr(idPayloadKey)}">
+                            <td>${index + 1}</td>
+                            <td class="descripcion">${escapeHtml(descripcion)}</td>
+                            ${showCodigoColumn ? `<td class="codigo">${codigo ? escapeHtml(codigo) : '-'}</td>` : ''}
+                            <td class="activo">${activo ? 'Sí' : 'No'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary btn-editar">Editar</button>
+                            </td>
+                        </tr>
                     `;
                     });
 
                     html += '</tbody></table>';
                     contenedorListado.innerHTML = html;
 
-                    // Agregar eventos a botones editar
-                    document.querySelectorAll('.btn-editar').forEach(btn => {
+                    // Eventos Editar
+                    contenedorListado.querySelectorAll('.btn-editar').forEach(btn => {
                         btn.addEventListener('click', function () {
                             const fila = this.closest('tr');
                             const descCell = fila.querySelector('.descripcion');
-                            const codCell = fila.querySelector('.codigo');
                             const activoCell = fila.querySelector('.activo');
+                            const codCell = showCodigoColumn ? fila.querySelector('.codigo') : null;
 
                             const descripcion = descCell.textContent.trim();
-                            const codigo = codCell.textContent.trim();
-                            const activo = activoCell.textContent.trim() === 'Sí';
+                            const activo = activoCell.textContent.trim().toLowerCase().startsWith('s'); // "Sí"
+                            const codigo = codCell ? (codCell.textContent.trim() === '-' ? '' : codCell.textContent.trim()) : '';
 
-                            // Reemplazar celdas por inputs
-                            descCell.innerHTML = `<input type="text" class="form-control form-control-sm" value="${descripcion}">`;
-                            codCell.innerHTML = `<input type="text" class="form-control form-control-sm" value="${codigo === '-' ? '' : codigo}">`;
+                            // Inputs inline
+                            descCell.innerHTML = `<input type="text" class="form-control form-control-sm" value="${escapeAttr(descripcion)}">`;
+                            if (showCodigoColumn && codCell) {
+                                if (codigoEditable) {
+                                    codCell.innerHTML = `<input type="text" class="form-control form-control-sm" value="${escapeAttr(codigo)}">`;
+                                } else {
+                                    codCell.innerHTML = `<input type="text" class="form-control form-control-sm" value="${escapeAttr(codigo)}" disabled>`;
+                                }
+                            }
                             activoCell.innerHTML = `
-                            <label class="switch">
-                                <input type="checkbox" id="activoCheckbox" ${activo ? 'checked' : ''}>
-                                <span class="slider"></span>
-                            </label>
-                            <span class="switch-label">Activo</span>
+                            <div class="form-check form-switch m-0">
+                                <input class="form-check-input" type="checkbox" id="activoCheckbox" ${activo ? 'checked' : ''}>
+                                <label class="visually-hidden" for="activoCheckbox">Activo</label>
+                            </div>
                         `;
 
-                            // Reemplazar botón por Guardar / Cancelar
+                            // Acciones Guardar/Cancelar
                             this.parentElement.innerHTML = `
                             <button class="btn btn-sm btn-success btn-guardar">Guardar</button>
                             <button class="btn btn-sm btn-secondary btn-cancelar">Cancelar</button>
                         `;
 
-                            // Botón Guardar
+                            // Guardar
                             fila.querySelector('.btn-guardar').addEventListener('click', function () {
-                                const nuevaDescripcion = descCell.querySelector('input').value.trim();
-                                const nuevoCodigo = codCell.querySelector('input').value.trim();
-                                const nuevoActivo = activoCell.querySelector('input[type="checkbox"]').checked;
+                                const nuevaDescripcion = (descCell.querySelector('input')?.value || '').trim();
+                                const nuevoActivo = !!activoCell.querySelector('input[type="checkbox"]')?.checked;
+                                const nuevoCodigo = (codigoEditable && codCell) ? (codCell.querySelector('input')?.value || '').trim() : undefined;
 
-                                const datosActualizados = {
+                                const entityId = fila.dataset.entityId;
+                                const idProp = fila.dataset.idProp;
+
+                                if (!entityId || !idProp) {
+                                    alert('No se pudo determinar el ID del registro.');
+                                    return;
+                                }
+
+                                const payload = {
                                     _tipo: selectListado.value,
                                     _descripcion: nuevaDescripcion,
-                                    _codigoSAPProgreso: nuevoCodigo,
                                     _active: nuevoActivo
                                 };
+                                // clave de ID que el backend espera, tal cual
+                                payload[idProp] = toNumberIfPossible(entityId);
+
+                                // Solo Planta envia _codigoSAPProgreso
+                                if (codigoEditable) {
+                                    payload._codigoSAPProgreso = nuevoCodigo ?? '';
+                                }
 
                                 fetch('/User/ActualizarElementoConfiguracion', {
                                     method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify(datosActualizados)
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(payload)
                                 })
                                     .then(res => res.json())
                                     .then(res => {
                                         if (res.success) {
-                                            alert('Actualizado correctamente');
+                                            if (successAlert) {
+                                                successAlert.textContent = 'Actualizado correctamente';
+                                                successAlert.style.display = 'block';
+                                                setTimeout(() => { successAlert.style.display = 'none'; }, 2000);
+                                            } else {
+                                                alert('Actualizado correctamente');
+                                            }
                                             selectListado.dispatchEvent(new Event('change'));
                                         } else {
-                                            alert('Error al actualizar: ' + res.message);
+                                            alert('Error al actualizar: ' + (res.message || ''));
                                         }
+                                    })
+                                    .catch(err => {
+                                        console.error(err);
+                                        alert('Error en la petición');
                                     });
                             });
 
-                            // Botón Cancelar
+                            // Cancelar
                             fila.querySelector('.btn-cancelar').addEventListener('click', function () {
                                 selectListado.dispatchEvent(new Event('change'));
                             });
@@ -405,10 +494,51 @@
                     contenedorListado.innerHTML = '<div class="text-danger">Error al cargar los datos.</div>';
                 });
         });
+
+        // Helpers
+        function toNumberIfPossible(v) {
+            const n = Number(v);
+            return Number.isFinite(n) ? n : v;
+        }
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, m => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[m]));
+        }
+        function escapeAttr(str) {
+            return escapeHtml(str).replace(/`/g, '&#96;');
+        }
     });
 
 
+    (function () {
+        function showLoading() {
+            var m = document.getElementById('loadingModal');
+            if (m) m.style.display = 'block';
+        }
+        function hideLoading() {
+            var m = document.getElementById('loadingModal');
+            if (m) m.style.display = 'none';
+        }
+        // expone helpers por si quieres usarlos en otros fetch
+        window.showLoading = showLoading;
+        window.hideLoading = hideLoading;
 
+        // muestra lo antes posible (cuando el DOM ya esta parseado)
+        document.addEventListener('readystatechange', function () {
+            if (document.readyState === 'interactive') showLoading();
+        });
+
+        // oculta cuando ya cargo todo (assets incluidos)
+        window.addEventListener('load', function () {
+            setTimeout(hideLoading, 200);
+        });
+
+        // muestra al navegar/recargar (cuando cambias de pagina)
+        window.addEventListener('beforeunload', function () {
+            showLoading();
+        });
+    })();
 
 
 

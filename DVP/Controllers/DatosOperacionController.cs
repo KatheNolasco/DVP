@@ -10,9 +10,10 @@ using System.Web.Mvc;
 
 namespace DVP.Controllers
 {
-    public class DatosEnergiaController : Controller
+    public class DatosOperacionController : Controller
     {
         DataAccess.DVPEntities _dvpEntities = new DataAccess.DVPEntities();
+
 
         // GET: DataOperacion
         public ActionResult Index()
@@ -47,7 +48,7 @@ namespace DVP.Controllers
 
 
         [HttpPost]
-        public JsonResult CreateTipoOperacion(DatosEnergiaViewModel.TipoOperacion data)
+        public JsonResult CreateTipoOperacion(DatosOperacionViewModel.TipoOperacion data)
         {
             try
             {
@@ -58,9 +59,16 @@ namespace DVP.Controllers
                 if (string.IsNullOrWhiteSpace(desc))
                     return Json(new { success = false, message = "Descripcion es obligatoria." });
 
+                // Normalizar para comparar duplicados (case-insensitive)
+                var existe = _dvpEntities.TipoOperacion
+                    .Any(t => t.Descripcion.ToLower() == desc.ToLower());
+                if (existe)
+                    return Json(new { success = false, message = "Ya existe un registro con esa descripcion." });
+
                 var nuevo = new TipoOperacion
                 {
                     Descripcion = desc,
+                    AfectaInventario = data._afectaInventario
                 };
 
                 _dvpEntities.TipoOperacion.Add(nuevo);
@@ -74,8 +82,9 @@ namespace DVP.Controllers
             }
         }
 
+
         [HttpPost]
-        public JsonResult CreateTipoMovimientoSAP(DatosEnergiaViewModel.TipoMovimientoSAP data)
+        public JsonResult CreateTipoMovimientoSAP(DatosOperacionViewModel.TipoMovimientoSAP data)
         {
             try
             {
@@ -103,7 +112,7 @@ namespace DVP.Controllers
         }
 
         [HttpPost]
-        public JsonResult CreateUnidadMedida(DatosEnergiaViewModel.UnidadMedida data)
+        public JsonResult CreateUnidadMedida(DatosOperacionViewModel.UnidadMedida data)
         {
             try
             {
@@ -131,15 +140,35 @@ namespace DVP.Controllers
         }
 
         [HttpPost]
-        public JsonResult UpdateTipoOperacion(int TipoOperacionID, string Descripcion)
+        public JsonResult UpdateTipoOperacion(int TipoOperacionID, string Descripcion, bool? AfectaInventario)
         {
-            var row = _dvpEntities.TipoOperacion.FirstOrDefault(x => x.TipoOperacionID == TipoOperacionID);
-            if (row == null) return Json(new { success = false, message = "No encontrado" });
+            try
+            {
+                var row = _dvpEntities.TipoOperacion.FirstOrDefault(x => x.TipoOperacionID == TipoOperacionID);
+                if (row == null)
+                    return Json(new { success = false, message = "No encontrado" });
 
-            row.Descripcion = Descripcion;
+                var desc = (Descripcion ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(desc))
+                    return Json(new { success = false, message = "Descripcion es obligatoria." });
 
-            _dvpEntities.SaveChanges();
-            return Json(new { success = true });
+                // Evitar duplicados con otros registros
+                var existeOtro = _dvpEntities.TipoOperacion
+                    .Any(t => t.TipoOperacionID != TipoOperacionID && t.Descripcion.ToLower() == desc.ToLower());
+                if (existeOtro)
+                    return Json(new { success = false, message = "Ya existe otro registro con esa descripcion." });
+
+                row.Descripcion = desc;
+                if (AfectaInventario.HasValue)
+                    row.AfectaInventario = AfectaInventario.Value;
+
+                _dvpEntities.SaveChanges();
+                return Json(new { success = true, message = "Actualizado exitosamente." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al actualizar TipoOperacion: " + ex.Message });
+            }
         }
 
         [HttpPost]

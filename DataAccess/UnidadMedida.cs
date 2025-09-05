@@ -18,6 +18,7 @@ namespace DataAccess
         public UnidadMedida()
         {
             this.DataOperacion = new HashSet<DataOperacion>();
+            this.Material = new HashSet<Material>();
         }
     
         public int UnidadMedidaID { get; set; }
@@ -25,5 +26,7 @@ namespace DataAccess
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<DataOperacion> DataOperacion { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<Material> Material { get; set; }
     }
 }

@@ -1,0 +1,734 @@
+﻿@model DVP.Models.BillOfMaterialViewModel
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "BOM Page";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+
+<style>
+    .container {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .input-container {
+        font-size: 18px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    input, select {
+        padding: 10px;
+        font-size: 16px;
+        margin-top: 10px;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        background-color: #f0f0f0;
+    }
+
+    .scrollable-table {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa;
+        z-index: 2;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .table tbody td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .form-check-input:checked {
+        background-color: #13DEB9 !important;
+        border-color: #13DEB9 !important;
+    }
+
+    .form-check-label {
+        font-weight: 500;
+    }
+
+</style>
+
+<body>
+    <div class="container-fluid" style="padding-left: 200px;">
+        <br />
+        <br />
+        <br />
+        <div class="card">
+            <div class="container-fluid">
+                <div class="container-fluid">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title fw-semibold mb-4 text-end"></h5>
+
+                            <div id="alertsuccesnewbom" class="alert alert-success" role="alert" style="display: none;">
+                                BOM agregado correctamente
+                            </div>
+
+                            <h5 class="card-title fw-semibold mb-4">BOM Configuration</h5>
+                        </div>
+
+                        <div class="card w-100">
+                            <div class="card-body p-4">
+                                <div class="text-end mb-3">
+                                    <div class="d-flex justify-content-end align-items-center gap-2 mb-3">
+                                        <i class="bi bi-binoculars-fill text-success"></i>
+                                        <input type="text" class="form-control form-control-sm w-25" id="_buscar" placeholder="Buscar...">
+                                        <button type="button" onclick="newBOM()" class="btn btn-outline-dark btn-sm">
+                                            Add new
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex gap-3">
+                                    <div class="table-responsive w-100" style="max-height: 400px; overflow-y: auto; background-color: #ffffff; padding: 10px; border-radius: 10px;">
+                                        <table class="table table-bordered mb-0" style="background-color: #ffffff;">
+                                            <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
+                                                <tr>
+                                                    <th class="text-center">Produced Material</th>
+                                                    <th class="text-center">Operation Type</th>
+                                                    <th class="text-center">SAP Movement Type</th>
+                                                    <th class="text-center">Factor</th>
+                                                    <th class="text-center">Equipment</th>
+                                                    <th class="text-center">Production Tag</th>
+                                                    <th class="text-center">Moisture Tag</th>
+                                                    <th class="text-center">Dry Cons.</th>
+                                                    <th class="text-center">Wet Cons.</th>
+                                                    <th class="text-center">BOM Date</th>
+                                                    <th class="text-center">Consumption Material</th>
+                                                    <th class="text-center">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="bomTableBody">
+                                                <tr></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div> <!-- card-body -->
+                        </div> <!-- card -->
+                    </div> <!-- card -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal cargando -->
+        <div id="loadingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: rgba(0, 0, 0, 0.5);">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 25px 35px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.3); min-width: 250px;">
+                <div style="display: flex; align-items: center; justify-content: center;">
+                    <img src="/Content/loading-green-loading.gif" alt="Cargando..." style="width: 40px; height: 40px; margin-right: 15px;" />
+                    <span style="color: black; font-size: 16px;">Cargando...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal crear BOM -->
+        <div class="modal fade" id="newBOM" tabindex="-1" aria-labelledby="modalLabelBOM" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="card-body">
+                            <div class="card">
+                                <form>
+                                    <div class="card-body">
+                                        <h4 class="card-title fw-semibold mb-2">Add New BOM</h4>
+                                        <br />
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Material Producción</label>
+                                                <select class="form-select" id="_materialProduccionID" required>
+                                                    <option value="">Seleccione un material de producción</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Material Consumo</label>
+                                                <select class="form-select" id="_materialConsumoID">
+                                                    <option value="">Seleccione un material de consumo</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Material Consumo Energía o Combustión</label>
+                                                <select class="form-select" id="_materialConsumoCombustibleID" required>
+                                                    <option value="">Seleccione un material combustible</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Material Alterno</label>
+                                                <select class="form-select" id="_materialAlternoID" required>
+                                                    <option value="">Seleccione un material alterno</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Tipo Movimiento SAP</label>
+                                                <select class="form-select" id="_tipoMovimientoSAPID">
+                                                    <option value="">Seleccione un tipo de movimiento SAP</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Factor Consumo</label>
+                                                <input type="number" step="0.0001" class="form-control" id="_factorConsumo">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Equipo</label>
+                                                <select class="form-select" id="_equipoID" required>
+                                                    <option value="">Seleccione un equipo</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="_consumoSeco">
+                                                <label class="form-check-label" for="_consumoSeco">Consumo Seco</label>
+                                            </div>
+                                            <div class="form-check form-switch mb-3">
+                                                <input class="form-check-input" type="checkbox" id="_consumoHumedo">
+                                                <label class="form-check-label" for="_consumoHumedo">Consumo Húmedo</label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="text-end mt-3">
+                                        <button type="button" id="crearBOM" class="btn btn-outline-success m-1"
+                                                data-url="@Url.Action("CreateBOM", "BillOfMaterial")">
+                                            Crear <span class="text-success ms-2">&#10004;</span>
+                                        </button>
+                                    </div>
+
+                                    <div id="alertSuccessBOM" class="alert alert-success mt-3" role="alert" style="display: none;">
+                                        Creado exitosamente
+                                    </div>
+                                </form>
+                            </div> <!-- card -->
+                        </div> <!-- card-body -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal editar BOM -->
+        <div class="modal fade" id="editarBOM" tabindex="-1" aria-labelledby="modalLabelBOMEdit" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalLabelBOMEdit">BOM Edit</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="card-body">
+                            <div class="card">
+                                <div class="card-body">
+                                    <form>
+                                        <div class="card-body">
+                                            <h4 class="card-title fw-semibold mb-2">Edit BOM</h4>
+                                            <br />
+                                            <input type="hidden" id="bomidhidden" value="" />
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Material Producción</label>
+                                                    <select class="form-select" id="_materialProduccionIDeditar">
+                                                        <option value="">Seleccione un material de producción</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">Tipo Operación</label>
+                                                    <select class="form-select" id="_tipoOperacionIDeditar">
+                                                        <option value="">Seleccione un tipo de operación</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">TipoMovimiento SAP</label>
+                                                    <select class="form-select" id="_tipoMovimientoSAPIDeditar">
+                                                        <option value="">Seleccione un tipo de movimiento SAP</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">Factor Consumo</label>
+                                                    <input type="number" step="0.0001" class="form-control" id="_factorConsumoeditar">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Equipo</label>
+                                                    <select class="form-select" id="_equipoIDeditar">
+                                                        <option value="">Seleccione un equipo</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">TagProduccion</label>
+                                                    <input type="text" class="form-control" id="_tagProduccioneditar">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">TagHumedad</label>
+                                                    <input type="text" class="form-control" id="_tagHumedadeditar">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">ConsumoSeco</label>
+                                                    <input type="number" step="0.0001" class="form-control" id="_consumoSecoeditar">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">ConsumoHumedo</label>
+                                                    <input type="number" step="0.0001" class="form-control" id="_consumoHumedoeditar">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Material Consumo</label>
+                                                    <input type="number" class="form-control" id="_materialConsumoIDeditar">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="text-end mt-3">
+                                            <button type="button" id="editar"
+                                                    class="btn btn-outline-success m-1"
+                                                    data-url="@Url.Action("EditBOM", "BillOfMaterial")"
+                                                    onclick="submitEditBOM()">
+                                                Editar <span class="text-success ms-2">&#10004;</span>
+                                            </button>
+                                        </div>
+                                    </form>
+
+                                    <div id="alertEditSuccessBOM" class="alert alert-success" role="alert" style="display: none;">
+                                        Editado
+                                    </div>
+                                </div> <!-- card-body -->
+                            </div> <!-- card -->
+                        </div> <!-- card-body -->
+                    </div> <!-- modal-body -->
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+@section scripts{
+    <script src="~/Content/Modernize-1.0.0/src/assets/libs/jquery/dist/jquery.min.js"></script>
+    <script src="~/Content/Modernize-1.0.0/src/assets/js/sidebarmenu.js"></script>
+    <script src="~/Content/Modernize-1.0.0/src/assets/js/app.min.js"></script>
+    <script src="~/Content/Modernize-1.0.0/src/assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/Content/Modernize-1.0.0/src/assets/libs/simplebar/dist/simplebar.js"></script>
+}
+
+<script>
+
+
+
+    function cargando() {
+        document.getElementById("loadingModal").style.display = "block";
+    }
+
+//___________________________________________________________________ Crear BOM __________________________________________________________________//
+
+
+function newBOM() {
+    const modalElement = document.getElementById('newBOM');
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+
+    const form = document.querySelector('#newBOM form');
+    if (form) form.reset();
+
+    
+    limpiarSelect('_materialProduccionID');
+    limpiarSelect('_tipoMovimientoSAPID');
+    limpiarSelect('_equipoID');
+    limpiarSelect('_materialConsumoID');
+    limpiarSelect('_materialConsumoCombustibleID');
+    limpiarSelect('_materialAlternoID'); 
+
+    cargarCombosBOM();
+}
+
+function cargarCombosBOM() {
+    // Carga de selects normales
+    const fetchTipoMovSAP = fetch('@Url.Action("GetTipoMovimientoSAP", "DatosOperacion")').then(r => r.json());
+    const fetchEquipos    = fetch('@Url.Action("GetEquiposporPaislogguedUser", "Equipo")').then(r => r.json());
+
+    Promise.all([fetchTipoMovSAP, fetchEquipos])
+        .then(([tiposMov, equipos]) => {
+            const norm = (x) => Array.isArray(x) ? x : (x?.data ?? x?.items ?? []);
+            llenarSelect('_tipoMovimientoSAPID', norm(tiposMov),'TipoMovimientoSAPID', 'Descripcion');
+            llenarSelect('_equipoID',            norm(equipos), 'EquipoID',            'Descripcion');
+        })
+        .catch(err => {
+            console.error(err);
+            alert('No se pudieron cargar los catálogos.');
+        });
+
+    // Multiselects con checkboxes + búsqueda dentro del dropdown
+    initMultiSelectDropdown(
+        '_materialProduccionID',
+        '@Url.Action("GetMaterialProducidoOConsumido", "Material")',
+        'MaterialID',
+        'Descripcion',
+        { minChars: 2, pageSize: 30, placeholder: 'Seleccione material de produccion' }
+    );
+
+    initMultiSelectDropdown(
+        '_materialConsumoID',
+        '@Url.Action("GetMaterialProducidoOConsumido", "Material")',
+        'MaterialID',
+        'Descripcion',
+        { minChars: 2, pageSize: 30, placeholder: 'Seleccione material de consumo' }
+    );
+
+    initMultiSelectDropdown(
+        '_materialConsumoCombustibleID',
+        '@Url.Action("GetMaterialCombustible", "Material")',
+        'MaterialID',
+        'Descripcion',
+        { minChars: 2, pageSize: 30, placeholder: 'Seleccione material combustible' }
+    );
+
+    // NUEVO: Material Alterno (mismo endpoint que Combustible; cámbialo si tienes otro)
+    initMultiSelectDropdown(
+        '_materialAlternoID',
+        '@Url.Action("GetMaterialCombustible", "Material")',
+        'MaterialID',
+        'Descripcion',
+        { minChars: 2, pageSize: 30, placeholder: 'Seleccione material alterno' }
+    );
+}
+
+// ===================== helpers comunes =====================
+function llenarSelect(selectId, data, valueField, textField) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    data.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = String(item[valueField]);
+        opt.text  = item[textField];
+        select.appendChild(opt);
+    });
+}
+
+function limpiarSelect(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    // Placeholder: sin valor, deshabilitado y oculto
+    select.innerHTML = '<option value="" disabled hidden>Seleccione una opcion</option>';
+
+    // Multiselect solo para estos IDs:
+    const multiIds = new Set([
+        '_materialProduccionID',
+        '_materialConsumoID',
+        '_materialConsumoCombustibleID',
+        '_materialAlternoID' // NUEVO
+    ]);
+
+    if (multiIds.has(selectId)) {
+        select.setAttribute('multiple', 'multiple');
+        select.classList.add('d-none');   // UI visible es el dropdown custom
+    } else {
+        select.removeAttribute('multiple');
+        select.classList.remove('d-none');
+    }
+
+    const wrap = document.getElementById(selectId + '__mswrap');
+    if (wrap && wrap.parentNode) wrap.parentNode.removeChild(wrap);
+}
+
+// ===================== multiselect "como select" =====================
+function initMultiSelectDropdown(selectId, fetchUrl, valueField, textField, opts = {}) {
+    const { minChars = 2, pageSize = 25, placeholder = 'Seleccione una opcion' } = opts;
+
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    select.setAttribute('multiple', 'multiple');
+    select.classList.add('d-none');
+
+    let wrap = document.getElementById(selectId + '__mswrap');
+    if (wrap && wrap.parentNode) wrap.parentNode.removeChild(wrap);
+
+    wrap = document.createElement('div');
+    wrap.className = 'dropdown w-100';
+    wrap.id = selectId + '__mswrap';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'form-select text-start d-flex align-items-center justify-content-between';
+    btn.setAttribute('data-bs-toggle', 'dropdown');
+    btn.setAttribute('data-bs-auto-close', 'outside');
+    btn.setAttribute('data-bs-display', 'static');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.id = selectId + '__btn';
+
+    const btnText = document.createElement('span');
+    btnText.id = selectId + '__btntext';
+    btnText.textContent = placeholder;
+
+    const caret = document.createElement('span');
+    caret.className = 'ms-2';
+    caret.innerHTML = '&#9662;';
+
+    btn.appendChild(btnText);
+    btn.appendChild(caret);
+
+    const menu = document.createElement('div');
+    menu.className = 'dropdown-menu p-2 w-100';
+    menu.style.maxHeight = '320px';
+    menu.style.overflow = 'auto';
+    menu.id = selectId + '__menu';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control mb-2';
+    input.placeholder = 'Buscar...';
+    input.id = selectId + '__search';
+
+    const hint = document.createElement('div');
+    hint.className = 'small text-muted mb-2';
+    hint.id = selectId + '__hint';
+    hint.textContent = 'Escribe al menos ' + minChars + ' letras';
+
+    const list = document.createElement('div');
+    list.id = selectId + '__list';
+
+    menu.appendChild(input);
+    menu.appendChild(hint);
+    menu.appendChild(list);
+
+    select.insertAdjacentElement('afterend', wrap);
+    wrap.appendChild(btn);
+    wrap.appendChild(menu);
+
+    const debounced = debounce(() =>
+        runSearch(input, hint, list, select, fetchUrl, valueField, textField, pageSize, updateButtonText)
+    );
+
+    input.addEventListener('input', () => {
+        if (input.value.trim().length < minChars) {
+            // Mostrar seleccionados; si no hay, lista vacía (sin "Sin resultados")
+            renderSelectedList(list, select, valueField, textField, /*quietIfEmpty=*/true);
+            const n = Array.from(select.options).filter(o => o.selected && o.value).length;
+            hint.textContent = n > 0
+                ? `Seleccionados (${n}). Escribe al menos ${minChars} letras para buscar`
+                : `Escribe al menos ${minChars} letras`;
+            return;
+        }
+        hint.textContent = 'Buscando...';
+        debounced();
+    });
+
+    // Al abrir: enfoca y si no hay término, muestra seleccionados o vacío
+    btn.addEventListener('shown.bs.dropdown', () => {
+        input.focus();
+        if (input.value.trim().length < minChars) {
+            renderSelectedList(list, select, valueField, textField, /*quietIfEmpty=*/true);
+            const n = Array.from(select.options).filter(o => o.selected && o.value).length;
+            hint.textContent = n > 0
+                ? `Seleccionados (${n}). Escribe al menos ${minChars} letras para buscar`
+                : `Escribe al menos ${minChars} letras`;
+        } else {
+            hint.textContent = 'Buscando...';
+            debounced.flush && debounced.flush();
+        }
+    });
+
+    function updateButtonText() {
+        const btnTextEl = document.getElementById(selectId + '__btntext');
+        const selected = Array.from(select.options).filter(o => o.selected && o.value);
+        if (selected.length === 0) btnTextEl.textContent = placeholder;
+        else if (selected.length === 1) btnTextEl.textContent = selected[0].text;
+        else btnTextEl.textContent = selected.length + ' seleccionados';
+    }
+
+    wrap._updateButtonText = updateButtonText;
+    updateButtonText();
+    renderIdleList(list); // estado inicial: nada
+}
+
+// ===================== búsqueda remota (GET ?q=) + filtro cliente =====================
+async function runSearch(input, hint, list, select, fetchUrl, valueField, textField, pageSize, onAfterRender) {
+    const term = input.value.trim();
+    if (!term) return;
+
+    try {
+        const url = `${fetchUrl}?q=${encodeURIComponent(term)}&pageSize=${pageSize}`;
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) {
+            hint.textContent = '';
+            renderNoResults(list);
+            return;
+        }
+        const raw = await res.json();
+        const arr = Array.isArray(raw) ? raw : (raw?.data ?? raw?.items ?? raw?.results ?? []);
+
+        // Filtro cliente sin acentos y case-insensitive
+        const t = normStr(term);
+        const filtered = (arr || []).filter(it => normStr(it[textField]).includes(t));
+
+        if (filtered.length) {
+            hint.textContent = filtered.length + ' resultado(s)';
+            renderResults(list, filtered, select, valueField, textField);
+            onAfterRender && onAfterRender();
+        } else {
+            hint.textContent = '';
+            renderNoResults(list);
+        }
+    } catch (e) {
+        console.error(e);
+        hint.textContent = '';
+        renderNoResults(list);
+    }
+}
+
+// ===================== mostrar seleccionados (o vacío si no hay) =====================
+function renderSelectedList(list, select, valueField, textField, quietIfEmpty = false) {
+    const selected = Array.from(select.options).filter(o => o.selected && o.value);
+    if (selected.length === 0) {
+        if (quietIfEmpty) renderIdleList(list); else renderNoResults(list);
+        return false;
+    }
+    const items = selected.map(o => ({ [valueField]: o.value, [textField]: o.text }));
+    renderResults(list, items, select, valueField, textField);
+    return true;
+}
+
+// ===================== render de resultados con checkboxes =====================
+function renderResults(list, items, select, valueField, textField) {
+    list._showingEmpty = false; // reset flag anti-duplicado
+    list.innerHTML = '';
+
+    
+    const filtered = (items || []).filter(it => {
+        const v = String(it?.[valueField] ?? '');
+        const t = String(it?.[textField] ?? '').trim().toLowerCase();
+        if (!v) return false;
+        if (t === 'seleccione una opcion' || t === 'seleccione una opción') return false;
+        return true;
+    });
+
+    if (!filtered.length) {
+        renderNoResults(list);
+        return;
+    }
+
+    const selectedValues = new Set(Array.from(select.options).filter(o => o.selected).map(o => o.value));
+
+    filtered.forEach(item => {
+        const val = String(item[valueField]);
+        const txt = item[textField];
+
+        const row = document.createElement('div');
+        row.className = 'form-check mb-1';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'form-check-input msitem';
+        cb.id = select.id + '__opt__' + val;
+        cb.value = val;
+        cb.checked = selectedValues.has(val);
+
+        const lb = document.createElement('label');
+        lb.className = 'form-check-label';
+        lb.setAttribute('for', cb.id);
+        lb.textContent = txt;
+
+        cb.addEventListener('change', () => {
+            syncSelectOption(select, val, txt, cb.checked);
+            const wrap = document.getElementById(select.id + '__mswrap');
+            if (wrap && typeof wrap._updateButtonText === 'function') wrap._updateButtonText();
+        });
+
+        row.appendChild(cb);
+        row.appendChild(lb);
+        list.appendChild(row);
+    });
+}
+
+// ===================== estados de lista =====================
+function renderNoResults(list) {
+    if (list._showingEmpty) return;  // evita duplicados por llamadas seguidas
+    list._showingEmpty = true;
+    list.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = 'text-muted small';
+    div.textContent = 'Sin resultados';
+    list.appendChild(div);
+}
+
+function renderIdleList(list) {
+    list._showingEmpty = false;
+    list.innerHTML = ''; // estado inicial: nada
+}
+
+// ===================== sync option del <select> oculto =====================
+function syncSelectOption(select, value, text, selected) {
+    if (!value) return; 
+    let opt = Array.from(select.options).find(o => o.value === value);
+    if (!opt) {
+        opt = document.createElement('option');
+        opt.value = value;
+        opt.text  = text;
+        select.appendChild(opt);
+    }
+    opt.selected = !!selected;
+}
+
+// ===================== utils =====================
+function normStr(s) {
+    return (s ?? '')
+        .toString()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+}
+
+function debounce(fn, wait = 300) {
+    let t, lastArgs, lastThis;
+    const wrapped = function(...args) {
+        lastArgs = args; lastThis = this;
+        clearTimeout(t);
+        t = setTimeout(() => {
+            fn.apply(lastThis, lastArgs);
+            lastArgs = lastThis = undefined;
+        }, wait);
+    };
+    wrapped.flush = function() {
+        clearTimeout(t);
+        if (lastArgs) {
+            fn.apply(lastThis, lastArgs);
+            lastArgs = lastThis = undefined;
+        }
+    };
+    return wrapped;
+}
+
+
+//___________________________________________________________________ Crear (POST) __________________________________________________________________//
+
+
+</script>
+

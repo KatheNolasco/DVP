@@ -77,7 +77,11 @@ namespace DVP.Controllers
                     _alterno = p.Alterno,
                     _afectaInventario = p.AfectaInventario,
                     _idStock = p.IDStock,
-                    _activo = p.Activo
+                    _activo = p.Activo,
+                    _plantaId = p.PlantaID,
+                    _plantaDescripcion = p.Planta.Descripcion,
+                    _unidadMedidaId = p.UnidadMedidaID,
+                    _unidadDescripcion = p.UnidadMedida.Descripcion
                 })
                 .FirstOrDefault();
 
@@ -105,7 +109,11 @@ namespace DVP.Controllers
                     _alterno = p.Alterno,
                     _afectaInventario = p.AfectaInventario,
                     _idStock = p.IDStock,
-                    _activo = p.Activo
+                    _activo = p.Activo,
+                    _plantaId = p.PlantaID,
+                    _plantaDescripcion = p.Planta.Descripcion,
+                    _unidadMedidaId = p.UnidadMedidaID,
+                    _unidadDescripcion = p.UnidadMedida.Descripcion
                 })
                 .ToList();
 
@@ -122,35 +130,68 @@ namespace DVP.Controllers
         {
             try
             {
-                if (ModelState.IsValid)
+                data._descripcion = (data._descripcion ?? "").Trim();
+                data._codSAPNuevo = (data._codSAPNuevo ?? "").Trim();
+                data._codOldSAP = (data._codOldSAP ?? "").Trim();
+                data._idStock = (data._idStock ?? "").Trim();
+
+
+                if (!TryValidateModel(data))
                 {
-                    var nuevo = new Material
-                    {
-                        Descripcion = data._descripcion,
-                        CodSAPNuevo = data._codSAPNuevo,
-                        CodOldSAP = data._codOldSAP,
-                        Producido = data._producido,
-                        ClasificacionMaterialID = data._clasificacionMaterialID,
-                        Alterno = data._alterno,
-                        AfectaInventario = data._afectaInventario,
-                        IDStock = data._idStock,
-                        Activo = data._activo
-                    };
-
-                    _dvpEntities.Material.Add(nuevo);
-                    _dvpEntities.SaveChanges();
-
-                    return Json(new { success = true, message = "Material creado exitosamente." });
+                    var errs = ModelState.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                    );
+                    return Json(new { success = false, message = "Datos inválidos.", errors = errs });
                 }
 
-                return Json(new { success = false, message = "Datos inválidos." });
+                if (string.IsNullOrWhiteSpace(data._descripcion) ||
+                    string.IsNullOrWhiteSpace(data._codSAPNuevo) ||
+                    string.IsNullOrWhiteSpace(data._codOldSAP) ||
+                    string.IsNullOrWhiteSpace(data._idStock) ||
+                    !data._clasificacionMaterialID.HasValue ||
+                    !data._plantaId.HasValue ||
+                    !data._unidadMedidaId.HasValue)
+                {
+                    return Json(new { success = false, message = "Campos requeridos incompletos." });
+                }
+
+                bool existe = _dvpEntities.Material.Any(m =>
+                    m.CodSAPNuevo == data._codSAPNuevo &&
+                    m.Descripcion == data._descripcion &&
+                    m.PlantaID == data._plantaId.Value &&
+                    m.UnidadMedidaID == data._unidadMedidaId.Value
+                );
+                if (existe)
+                {
+                    return Json(new { success = false, message = "El material ya existe (CodSAPNuevo + Planta + Unidad)." });
+                }
+
+                var nuevo = new Material
+                {
+                    Descripcion = data._descripcion,
+                    CodSAPNuevo = data._codSAPNuevo,
+                    CodOldSAP = data._codOldSAP,
+                    Producido = data._producido,
+                    ClasificacionMaterialID = data._clasificacionMaterialID.Value,
+                    Alterno = data._alterno,
+                    AfectaInventario = data._afectaInventario,
+                    IDStock = data._idStock,
+                    Activo = data._activo,
+                    PlantaID = data._plantaId.Value,
+                    UnidadMedidaID = data._unidadMedidaId.Value
+                };
+
+                _dvpEntities.Material.Add(nuevo);
+                _dvpEntities.SaveChanges();
+
+                return Json(new { success = true, message = "Material creado exitosamente." });
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error al crear el equipo: " + ex.Message });
+                return Json(new { success = false, message = "Error al crear el material: " + ex.Message });
             }
         }
-
 
         [HttpPost]
         public JsonResult Edit(MaterialViewModel data)
@@ -173,6 +214,9 @@ namespace DVP.Controllers
                     objeto.AfectaInventario = data._afectaInventario;
                     objeto.IDStock = data._idStock;
                     objeto.Activo = data._activo;
+                    objeto.PlantaID = data._plantaId;
+                    objeto.UnidadMedidaID = data._unidadMedidaId;
+
 
                     _dvpEntities.SaveChanges();
 
@@ -186,5 +230,51 @@ namespace DVP.Controllers
                 return Json(new { success = false, message = "Error al editar el equipo: " + ex.Message });
             }
         }
+
+        [HttpGet]
+        public JsonResult GetMaterialProducidoOConsumido()
+        {
+            var list = _dvpEntities.Material
+                                     .Where(s => s.Producido == true && s.AfectaInventario == true)
+                                     .Select(s => new
+                                     {
+                                         MaterialID = s.MaterialID,
+                                         Descripcion = s.Descripcion
+                                     })
+                                     .ToList();
+
+            return Json(list, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult GetMaterialCombustible()
+        {
+            var list = _dvpEntities.Material
+                                     .Where(s => s.Producido == false && s.AfectaInventario == false)
+                                     .Select(s => new
+                                     {
+                                         MaterialID = s.MaterialID,
+                                         Descripcion = s.Descripcion
+                                     })
+                                     .ToList();
+
+            return Json(list, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult GetMaterialAlterno()
+        {
+            var list = _dvpEntities.Material
+                                     .Where(s => s.Alterno == true && s.AfectaInventario == false)
+                                     .Select(s => new
+                                     {
+                                         MaterialID = s.MaterialID,
+                                         Descripcion = s.Descripcion
+                                     })
+                                     .ToList();
+
+            return Json(list, JsonRequestBehavior.AllowGet);
+        }
+
     }
 }

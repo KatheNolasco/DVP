@@ -103,6 +103,14 @@
                                             Add new
                                         </button>
                                     </div>
+                                    <div class="d-flex justify-content-end align-items-center gap-2 mb-3">
+                                        <select id="selectFiltroEquipo" class="form-select" style="max-width: 420px;">
+                                            <option value="">Equipment filter</option>
+                                        </select>
+                                        <select id="selectFiltroTipoOperacion" class="form-select" style="max-width: 420px;">
+                                            <option value="">Operation type filter</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 <div class="d-flex gap-3">
                                     <!-- Tabla más ancha (downtimes activos) -->
@@ -112,6 +120,7 @@
                                                 <tr>
                                                     <th class="text-center">Status</th>
                                                     <th class="text-center">Tag Name</th>
+                                                    <th class="text-center">Tag Code</th>
                                                     <th class="text-center">Operation Type</th>
                                                     <th class="text-center">Equipment</th>
                                                     <th class="text-center">Actions</th>
@@ -185,6 +194,12 @@
 
                                         <!-- Columna derecha -->
                                         <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label">Material</label>
+                                                <select class="form-select" id="_materialId">
+                                                    <option value="">Seleccione un material</option>
+                                                </select>
+                                            </div>
                                             <div class="mb-3">
                                                 <label class="form-label">Equipo</label>
                                                 <select class="form-select" id="_equipoId">
@@ -321,166 +336,253 @@
         document.getElementById("loadingModal").style.display = "block";
     }
 
-    //___________________________________________________________________ Crear Equipo __________________________________________________________________//
+    //___________________________________________________________________ Crear Tag __________________________________________________________________//
 
-    function newEquipment() {
-    // Mostrar el modal
-    const modalElement = document.getElementById("newTag");
-    const modal = new bootstrap.Modal(modalElement);
-    modal.show();
-
-    // Cargar los combos al abrir
-    cargarCombosEquipo();
+        function newEquipment() {
+        const modalElement = document.getElementById("newTag");
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+        cargarCombosEquipo();
     }
 
     function cargarCombosEquipo() {
-    // Limpiar selects
-    limpiarSelect("_tipoOperacionId");
-    limpiarSelect("_equipoId");
+        limpiarSelect("_tipoOperacionId", "Seleccione un tipo de operacion");
+        limpiarSelect("_equipoId", "Seleccione un equipo");
+        limpiarSelect("_materialId", "Seleccione un material (opcional)");
 
+        // Equipo
+        fetch('@Url.Action("GetEquiposporPlantalogguedUser", "Equipo")')
+            .then(r => r.json())
+            .then(data => llenarSelect("_equipoId", data, "EquipoID", "Descripcion"));
 
-    // Llamadas cada endpoint
-    fetch('@Url.Action("GetEquiposporPaislogguedUser", "Equipo")')
-        .then(response => response.json())
-        .then(data => llenarSelect("_equipoId", data, "EquipoID", "Descripcion"));
+        // Tipo Operacion
+        fetch('@Url.Action("GetTipoOperacion", "Tag")')
+            .then(r => r.json())
+            .then(data => llenarSelect("_tipoOperacionId", data, "TipoOperacionID", "Descripcion"));
 
-    fetch('@Url.Action("GetTipoOperacion", "Tag")')
-        .then(response => response.json())
-        .then(data => llenarSelect("_tipoOperacionId", data, "TipoOperacionID", "Descripcion"));
-
-}
+        // Material (endpoint con wrapper { success, data })
+        fetch('@Url.Action("GetMateriales", "Material")')
+            .then(r => r.json())
+            .then(result => {
+                if (!result || result.success !== true || !Array.isArray(result.data)) return;
+                llenarSelect("_materialId", result.data, "_materialID", "_descripcion");
+            })
+            .catch(err => console.error("Error cargando materiales:", err));
+    }
 
     function llenarSelect(selectId, data, valueField, textField) {
-    const select = document.getElementById(selectId);
-    data.forEach(item => {
-        const option = document.createElement("option");
-        option.value = item[valueField];
-        option.text = item[textField];
-        select.appendChild(option);
-    });
-}
+        const select = document.getElementById(selectId);
+        data.forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item[valueField];
+            opt.text = item[textField];
+            select.appendChild(opt);
+        });
+    }
 
-    function limpiarSelect(selectId) {
-    const select = document.getElementById(selectId);
-    select.innerHTML = '<option value="">Seleccione una opción</option>';
-}
-
-
+    function limpiarSelect(selectId, placeholder) {
+        const select = document.getElementById(selectId);
+        const text = placeholder || "Seleccione una opcion";
+        select.innerHTML = `<option value="">${text}</option>`;
+    }
 
     document.getElementById("creartag").addEventListener("click", crearEquipoNuevo);
 
     function crearEquipoNuevo() {
-        // Obtener valores del formulario
         const descripcion = document.getElementById("_descripcion").value.trim();
         const tagName = document.getElementById("_tagName").value.trim();
         const tagCode = document.getElementById("_tagCode").value.trim();
-        const tipoOperacionId = parseInt(document.getElementById("_tipoOperacionId").value) || null;
-        const equipoId = parseInt(document.getElementById("_equipoId").value) || null;
+
+        const tipoOperacionVal = document.getElementById("_tipoOperacionId").value;
+        const equipoVal = document.getElementById("_equipoId").value;
+        const materialVal = document.getElementById("_materialId").value; // puede ser ""
+
+        const tipoOperacionId = tipoOperacionVal ? parseInt(tipoOperacionVal) : null;
+        const equipoId = equipoVal ? parseInt(equipoVal) : null;
+        const materialId = materialVal ? parseInt(materialVal) : null; // opcional
+
         const activo = document.getElementById("_activo").checked;
-
-
         const url = document.getElementById("creartag").getAttribute("data-url");
 
-        // Construir el objeto que será enviado al controlador
+        // validaciones basicas (material no requerido)
+        if (!descripcion || !tagName || !tagCode || !tipoOperacionId || !equipoId) {
+            alert("Complete los campos requeridos.");
+            return;
+        }
+
         const data = {
             _descripcion: descripcion,
             _tagName: tagName,
             _tagCode: tagCode,
             _tipoOperacionId: tipoOperacionId,
             _equipoId: equipoId,
+            _materialId: materialId, // puede ir null
             _activo: activo
         };
 
-
-        // Enviar al backend vía fetch
         fetch(url, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json; charset=utf-8" },
             body: JSON.stringify(data)
         })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    // Mostrar alerta
-                    document.getElementById("alertSuccess").style.display = "block";
+        .then(r => r.json())
+        .then(result => {
+            if (result.success) {
+                const alertEl = document.getElementById("alertSuccess");
+                alertEl.style.display = "block";
 
-                    // Ocultar modal y limpiar formulario después de unos segundos
-                    setTimeout(() => {
-                        document.getElementById("alertSuccess").style.display = "none";
-                        var modal = bootstrap.Modal.getInstance(document.getElementById("newTag"));
-                        modal.hide();
-                        document.querySelector("#newTag form").reset();
-
-                        // Puedes recargar la tabla de equipos si es necesario
-                        loadEquipmentTable();
-                    }, 1500);
-                } else {
-                    alert(result.message || "Ocurrió un error al crear el equipo.");
-                }
-            })
-            .catch(error => {
-                console.error("Error al enviar el formulario:", error);
-                alert("Ocurrió un error al enviar los datos.");
-            });
+                setTimeout(() => {
+                    alertEl.style.display = "none";
+                    const modal = bootstrap.Modal.getInstance(document.getElementById("newTag"));
+                    modal.hide();
+                    document.querySelector("#newTag form").reset();
+                    if (typeof loadEquipmentTable === "function") loadEquipmentTable();
+                }, 1500);
+            } else {
+                alert(result.message || "Ocurrio un error al crear el tag.");
+            }
+        })
+        .catch(err => {
+            console.error("Error:", err);
+            alert("Ocurrio un error al enviar los datos.");
+        });
     }
 
-    //____________________________________________________________________ Mostrar Equipos en el datatable_______________________________________________//
+    //____________________________________________________________________ Mostrar Tags en el datatable_______________________________________________//
 
+  function cargarSelectFiltroEquipos() {
+    const sel = document.getElementById('selectFiltroEquipo');
+      sel.innerHTML = '<option value="">Equipment filter</option>';
 
-
-    function loadEquipmentTable() {
-    const tbody = document.getElementById('downtimeTableBody');
-    tbody.innerHTML = ''; // Limpiar contenido anterior
-
-    cargando(); // Mostrar modal de carga
-
-    fetch('@Url.Action("GetTags", "Tag")')
-        .then(response => {
-            if (!response.ok) throw new Error("Error al obtener los datos.");
-            return response.json();
-        })
-        .then(data => {
-            if (!data.success || !Array.isArray(data.data)) {
-                alert("La respuesta del servidor no es válida.");
-                return;
-            }
-
-            // Mostrar todos (activos e inactivos)
-            data.data.forEach(item => {
-                const row = document.createElement('tr');
-
-                row.innerHTML = `
-                    <td class="text-center">
-                        ${
-                            item._activo
-                                ? '<i class="bi bi-check-circle-fill text-success"></i>'
-                                : '<i class="bi bi-x-circle-fill text-danger"></i>'
-                        }
-                    </td>
-                    <td class="text-center">${item._descripcion || ''}</td>
-                    <td class="text-center">${item._tipoOperacionDescripcion || ''}</td>
-                    <td class="text-center">${item._equipoDescripcion || ''}</td>
-                    <td class="text-center bg-white">
-                        <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditarTag(${item._tagEquipoId})">
-                            <i class="bi bi-pencil me-2"></i>
-                        </a>
-                    </td>
-                `;
-
-                tbody.appendChild(row);
-            });
-        })
-        .catch(error => {
-            console.error("Error cargando la tabla de equipos:", error);
-            alert("Ocurrió un error al cargar los equipos.");
-        })
-        .finally(() => {
-            // Ocultar modal de carga al final
-            document.getElementById("loadingModal").style.display = "none";
+    fetch('@Url.Action("GetEquiposporPlantalogguedUser", "Equipo")')
+      .then(r => r.json())
+      .then(data => {
+        if (!Array.isArray(data)) return;
+        data.forEach(eq => {
+          const opt = document.createElement('option');
+          opt.value = String(eq.EquipoID);
+          opt.textContent = eq.Descripcion || ('Equipo ' + eq.EquipoID);
+          sel.appendChild(opt);
         });
+      })
+      .catch(err => console.error('Error cargando equipos filtro:', err));
+  }
+
+  function cargarSelectFiltroTipoOperacion() {
+    const sel = document.getElementById('selectFiltroTipoOperacion');
+      sel.innerHTML = '<option value="">Operation type filter</option>';
+
+    fetch('@Url.Action("GetTipoOperacion", "Tag")')
+      .then(r => r.json())
+      .then(data => {
+        if (!Array.isArray(data)) return;
+        data.forEach(op => {
+          const opt = document.createElement('option');
+          opt.value = String(op.TipoOperacionID);
+          opt.textContent = op.Descripcion || ('Tipo ' + op.TipoOperacionID);
+          sel.appendChild(opt);
+        });
+      })
+      .catch(err => console.error('Error cargando tipos operacion:', err));
+  }
+
+  function aplicarFiltros() {
+    const equipoId = document.getElementById('selectFiltroEquipo').value;
+    const tipoId   = document.getElementById('selectFiltroTipoOperacion').value;
+
+    const filas = document.querySelectorAll('#downtimeTableBody tr');
+    let visibles = 0;
+
+    filas.forEach(tr => {
+      const filaEquipoId = tr.getAttribute('data-equipo-id') || '';
+      const filaTipoId   = tr.getAttribute('data-tipo-id') || '';
+
+      const coincideEquipo = !equipoId || filaEquipoId === equipoId;
+      const coincideTipo   = !tipoId   || filaTipoId   === tipoId;
+
+      const mostrar = coincideEquipo && coincideTipo;
+      tr.style.display = mostrar ? '' : 'none';
+      if (mostrar) visibles++;
+    });
+
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('selectFiltroEquipo')
+      .addEventListener('change', aplicarFiltros);
+
+    document.getElementById('selectFiltroTipoOperacion')
+      .addEventListener('change', aplicarFiltros);
+
+    // Cargar opciones para ambos filtros al iniciar
+    cargarSelectFiltroEquipos();
+    cargarSelectFiltroTipoOperacion();
+  });
+
+  function loadEquipmentTable() {
+  const tbody = document.getElementById('downtimeTableBody');
+  tbody.innerHTML = '';
+
+  cargando();
+
+  fetch('@Url.Action("GetTagsByPlantAndEquipment", "Tag")', { credentials: 'include' })
+    .then(async (response) => {
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      // Intenta parsear JSON; si te devolvieran HTML por redirección, esto fallará:
+      return await response.json();
+    })
+    .then(payload => {
+      // Esperamos { success: bool, data: [...] }
+      if (!payload || typeof payload !== 'object') {
+        alert('Respuesta inválida (no es objeto).');
+        return;
+      }
+      if (!payload.success) {
+        // Muestra el mensaje real del backend
+        alert(payload.message || 'Solicitud no exitosa.');
+        return;
+      }
+      if (!Array.isArray(payload.data)) {
+        alert('Respuesta inválida (data no es arreglo).');
+        return;
+      }
+
+      payload.data.forEach(item => {
+        const row = document.createElement('tr');
+        row.setAttribute('data-equipo-id', item._equipoId != null ? String(item._equipoId) : '');
+        row.setAttribute('data-tipo-id',   item._tipoOperacionId != null ? String(item._tipoOperacionId) : '');
+
+        row.innerHTML = `
+          <td class="text-center">
+            ${item._activo
+              ? '<i class="bi bi-check-circle-fill text-success"></i>'
+              : '<i class="bi bi-x-circle-fill text-danger"></i>'
+            }
+          </td>
+          <td class="text-center">${item._descripcion || ''}</td>
+          <td class="text-center">${item._tagCode || ''}</td>
+          <td class="text-center">${item._tipoOperacionDescripcion || ''}</td>
+          <td class="text-center">${item._equipoDescripcion || ''}</td>
+          <td class="text-center bg-white">
+            <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditarTag(${item._tagEquipoId})">
+              <i class="bi bi-pencil me-2"></i>
+            </a>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      aplicarFiltros();
+    })
+    .catch(error => {
+      console.error('Error cargando la tabla de equipos:', error);
+      alert('Ocurrió un error al cargar los equipos.');
+    })
+    .finally(() => {
+      document.getElementById('loadingModal').style.display = 'none';
+    });
 }
+
 
 
 

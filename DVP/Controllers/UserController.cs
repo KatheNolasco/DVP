@@ -144,14 +144,58 @@ namespace DVP.Controllers
         {
             try
             {
+
+                string desc = (model._descripcion ?? "").Trim();
+                string emailIn = (model._email ?? "").Trim();
+                string nombre = (model._nombre ?? "").Trim();
+                string adIn = (model._aDUsername ?? "").Trim();
+                string userIdProg = (model._userIdProgreso ?? "").Trim();
+                string numEmp = (model._numeroEmpleado ?? "").Trim();
+                string plainPwd = (model._contraseñaHash ?? "").Trim();
+
+
+                if (!model._plantaId.HasValue || model._plantaId.Value <= 0)
+                    ModelState.AddModelError(nameof(model._plantaId), "La Planta es obligatoria.");
+
+                if (!model._unidadOperativaId.HasValue || model._unidadOperativaId.Value <= 0)
+                    ModelState.AddModelError(nameof(model._unidadOperativaId), "La Unidad Operativa es obligatoria.");
+
+                if (!model._paisId.HasValue || model._paisId.Value <= 0)
+                    ModelState.AddModelError(nameof(model._paisId), "El País es obligatorio.");
+
+                if (!model._gerenciaId.HasValue || model._gerenciaId.Value <= 0)
+                    ModelState.AddModelError(nameof(model._gerenciaId), "La Gerencia es obligatoria.");
+
+                if (!model._rolId.HasValue || model._rolId.Value <= 0)
+                    ModelState.AddModelError(nameof(model._rolId), "El Rol es obligatorio.");
+
+
+                if (!model._esAD && string.IsNullOrWhiteSpace(plainPwd))
+                    ModelState.AddModelError(nameof(model._contraseñaHash), "La contraseña es obligatoria para usuarios no-AD.");
+
+
+                if (!ModelState.IsValid)
+                {
+                    var errs = ModelState.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).Where(m => !string.IsNullOrWhiteSpace(m)).ToArray()
+                    );
+                    return Json(new { success = false, message = "Datos inválidos.", errors = errs });
+                }
+
                 if (ModelState.IsValid)
                 {
+
+                    string email = emailIn.ToLower();
+                    string ad = adIn.ToLower();
+
                     bool yaExiste = _dvpEntities.Usuario.Any(u =>
-                        u.UserIdProgreso == model._userIdProgreso ||
-                        u.Email == model._email ||
-                        u.ADUsername == model._aDUsername ||
-                        u.Nombre == model._nombre ||
-                        u.NumeroEmpleado == model._numeroEmpleado);
+                        u.UserIdProgreso == userIdProg ||
+                        u.Email.ToLower() == email ||
+                        u.ADUsername.ToLower() == ad ||
+                        u.Nombre == nombre ||
+                        u.NumeroEmpleado == numEmp
+                    );
 
                     if (yaExiste)
                     {
@@ -162,25 +206,31 @@ namespace DVP.Controllers
                         });
                     }
 
-                    string salt = GenerarSalt();
-                    string hashConSalt = HashearContraseña(model._contraseñaHash, salt);
+
+                    string salt = null;
+                    string hashConSalt = null;
+                    if (!model._esAD)
+                    {
+                        salt = GenerarSalt();
+                        hashConSalt = HashearContraseña(plainPwd, salt);
+                    }
 
                     var nuevoUsuario = new Usuario
                     {
-                        Descripcion = model._descripcion,
-                        Email = model._email,
-                        Nombre = model._nombre,
+                        Descripcion = desc,
+                        Email = model._email,      
+                        Nombre = nombre,
                         ContraseñaHash = hashConSalt,
                         Salt = salt,
-                        ADUsername = model._aDUsername,
+                        ADUsername = model._aDUsername, 
                         EsAD = model._esAD,
-                        NumeroEmpleado = model._numeroEmpleado,
-                        PlantaID = model._plantaId,
-                        UnidadOperativaID = model._unidadOperativaId,
-                        PaisID = model._paisId,
-                        GerenciaID = model._gerenciaId,
+                        NumeroEmpleado = numEmp,
+                        PlantaID = model._plantaId.Value,
+                        UnidadOperativaID = model._unidadOperativaId.Value,
+                        PaisID = model._paisId.Value,
+                        GerenciaID = model._gerenciaId.Value,
                         Active = model._active,
-                        UserIdProgreso = model._userIdProgreso,
+                        UserIdProgreso = userIdProg,
                     };
 
                     _dvpEntities.Usuario.Add(nuevoUsuario);
@@ -205,6 +255,7 @@ namespace DVP.Controllers
                 return Json(new { success = false, message = "Error al crear el usuario: " + ex.Message });
             }
         }
+
 
         [HttpPost]
         public JsonResult Edit(DVP.Models.UserViewModel data)
@@ -332,7 +383,6 @@ namespace DVP.Controllers
             return Json(new { success = true, data = usuarios }, JsonRequestBehavior.AllowGet);
         }
 
-
         [HttpPost]
         public JsonResult GuardarElementoConfiguracion(DVP.Models.UserViewModel model)
         {
@@ -385,6 +435,15 @@ namespace DVP.Controllers
                         _dvpEntities.Gerencia.Add(gerencia);
                         break;
 
+                    case "Proceso":
+                        var proceso = new Proceso
+                        {
+                            Descripcion = desc,
+                            Active = true
+                        };
+                        _dvpEntities.Proceso.Add(proceso);
+                        break;
+
                     default:
                         return Json(new { success = false, message = "Tipo desconocido." });
                 }
@@ -432,31 +491,37 @@ namespace DVP.Controllers
                 {
                     case "Planta":
                         listado = _dvpEntities.Planta
-                            .Select(p => new { _descripcion = p.Descripcion, _codigoSAPProgreso = p.CodigoSAPProgreso, _active = p.Active })
+                            .Select(p => new { _plantaId = p.PlantaID, _descripcion = p.Descripcion, _codigoSAPProgreso = p.CodigoSAPProgreso, _active = p.Active })
                             .ToList<object>();
                         break;
 
                     case "UnidadOperativa":
                         listado = _dvpEntities.UnidadOperativa
-                            .Select(u => new { _descripcion = u.Descripcion, _codigoSAPProgreso = "", _active = u.Active })
+                            .Select(u => new { _unidadOperativaId = u.UnidadOperativaID, _descripcion = u.Descripcion, _codigoSAPProgreso = "", _active = u.Active })
                             .ToList<object>();
                         break;
 
                     case "Pais":
                         listado = _dvpEntities.Pais
-                            .Select(p => new { _descripcion = p.Descripcion, _codigoSAPProgreso = p.CodigoSAPNuevo, _active = p.Active })
+                            .Select(p => new { _paisId = p.PaisID, _descripcion = p.Descripcion, _codigoSAPProgreso = p.CodigoSAPNuevo, _active = p.Active })
                             .ToList<object>();
                         break;
 
                     case "Gerencia":
                         listado = _dvpEntities.Gerencia
-                            .Select(g => new { _descripcion = g.Descripcion, _codigoSAPProgreso = "", _active = g.Active })
+                            .Select(g => new { _gerenciaId = g.GerenciaID, _descripcion = g.Descripcion, _codigoSAPProgreso = "", _active = g.Active })
                             .ToList<object>();
                         break;
 
                     case "Rol":
                         listado = _dvpEntities.Rol
-                            .Select(r => new { _descripcion = r.Descripcion, _codigoSAPProgreso = "", _active = r.Active })
+                            .Select(r => new { _rolId = r.RolID, _descripcion = r.Descripcion, _codigoSAPProgreso = "", _active = r.Active })
+                            .ToList<object>();
+                        break;
+
+                    case "Proceso":
+                        listado = _dvpEntities.Proceso
+                            .Select(p => new { _procesoId = p.ProcesoID, _descripcion = p.Descripcion, _active = p.Active })
                             .ToList<object>();
                         break;
 
@@ -472,8 +537,6 @@ namespace DVP.Controllers
             }
         }
 
-
-
         [HttpPost]
         public JsonResult ActualizarElementoConfiguracion(DVP.Models.UserViewModel model)
         {
@@ -482,7 +545,7 @@ namespace DVP.Controllers
                 switch (model._tipo)
                 {
                     case "Planta":
-                        var planta = _dvpEntities.Planta.FirstOrDefault(p => p.Descripcion == model._descripcion);
+                        var planta = _dvpEntities.Planta.FirstOrDefault(p => p.PlantaID == model._plantaId);
                         if (planta == null)
                             return Json(new { success = false, message = "Planta no encontrada" });
 
@@ -492,7 +555,7 @@ namespace DVP.Controllers
                         break;
 
                     case "UnidadOperativa":
-                        var unidad = _dvpEntities.UnidadOperativa.FirstOrDefault(u => u.Descripcion == model._descripcion);
+                        var unidad = _dvpEntities.UnidadOperativa.FirstOrDefault(u => u.UnidadOperativaID == model._unidadOperativaId);
                         if (unidad == null)
                             return Json(new { success = false, message = "Unidad Operativa no encontrada" });
 
@@ -501,7 +564,7 @@ namespace DVP.Controllers
                         break;
 
                     case "Pais":
-                        var pais = _dvpEntities.Pais.FirstOrDefault(p => p.Descripcion == model._descripcion);
+                        var pais = _dvpEntities.Pais.FirstOrDefault(p => p.PaisID == model._paisId);
                         if (pais == null)
                             return Json(new { success = false, message = "País no encontrado" });
 
@@ -510,12 +573,21 @@ namespace DVP.Controllers
                         break;
 
                     case "Gerencia":
-                        var gerencia = _dvpEntities.Gerencia.FirstOrDefault(g => g.Descripcion == model._descripcion);
+                        var gerencia = _dvpEntities.Gerencia.FirstOrDefault(g => g.GerenciaID == model._gerenciaId);
                         if (gerencia == null)
                             return Json(new { success = false, message = "Gerencia no encontrada" });
 
                         gerencia.Descripcion = model._descripcion;
                         gerencia.Active = model._active;
+                        break;
+
+                    case "Proceso":
+                        var proceso = _dvpEntities.Proceso.FirstOrDefault(g => g.ProcesoID == model._procesoId);
+                        if (proceso == null)
+                            return Json(new { success = false, message = "Proceso no encontrado" });
+
+                        proceso.Descripcion = model._descripcion;
+                        proceso.Active = model._active;
                         break;
 
                     default:

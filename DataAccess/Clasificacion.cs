@@ -25,6 +25,7 @@ namespace DataAccess
         public string Descripcion { get; set; }
         public Nullable<bool> Ajeno { get; set; }
         public Nullable<bool> AfectaTMEF { get; set; }
+        public string CodigoDet { get; set; }
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<Paros> Paros { get; set; }

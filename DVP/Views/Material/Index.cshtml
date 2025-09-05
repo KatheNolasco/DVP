@@ -108,12 +108,8 @@
                                                     <th class="text-center">Status</th>
                                                     <th class="text-center">Description</th>
                                                     <th class="text-center">New SAP code</th>
-                                                    <th class="text-center">Old SAP code</th>
-                                                    <th class="text-center">Produced</th>
-                                                    <th class="text-center">Material Classification</th>
-                                                    <th class="text-center">Alternate</th>
-                                                    <th class="text-center">Affects Inventory</th>
                                                     <th class="text-center">ID Stock</th>
+                                                    <th class="text-center">Unidad Medida</th>
                                                     <th class="text-center">Actions</th>
                                                 </tr>
                                             </thead>
@@ -143,94 +139,104 @@
             </div>
         </div>
 
+        @*______________________________________________________________________Modal crear  _________________________________________________________________________*@
 
-
-
-        @*______________________________________________________________________Modal crear equipo _________________________________________________________________________*@
-
-        <div class="modal fade" id="newMaterial" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="card-body">
-                            <div class="card">
-                                <form>
-                                    <div class="card-body">
-                                        <h4 class="card-title fw-semibold mb-2">Add New Material</h4>
-                                        <br />
-                                    </div>
-                                    <div class="row">
-                                        <!-- Columna izquierda -->
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label class="form-label">Descripción</label>
-                                                <input type="text" class="form-control" id="_descripcion" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Código SAP Nuveo</label>
-                                                <input type="text" class="form-control" id="_codSAPNuevo" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Código SAP Antiguo</label>
-                                                <input type="text" class="form-control" id="_codOldSAP" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">ID STOCK</label>
-                                                <input type="text" class="form-control" id="_idStock" required>
-                                            </div>
+         <div class="modal fade" id="newMaterial" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+           <div class="modal-dialog modal-lg">
+              <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="card-body">
+                        <div class="card">
+                            <!-- Formulario con validación -->
+                            <form id="formNewMaterial" novalidate>
+                                <div class="card-body">
+                                    <h4 class="card-title fw-semibold mb-2">Add New Material</h4>
+                                    <br />
+                                </div>
+                                <div class="row">
+                                    <!-- Columna izquierda -->
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Descripción</label>
+                                            <input type="text" class="form-control" id="_descripcion" name="Descripcion" required>
                                         </div>
-
-                                        <!-- Columna derecha -->
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label class="form-label">Clasificación Material</label>
-                                                <select class="form-select" id="_clasificacionMaterialID">
-                                                    <option value="">Seleccione una clasificación</option>
-                                                </select>
-                                            </div>
-                                            <!-- Switches -->
-                                            <div class="form-check form-switch mb-3">
-                                                <input class="form-check-input" type="checkbox" id="_producido">
-                                                <label class="form-check-label" for="_producido">Producido</label>
-                                            </div>
-                                            <div class="form-check form-switch mb-3">
-                                                <input class="form-check-input" type="checkbox" id="_alterno">
-                                                <label class="form-check-label" for="_alterno">Alterno</label>
-                                            </div>
-                                            <div class="form-check form-switch mb-3">
-                                                <input class="form-check-input" type="checkbox" id="_afectaInventario">
-                                                <label class="form-check-label" for="_afectaInventario">Afecta Inventario</label>
-                                            </div>
-                                            <div class="form-check form-switch mb-3">
-                                                <input class="form-check-input" type="checkbox" id="_activo">
-                                                <label class="form-check-label" for="_activo">Activo</label>
-                                            </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Código SAP Nuevo</label>
+                                            <input type="text" class="form-control" id="_codSAPNuevo" name="CodSAPNuevo" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Código SAP Antiguo</label>
+                                            <input type="text" class="form-control" id="_codOldSAP" name="CodOldSAP" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">ID STOCK</label>
+                                            <input type="text" class="form-control" id="_idStock" name="IDStock" required>
                                         </div>
                                     </div>
 
-                                    <!-- Botón y alerta -->
-                                    <div class="text-end mt-3">
-                                        <button type="button" id="crear" class="btn btn-outline-success m-1"
-                                                data-url="@Url.Action("Create", "Material")">
-                                            Crear <span class="text-success ms-2">&#10004;</span>
-                                        </button>
+                                    <!-- Columna derecha -->
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Clasificación Material</label>
+                                            <select class="form-select" id="_clasificacionMaterialID" name="ClasificacionMaterialID" required>
+                                                <option value="">Seleccione una clasificación</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Planta</label>
+                                            <select class="form-select" id="_plantaId" name="PlantaID" required>
+                                                <option value="">Seleccione una Planta</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Unidad Medida</label>
+                                            <select class="form-select" id="_unidadMedidaId" name="UnidadMedidaID" required>
+                                                <option value="">Seleccione una Unidad Medida</option>
+                                            </select>
+                                        </div>
+                                        <!-- Switches -->
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="_producido" name="Producido">
+                                            <label class="form-check-label" for="_producido">Producido</label>
+                                        </div>
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="_alterno" name="Alterno">
+                                            <label class="form-check-label" for="_alterno">Alterno</label>
+                                        </div>
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="_afectaInventario" name="AfectaInventario">
+                                            <label class="form-check-label" for="_afectaInventario">Afecta Inventario</label>
+                                        </div>
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="_activo" name="Activo">
+                                            <label class="form-check-label" for="_activo">Activo</label>
+                                        </div>
                                     </div>
+                                </div>
 
-                                    <div id="alertSuccess" class="alert alert-success mt-3" role="alert" style="display: none;">
-                                        ¡Creado exitosamente!
-                                    </div>
-                                </form>
-                            </div>
+                                <!-- Botón y alerta -->
+                                <div class="text-end mt-3">
+                                    <button type="submit" id="crear" class="btn btn-outline-success m-1"
+                                            data-url="@Url.Action("Create", "Material")">
+                                        Crear <span class="text-success ms-2">&#10004;</span>
+                                    </button>
+                                </div>
+
+                                <div id="alertSuccess" class="alert alert-success mt-3" role="alert" style="display: none;">
+                                    ¡Creado exitosamente!
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        @*_____________________________________________________________________________ Modal para Editar equipo ___________________________________________________________________*@
+        @*_____________________________________________________________________________ Modal para Editar  ___________________________________________________________________*@
         <div class="modal fade" id="editar" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
@@ -263,6 +269,10 @@
                                                     <label class="form-label">Código SAP Viejo</label>
                                                     <input type="text" class="form-control" id="_codOldSAPeditar" required>
                                                 </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">ID Stock</label>
+                                                    <input type="text" class="form-control" id="_idStockeditar" required>
+                                                </div>
                                             </div>
 
                                             <!-- Columna derecha -->
@@ -271,6 +281,18 @@
                                                     <label class="form-label">Clasificación Material</label>
                                                     <select class="form-select" id="_clasificacionMaterialIdeditar">
                                                         <option value="">Seleccione una clasificación</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Planta</label>
+                                                    <select class="form-select" id="_plantaIdeditar">
+                                                        <option value="">Seleccione una Planta</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Unidad Medida</label>
+                                                    <select class="form-select" id="_unidadMedidaIdeditar">
+                                                        <option value="">Seleccione una Planta</option>
                                                     </select>
                                                 </div>
                                                 <div class="form-check form-switch mb-3">
@@ -289,10 +311,6 @@
                                                 <div class="form-check form-switch mb-3">
                                                     <input class="form-check-input" type="checkbox" id="_producidoeditar">
                                                     <label class="form-check-label" for="_producidoeditar">Producido</label>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">ID Stock</label>
-                                                    <input type="text" class="form-control" id="_idStockeditar" required>
                                                 </div>
                                             </div>
                                         </div>
@@ -356,12 +374,20 @@
 
     function cargarCombos() {
     // Limpiar selects
-    limpiarSelect("_clasificacionMaterialID");
+        limpiarSelect("_clasificacionMaterialID");
+        limpiarSelect("_plantaId");
+
 
     // Llamadas AJAX a cada endpoint
     fetch('@Url.Action("GetClasificacionMaterial", "Material")')
         .then(response => response.json())
-        .then(data => llenarSelect("_clasificacionMaterialID", data, "ClasificacionMaterialID", "Descripcion"));
+            .then(data => llenarSelect("_clasificacionMaterialID", data, "ClasificacionMaterialID", "Descripcion"));
+    fetch('@Url.Action("GetPlanta", "Equipo")')
+    .then(response => response.json())
+            .then(data => llenarSelect("_plantaId", data, "PlantaID", "Descripcion"));
+    fetch('@Url.Action("GetUnidadMedida", "DatosOperacion")')
+         .then(response => response.json())
+        .then(data => llenarSelect("_unidadMedidaId", data, "UnidadMedidaID", "Descripcion"));
 }
 
     function llenarSelect(selectId, data, valueField, textField) {
@@ -390,6 +416,8 @@
         const codOldSAP = document.getElementById("_codOldSAP").value.trim();
         const idStock = document.getElementById("_idStock").value.trim();
         const clasificacionMaterialID = document.getElementById("_clasificacionMaterialID").value;
+        const plantaId = document.getElementById("_plantaId").value;
+        const unidadMedidaId = document.getElementById("_unidadMedidaId").value;
         const producido = document.getElementById("_producido").checked;
         const alterno = document.getElementById("_alterno").checked;
         const afectaInventario = document.getElementById("_afectaInventario").checked;
@@ -404,10 +432,12 @@
             _codOldSAP: codOldSAP,
             _idStock: idStock,
             _clasificacionMaterialID: parseInt(clasificacionMaterialID),
+            _plantaId: parseInt(plantaId),
             _producido: producido,
             _alterno: alterno,
             _afectaInventario: afectaInventario,
-            _activo: activo
+            _activo: activo,
+            _unidadMedidaId: unidadMedidaId
         };
 
         // Enviar al backend vía fetch
@@ -444,6 +474,13 @@
             });
     }
 
+    document.getElementById('formNewMaterial').addEventListener('submit', function (e) {
+        if (!this.checkValidity()) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        this.classList.add('was-validated'); // estilos bootstrap
+    });
     //____________________________________________________________________ Mostrar datatable_______________________________________________//
 
 
@@ -465,32 +502,28 @@
                 return;
             }
 
-            // Filtrar solo los activos
-            const materialesActivos = data.data.filter(item => item._activo === true);
+            // 👉 Mostrar TODOS (sin filtrar por _activo)
+            const materiales = data.data;
 
-            materialesActivos.forEach(item => {
+            materiales.forEach(item => {
                 const row = document.createElement('tr');
+
+                const iconActivo = item._activo
+                    ? '<i class="bi bi-check-circle-fill text-success"></i>'
+                    : '<i class="bi bi-x-circle-fill text-danger"></i>';
 
                 row.innerHTML = `
                     <td class="text-center">
-                        <i class="bi bi-check-circle-fill text-success"></i>
+                        ${iconActivo}
                     </td>
                     <td class="text-center">${item._descripcion || ''}</td>
                     <td class="text-center">${item._codSAPNuevo || ''}</td>
-                    <td class="text-center">${item._codOldSAP || ''}</td>
-                    <td class="text-center">
-                        ${item._producido ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}
-                    </td>
-                    <td class="text-center">${item._clasificacionMaterialdescripcion || ''}</td>
-                    <td class="text-center">
-                        ${item._alterno ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}
-                    </td>
-                    <td class="text-center">
-                        ${item._afectaInventario ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}
-                    </td>
                     <td class="text-center">${item._idStock || ''}</td>
+                    <td class="text-center">${item._unidadDescripcion || ''}</td>
                     <td class="text-center bg-white">
-                        <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditar(${item._materialID})"><i class="bi bi-pencil me-2"></i></a>
+                        <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditar(${item._materialID})">
+                            <i class="bi bi-pencil me-2"></i>
+                        </a>
                     </td>
                 `;
 
@@ -502,9 +535,12 @@
             alert("Ocurrió un error al cargar los materiales.");
         })
         .finally(() => {
-            document.getElementById("loadingModal").style.display = "none";
+            // Ocultar modal de carga
+            const lm = document.getElementById("loadingModal");
+            if (lm) lm.style.display = "none";
         });
 }
+
 
 
 
@@ -512,112 +548,194 @@
     //____________________________________________________________________ Editar _________________________________________________________________//
 
 
-    function abrirModalEditar(materialId) {
-    // Mostrar cargando
-    document.getElementById("loadingModal").style.display = "block";
+  function abrirModalEditar(materialId) {
+  document.getElementById("loadingModal").style.display = "block";
 
-    // Obtener clasificaciones primero
-    fetch('@Url.Action("GetClasificacionMaterial", "Material")')
-        .then(res => res.json())
-        .then(clasificaciones => {
-            const select = document.getElementById('_clasificacionMaterialIdeditar');
+  const urlClasif   = '@Url.Action("GetClasificacionMaterial", "Material")';
+  const urlPlantas  = '@Url.Action("GetPlanta", "Equipo")';
+  const urlUnidades = '@Url.Action("GetUnidadMedida", "DatosOperacion")';
+  const urlMaterial = '@Url.Action("GetMaterialId", "Material")' + '?materialId=' + encodeURIComponent(materialId);
 
-            // Limpiar opciones actuales
-            select.innerHTML = '<option value="">Seleccione una clasificación</option>';
+  const cargarClasificaciones = fetch(urlClasif).then(r => r.json());
+  const cargarPlantas        = fetch(urlPlantas).then(r => r.json());
+  const cargarUnidades       = fetch(urlUnidades).then(r => r.json());
 
-            // Llenar select con opciones
-            clasificaciones.forEach(item => {
-                const option = document.createElement('option');
-                option.value = item.ClasificacionMaterialID;
-                option.textContent = item.Descripcion;
-                select.appendChild(option);
-            });
+  Promise.all([cargarClasificaciones, cargarPlantas, cargarUnidades])
+    .then(([clasificaciones, plantas, unidades]) => {
+      // Clasificación
+      const selClas = document.getElementById('_clasificacionMaterialIdeditar');
+      selClas.innerHTML = '<option value="">Seleccione una clasificacion</option>';
+      (clasificaciones || []).forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = String(item.ClasificacionMaterialID);
+        opt.textContent = item.Descripcion;
+        selClas.appendChild(opt);
+      });
 
-            // Luego obtener el material
-            return fetch('@Url.Action("GetMaterialId", "Material")' + '?materialId=' + materialId);
-        })
-        .then(res => res.json())
-        .then(result => {
-            if (result.success) {
-                const data = result.data;
+      // Plantas
+      const selPlanta = document.getElementById('_plantaIdeditar');
+      selPlanta.innerHTML = '<option value="">Seleccione una Planta</option>';
+      (plantas || []).forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = String(p.PlantaID);
+        opt.textContent = (p.Descripcion && p.Descripcion.trim()) ? p.Descripcion.trim() : ('Planta ' + p.PlantaID);
+        selPlanta.appendChild(opt);
+      });
 
-                // Llenar campos
-                document.getElementById("materialidhidden").value = data._materialID;
-                document.getElementById("_descripcioneditar").value = data._descripcion;
-                document.getElementById("_codSAPNuevoeditar").value = data._codSAPNuevo;
-                document.getElementById("_codOldSAPeditar").value = data._codOldSAP;
-                document.getElementById("_producidoeditar").checked = data._producido;
-                document.getElementById("_clasificacionMaterialIdeditar").value = data._clasificacionMaterialID?.toString() || "";
-                document.getElementById("_activoedit").checked = data._activo;
-                document.getElementById("_alternoeditar").checked = data._alterno;
-                document.getElementById("_afectaInventarioeditar").checked = data._afectaInventario;
-                document.getElementById("_idStockeditar").value = data._idStock;
-
-                // Mostrar el modal de edición
-                const modalElement = document.getElementById("editar");
-                const modal = new bootstrap.Modal(modalElement);
-                modal.show();
-            } else {
-                alert("No se encontró el material.");
-            }
-        })
-        .catch(error => {
-            console.error("Error al obtener los datos del material o clasificaciones:", error);
-            alert("Ocurrió un error al cargar los datos.");
-        })
-        .finally(() => {
-            // Ocultar cargando siempre al final
-            document.getElementById("loadingModal").style.display = "none";
+      // Unidades de Medida
+      const selUnidad = document.getElementById('_unidadMedidaIdeditar');
+      if (selUnidad) {
+        selUnidad.innerHTML = '<option value="">Seleccione una unidad</option>';
+        (unidades || []).forEach(u => {
+          const opt = document.createElement('option');
+          opt.value = String(u.UnidadMedidaID);
+          opt.textContent = u.Descripcion;
+          selUnidad.appendChild(opt);
         });
-}
+      }
 
-
-
-
-    function submitEditForm() {
-    cargando();
-
-    const data = {
-        _materialId: document.getElementById("materialidhidden").value,
-        _descripcion: document.getElementById("_descripcioneditar").value,
-        _codSAPNuevo: document.getElementById("_codSAPNuevoeditar").value,
-        _codOldSAP: document.getElementById("_codOldSAPeditar").value,
-        _producido: document.getElementById("_producidoeditar").checked,
-        _clasificacionMaterialID: document.getElementById("_clasificacionMaterialIdeditar").value,
-        _activo: document.getElementById("_activoedit").checked,
-        _alterno: document.getElementById("_alternoeditar").checked,
-        _afectaInventario: document.getElementById("_afectaInventarioeditar").checked,
-        _idStock: document.getElementById("_idStockeditar").value
-    };
-
-    fetch('@Url.Action("Edit", "Material")', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
+      // Ahora obtener el material
+      return fetch(urlMaterial);
     })
     .then(res => res.json())
-    .then(response => {
-        if (response.success) {
-            document.getElementById("alertEditSuccess").style.display = "block";
+    .then(result => {
+      if (!result || !result.success) {
+        alert("No se encontro el material.");
+        return;
+      }
 
-            setTimeout(() => {
-                document.getElementById("alertEditSuccess").style.display = "none";
-                const modal = bootstrap.Modal.getInstance(document.getElementById("editar"));
-                modal.hide();
-                location.reload();
-            }, 2000);
-        } else {
-            alert("Error: " + response.message);
+      const data = result.data || {};
+
+      // Campos base
+      document.getElementById("materialidhidden").value = data._materialID ?? '';
+      document.getElementById("_descripcioneditar").value = data._descripcion || "";
+      document.getElementById("_codSAPNuevoeditar").value = data._codSAPNuevo || "";
+      document.getElementById("_codOldSAPeditar").value = data._codOldSAP || "";
+      document.getElementById("_producidoeditar").checked = !!data._producido;
+      document.getElementById("_clasificacionMaterialIdeditar").value = (data._clasificacionMaterialID ?? "").toString();
+      document.getElementById("_activoedit").checked = !!data._activo;
+      document.getElementById("_alternoeditar").checked = !!data._alterno;
+      document.getElementById("_afectaInventarioeditar").checked = !!data._afectaInventario;
+      document.getElementById("_idStockeditar").value = data._idStock || "";
+
+      // Planta
+      const plantaFromData = data._plantaId;
+      if (plantaFromData !== null && plantaFromData !== undefined) {
+        const selPlanta = document.getElementById('_plantaIdeditar');
+        const v = String(plantaFromData).trim();
+        selPlanta.value = v;
+        if (selPlanta.value !== v) {
+          const opt = document.createElement('option');
+          opt.value = v;
+          const desc = data._plantaDescripcion || data.PlantaDescripcion || `Planta ${v}`;
+          opt.textContent = String(desc);
+          selPlanta.appendChild(opt);
+          selPlanta.value = v;
         }
+      }
+
+      // Unidad de Medida (soporta _unidadMedidaID o _unidadMedidaId)
+      const unidadFromData = (data._unidadMedidaID ?? data._unidadMedidaId ?? data.UnidadMedidaID ?? data.UnidadMedidaId);
+      const selUnidad = document.getElementById('_unidadMedidaIdeditar');
+      if (selUnidad) {
+        if (unidadFromData !== null && unidadFromData !== undefined && String(unidadFromData) !== "") {
+          const vUM = String(unidadFromData).trim();
+          selUnidad.value = vUM;
+
+          // Si no existe en el combo, agregarlo on-the-fly
+          if (selUnidad.value !== vUM) {
+            const opt = document.createElement('option');
+            opt.value = vUM;
+            const descUM = data._unidadMedidaDescripcion || data.UnidadMedidaDescripcion || `UM ${vUM}`;
+            opt.textContent = String(descUM);
+            selUnidad.appendChild(opt);
+            selUnidad.value = vUM;
+          }
+        } else {
+          if (!selUnidad.querySelector('option[value=""]')) {
+            const opt = document.createElement('option');
+            opt.value = "";
+            opt.textContent = "Seleccione una unidad";
+            selUnidad.insertBefore(opt, selUnidad.firstChild);
+          }
+          selUnidad.value = "";
+        }
+      }
+
+      // Mostrar modal
+      const modalElement = document.getElementById("editar");
+      const modal = new bootstrap.Modal(modalElement);
+      modal.show();
     })
-    .catch(error => {
-        console.error("Error al enviar datos:", error);
-        alert("Ocurrió un error al enviar los datos.");
+    .catch(err => {
+      console.error("Error al cargar datos:", err);
+      alert("Ocurrio un error al cargar los datos.");
+    })
+    .finally(() => {
+      document.getElementById("loadingModal").style.display = "none";
     });
 }
 
+  function submitEditForm() {
+  cargando();
+
+  const plantaVal = document.getElementById('_plantaIdeditar')?.value || '';
+  const plantaID = plantaVal === '' ? null : parseInt(plantaVal, 10);
+
+  const clasifVal = document.getElementById('_clasificacionMaterialIdeditar')?.value || '';
+  const materialIdVal = document.getElementById('materialidhidden')?.value || '';
+
+  // Unidad de Medida
+  const umVal = document.getElementById('_unidadMedidaIdeditar')?.value || '';
+  const unidadMedidaID = umVal === '' ? null : parseInt(umVal, 10);
+
+  const data = {
+    _materialId: materialIdVal === '' ? null : parseInt(materialIdVal, 10),
+    _descripcion: (document.getElementById('_descripcioneditar').value || '').trim(),
+    _codSAPNuevo: (document.getElementById('_codSAPNuevoeditar').value || '').trim(),
+    _codOldSAP: (document.getElementById('_codOldSAPeditar').value || '').trim(),
+    _producido: document.getElementById('_producidoeditar').checked,
+    _clasificacionMaterialID: clasifVal === '' ? null : parseInt(clasifVal, 10),
+    _activo: document.getElementById('_activoedit').checked,
+    _alterno: document.getElementById('_alternoeditar').checked,
+    _afectaInventario: document.getElementById('_afectaInventarioeditar').checked,
+    _idStock: (document.getElementById('_idStockeditar').value || '').trim(),
+    _plantaID: plantaID,
+    _unidadMedidaID: unidadMedidaID   // <<< AQUI se envía la UM
+  };
+
+  fetch('@Url.Action("Edit", "Material")', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+    credentials: 'same-origin'
+  })
+  .then(res => {
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  })
+  .then(response => {
+    if (response.success) {
+      document.getElementById('alertEditSuccess').style.display = 'block';
+      setTimeout(() => {
+        document.getElementById('alertEditSuccess').style.display = 'none';
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editar'));
+        if (modal) modal.hide();
+        location.reload();
+      }, 1200);
+    } else {
+      alert('Error: ' + (response.message || 'No se pudo guardar'));
+    }
+  })
+  .catch(error => {
+    console.error('Error al enviar datos:', error);
+    alert('Ocurrio un error al enviar los datos.');
+  })
+  .finally(() => {
+    const lm = document.getElementById('loadingModal');
+    if (lm) lm.style.display = 'none';
+  });
+}
 
 
 

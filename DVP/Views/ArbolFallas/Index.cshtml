@@ -157,9 +157,22 @@
             </div>
         </div>
     </div>
+
+    @*___________________________________________________________________Modal Cargando__________________________________________________*@
+    <div id="loadingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: rgba(0, 0, 0, 0.5);">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 25px 35px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.3); min-width: 250px;">
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <img src="/Content/loading-green-loading.gif" alt="Cargando..." style="width: 40px; height: 40px; margin-right: 15px;" />
+                <span style="color: black; font-size: 16px;">Cargando...</span>
+            </div>
+        </div>
+    </div>
+
 </body>
 
 <script>
+
+
     document.addEventListener("DOMContentLoaded", function () {
         const select = document.getElementById('_elememnto'); // si tu select real es _elemento, cambia este id
         const contenedor = document.getElementById('camposContainer');
@@ -251,7 +264,7 @@
 
             if (!equipoId || Number(equipoId) <= 0) {
                 sel.innerHTML = '<option value="">Seleccione un equipo primero</option>';
-                return Promise.resolve([]);
+                return Promise.resolve([]); // no lanzar error
             }
 
             sel.disabled = true;
@@ -302,7 +315,6 @@
             });
         }
 
-
         // Helper: cargar clasificaciones
         const loadClasificaciones = (selectId) => {
             const sel = document.getElementById(selectId);
@@ -339,7 +351,7 @@
 
             if (!subequipoId || Number(subequipoId) <= 0) {
                 sel.innerHTML = '<option value="">Seleccione un subequipo primero</option>';
-                return Promise.resolve([]);
+                return Promise.resolve([]); // no lanzar error
             }
 
             sel.disabled = true;
@@ -382,37 +394,37 @@
             switch (valor) {
                 case '1':
                     contenedor.innerHTML = `
-                <div class="mb-3">
-                    <label class="form-label">Descripcion</label>
-                    <input type="text" class="form-control" id="_descripcion" required />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Equipo</label>
-                    <select class="form-control" id="_equipoId" required>
-                        <option value="">Cargando equipos...</option>
-                    </select>
-                </div>`;
+            <div class="mb-3">
+                <label class="form-label">Descripcion</label>
+                <input type="text" class="form-control" id="_descripcion" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Equipo</label>
+                <select class="form-control" id="_equipoId" required>
+                    <option value="">Cargando equipos...</option>
+                </select>
+            </div>`;
                     loadEquipos('_equipoId');
                     break;
 
                 case '2':
                     contenedor.innerHTML = `
-                <div class="mb-3">
-                    <label class="form-label">Descripcion</label>
-                    <input type="text" class="form-control" id="_descripcion" required />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Equipo</label>
-                    <select class="form-control" id="_equipoIdForSub" required>
-                        <option value="">Cargando...</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Subequipo</label>
-                    <select class="form-control" id="_subequipoId" required>
-                        <option value="">Seleccione un equipo primero</option>
-                    </select>
-                </div>`;
+            <div class="mb-3">
+                <label class="form-label">Descripcion</label>
+                <input type="text" class="form-control" id="_descripcion" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Equipo</label>
+                <select class="form-control" id="_equipoIdForSub" required>
+                    <option value="">Cargando...</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Subequipo</label>
+                <select class="form-control" id="_subequipoId" required>
+                    <option value="">Seleccione un equipo primero</option>
+                </select>
+            </div>`;
                     loadEquipos('_equipoIdForSub').then(() => {
                         const selEquipo = document.getElementById('_equipoIdForSub');
                         if (window.equipoSeleccionadoId) {
@@ -428,57 +440,56 @@
 
                 case '3':
                     contenedor.innerHTML = `
-                <div class="mb-3">
-                    <label class="form-label">Descripcion</label>
-                    <input type="text" class="form-control" id="_descripcion" required />
-                </div>
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" id="_ajeno">
-                    <label class="form-check-label" for="_ajeno">Ajeno</label>
-                </div>
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" id="_afectaTMEF">
-                    <label class="form-check-label" for="_afectaTMEF">Afecta TMEF</label>
-                </div>`;
-
-                    // === NUEVO: hacerlos mutuamente excluyentes
+            <div class="mb-3">
+                <label class="form-label">Descripcion</label>
+                <input type="text" class="form-control" id="_descripcion" required />
+            </div>
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="_ajeno">
+                <label class="form-check-label" for="_ajeno">Ajeno</label>
+            </div>
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="_afectaTMEF">
+                <label class="form-check-label" for="_afectaTMEF">Afecta TMEF</label>
+            </div>`;
+                    // hacerlos mutuamente excluyentes
                     setMutualExclusive('_ajeno', '_afectaTMEF');
                     break;
 
                 case '4':
                     contenedor.innerHTML = `
-                <div class="mb-3">
-                    <label class="form-label">Descripcion</label>
-                    <input type="text" class="form-control" id="_descripcion" required />
-                </div>
+            <div class="mb-3">
+                <label class="form-label">Descripcion</label>
+                <input type="text" class="form-control" id="_descripcion" required />
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Equipo</label>
-                    <select class="form-control" id="_equipoIdForTF" required>
-                        <option value="">Cargando...</option>
-                    </select>
-                </div>
+            <div class="mb-3">
+                <label class="form-label">Equipo</label>
+                <select class="form-control" id="_equipoIdForTF" required>
+                    <option value="">Cargando...</option>
+                </select>
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Subequipo</label>
-                    <select class="form-control" id="_subequipoIdForTF" required>
-                        <option value="">Seleccione un equipo primero</option>
-                    </select>
-                </div>
+            <div class="mb-3">
+                <label class="form-label">Subequipo</label>
+                <select class="form-control" id="_subequipoIdForTF" required>
+                    <option value="">Seleccione un equipo primero</option>
+                </select>
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Componente</label>
-                    <select class="form-control" id="_componenteId" required>
-                        <option value="">Seleccione un subequipo primero</option>
-                    </select>
-                </div>
+            <div class="mb-3">
+                <label class="form-label">Componente</label>
+                <select class="form-control" id="_componenteId" required>
+                    <option value="">Seleccione un subequipo primero</option>
+                </select>
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Clasificacion</label>
-                    <select class="form-control" id="_clasificacionId" required>
-                        <option value="">Cargando...</option>
-                    </select>
-                </div>`;
+            <div class="mb-3">
+                <label class="form-label">Clasificacion</label>
+                <select class="form-control" id="_clasificacionId" required>
+                    <option value="">Cargando...</option>
+                </select>
+            </div>`;
                     loadClasificaciones('_clasificacionId');
                     loadEquipos('_equipoIdForTF').then(() => {
                         const selEquipo = document.getElementById('_equipoIdForTF');
@@ -567,7 +578,10 @@
 
                 if (resp?.success) {
                     showSuccess(resp.message || 'Agregado correctamente!');
-                    // form.reset(); // si quieres limpiar
+                    // 🔁 Recargar la pagina tras mostrar el mensaje
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 700);
                 } else {
                     alert(resp?.message || 'No se pudo guardar.');
                 }
@@ -996,7 +1010,34 @@
 
 
 
+    (function () {
+        function showLoading() {
+            var m = document.getElementById('loadingModal');
+            if (m) m.style.display = 'block';
+        }
+        function hideLoading() {
+            var m = document.getElementById('loadingModal');
+            if (m) m.style.display = 'none';
+        }
+        // expone helpers por si quieres usarlos en otros fetch
+        window.showLoading = showLoading;
+        window.hideLoading = hideLoading;
 
+        // muestra lo antes posible (cuando el DOM ya esta parseado)
+        document.addEventListener('readystatechange', function () {
+            if (document.readyState === 'interactive') showLoading();
+        });
+
+        // oculta cuando ya cargo todo (assets incluidos)
+        window.addEventListener('load', function () {
+            setTimeout(hideLoading, 200);
+        });
+
+        // muestra al navegar/recargar (cuando cambias de pagina)
+        window.addEventListener('beforeunload', function () {
+            showLoading();
+        });
+    })();
 
 
 

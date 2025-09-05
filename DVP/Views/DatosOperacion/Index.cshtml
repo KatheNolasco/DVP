@@ -1,4 +1,4 @@
-﻿@model DVP.Models.DatosEnergiaViewModel
+﻿@model DVP.Models.DatosOperacionViewModel
 
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -119,7 +119,7 @@
                             <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
                                 Agregado correctamente!
                             </div>
-                            <h5 class="card-title fw-semibold mb-4">Energy components</h5>
+                            <h5 class="card-title fw-semibold mb-4">Operations components</h5>
                         </div>
 
                         <div class="mb-3">
@@ -156,6 +156,17 @@
             </div>
         </div>
     </div>
+
+
+    @*___________________________________________________________________Modal Cargando__________________________________________________*@
+    <div id="loadingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: rgba(0, 0, 0, 0.5);">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 25px 35px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.3); min-width: 250px;">
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <img src="/Content/loading-green-loading.gif" alt="Cargando..." style="width: 40px; height: 40px; margin-right: 15px;" />
+                <span style="color: black; font-size: 16px;">Cargando...</span>
+            </div>
+        </div>
+    </div>
 </body>
 
 
@@ -180,19 +191,19 @@
 
         // --------------------- endpoints ----------------------
         const createEndpoints = {
-            TipoOperacion: '/DatosEnergia/CreateTipoOperacion',
-            TipoMovimientoSAP: '/DatosEnergia/CreateTipoMovimientoSAP',
-            UnidadMedida: '/DatosEnergia/CreateUnidadMedida'
+            TipoOperacion: '/DatosOperacion/CreateTipoOperacion',
+            TipoMovimientoSAP: '/DatosOperacion/CreateTipoMovimientoSAP',
+            UnidadMedida: '/DatosOperacion/CreateUnidadMedida'
         };
         const updateEndpoints = {
-            TipoOperacion: '/DatosEnergia/UpdateTipoOperacion',
-            TipoMovimientoSAP: '/DatosEnergia/UpdateTipoMovimientoSAP',
-            UnidadMedida: '/DatosEnergia/UpdateUnidadMedida'
+            TipoOperacion: '/DatosOperacion/UpdateTipoOperacion',
+            TipoMovimientoSAP: '/DatosOperacion/UpdateTipoMovimientoSAP',
+            UnidadMedida: '/DatosOperacion/UpdateUnidadMedida'
         };
         const listEndpoints = {
             TipoOperacion: '/Tag/GetTipoOperacion',
-            TipoMovimientoSAP: '/DatosEnergia/GetTipoMovimientoSAP',
-            UnidadMedida: '/DatosEnergia/GetUnidadMedida'
+            TipoMovimientoSAP: '/DatosOperacion/GetTipoMovimientoSAP',
+            UnidadMedida: '/DatosOperacion/GetUnidadMedida'
         };
 
         // --------------------- fetch utils --------------------
@@ -217,9 +228,11 @@
         const BLOQUEADAS = [
             'Explotacion',
             'Produccion',
-            'Consumo',
-            'Consumo electrico',
-            'Encendido Validado'
+            'Consumo Material',
+            'Consumo Electrico',
+            'Encendido Validado',
+            'Equipo Completo',
+            'Paro DVM'
         ];
         const normalize = (s) => String(s || '')
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -233,29 +246,31 @@
             const tipo = this.value;
             if (!tipo) return;
 
-            // TipoOperacion: solo Descripcion (sin Movimiento SAP)
             if (tipo === 'TipoOperacion') {
                 contenedor.innerHTML = `
-        <div class="mb-3">
-          <label class="form-label">Descripcion</label>
-          <input type="text" class="form-control" id="_descripcion" required />
-        </div>`;
+<div class="mb-3">
+  <label class="form-label">Descripcion</label>
+  <input type="text" class="form-control" id="_descripcion" required />
+</div>
+<div class="form-check form-switch mb-3">
+  <input class="form-check-input" type="checkbox" id="_afectaInventario">
+</div>`;
             }
 
             if (tipo === 'TipoMovimientoSAP') {
                 contenedor.innerHTML = `
-        <div class="mb-3">
-          <label class="form-label">Descripcion</label>
-          <input type="text" class="form-control" id="_descripcion" required />
-        </div>`;
+<div class="mb-3">
+  <label class="form-label">Descripcion</label>
+  <input type="text" class="form-control" id="_descripcion" required />
+</div>`;
             }
 
             if (tipo === 'UnidadMedida') {
                 contenedor.innerHTML = `
-        <div class="mb-3">
-          <label class="form-label">Descripcion</label>
-          <input type="text" class="form-control" id="_descripcion" required />
-        </div>`;
+<div class="mb-3">
+  <label class="form-label">Descripcion</label>
+  <input type="text" class="form-control" id="_descripcion" required />
+</div>`;
             }
         });
 
@@ -271,8 +286,13 @@
 
             let payload = null;
 
-            // Todos estos crean solo con Descripcion
-            if (tipo === 'TipoOperacion' || tipo === 'TipoMovimientoSAP' || tipo === 'UnidadMedida') {
+            if (tipo === 'TipoOperacion') {
+                const descripcion = document.getElementById('_descripcion')?.value.trim();
+                const afecta = !!document.getElementById('_afectaInventario')?.checked;
+                payload = { _descripcion: descripcion, _afectaInventario: afecta };
+            }
+
+            if (tipo === 'TipoMovimientoSAP' || tipo === 'UnidadMedida') {
                 const descripcion = document.getElementById('_descripcion')?.value.trim();
                 payload = { _descripcion: descripcion };
             }
@@ -315,7 +335,7 @@
 
             if (tipo === 'TipoOperacion') {
                 const data = await getJson(listEndpoints.TipoOperacion).catch(() => []);
-                renderTablaTipoOperacion(data); // sin columna de Movimiento SAP
+                renderTablaTipoOperacion(data);
             }
 
             if (tipo === 'UnidadMedida') {
@@ -332,31 +352,31 @@
             }
 
             const rows = data.map((x, i) => `
-      <tr data-id="${x.TipoMovimientoSAPID}">
-        <td class="text-center">${i + 1}</td>
-        <td>
-          <span class="cell-text">${escapeHtml(x.Descripcion || '')}</span>
-          <input class="form-control form-control-sm cell-input" type="text" value="${escapeAttr(x.Descripcion || '')}" style="display:none;">
-        </td>
-        <td class="text-nowrap text-center">
-          <button type="button" class="btn btn-sm btn-outline-primary btn-edit">Editar</button>
-          <button type="button" class="btn btn-sm btn-success btn-save" style="display:none;">Guardar</button>
-          <button type="button" class="btn btn-sm btn-secondary btn-cancel" style="display:none;">Cancelar</button>
-        </td>
-      </tr>
-    `).join('');
+<tr data-id="${x.TipoMovimientoSAPID}">
+  <td class="text-center">${i + 1}</td>
+  <td>
+    <span class="cell-text">${escapeHtml(x.Descripcion || '')}</span>
+    <input class="form-control form-control-sm cell-input" type="text" value="${escapeAttr(x.Descripcion || '')}" style="display:none;">
+  </td>
+  <td class="text-nowrap text-center">
+    <button type="button" class="btn btn-sm btn-outline-primary btn-edit">Editar</button>
+    <button type="button" class="btn btn-sm btn-success btn-save" style="display:none;">Guardar</button>
+    <button type="button" class="btn btn-sm btn-secondary btn-cancel" style="display:none;">Cancelar</button>
+  </td>
+</tr>
+`).join('');
 
             contenedorListado.innerHTML = `
-      <table class="table table-bordered table-sm table-striped align-middle">
-        <thead>
-          <tr>
-            <th style="width:60px;">#</th>
-            <th>Descripcion</th>
-            <th style="width:210px;">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>`;
+<table class="table table-bordered table-sm table-striped align-middle">
+  <thead>
+    <tr>
+      <th style="width:60px;">#</th>
+      <th>Descripcion</th>
+      <th style="width:210px;">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+</table>`;
 
             wireRowHandlers('TipoMovimientoSAP');
         }
@@ -368,36 +388,36 @@
             }
 
             const rows = data.map((x, i) => `
-      <tr data-id="${x.UnidadMedidaID}">
-        <td class="text-center">${i + 1}</td>
-        <td>
-          <span class="cell-text">${escapeHtml(x.Descripcion || '')}</span>
-          <input class="form-control form-control-sm cell-input" type="text" value="${escapeAttr(x.Descripcion || '')}" style="display:none;">
-        </td>
-        <td class="text-nowrap text-center">
-          <button type="button" class="btn btn-sm btn-outline-primary btn-edit">Editar</button>
-          <button type="button" class="btn btn-sm btn-success btn-save" style="display:none;">Guardar</button>
-          <button type="button" class="btn btn-sm btn-secondary btn-cancel" style="display:none;">Cancelar</button>
-        </td>
-      </tr>
-    `).join('');
+<tr data-id="${x.UnidadMedidaID}">
+  <td class="text-center">${i + 1}</td>
+  <td>
+    <span class="cell-text">${escapeHtml(x.Descripcion || '')}</span>
+    <input class="form-control form-control-sm cell-input" type="text" value="${escapeAttr(x.Descripcion || '')}" style="display:none;">
+  </td>
+  <td class="text-nowrap text-center">
+    <button type="button" class="btn btn-sm btn-outline-primary btn-edit">Editar</button>
+    <button type="button" class="btn btn-sm btn-success btn-save" style="display:none;">Guardar</button>
+    <button type="button" class="btn btn-sm btn-secondary btn-cancel" style="display:none;">Cancelar</button>
+  </td>
+</tr>
+`).join('');
 
             contenedorListado.innerHTML = `
-      <table class="table table-bordered table-sm table-striped align-middle">
-        <thead>
-          <tr>
-            <th style="width:60px;">#</th>
-            <th>Descripcion</th>
-            <th style="width:210px;">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>`;
+<table class="table table-bordered table-sm table-striped align-middle">
+  <thead>
+    <tr>
+      <th style="width:60px;">#</th>
+      <th>Descripcion</th>
+      <th style="width:210px;">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+</table>`;
 
             wireRowHandlers('UnidadMedida');
         }
 
-        // >>> TipoOperacion SIN columna Movimiento SAP <<<
+        // >>> TipoOperacion CON columna Afecta Inventario como switch (sin texto) <<<
         function renderTablaTipoOperacion(data) {
             if (!Array.isArray(data) || data.length === 0) {
                 contenedorListado.innerHTML = '<div class="alert alert-warning">Sin datos.</div>';
@@ -407,39 +427,46 @@
             const rows = data.map((x, i) => {
                 const id = Number(x.TipoOperacionID);
                 const blocked = isBlockedTipoOperacion(x.Descripcion);
+                const afecta = !!x.AfectaInventario;
 
                 return `
-        <tr data-id="${id}">
-          <td class="text-center">${i + 1}</td>
-          <td>
-            <span class="cell-text">${escapeHtml(x.Descripcion || '')}</span>
-            <input class="form-control form-control-sm cell-input" type="text"
-                   value="${escapeAttr(x.Descripcion || '')}"
-                   style="display:none;" ${blocked ? 'disabled' : ''}>
-          </td>
-          <td class="text-nowrap text-center">
-            ${blocked
-                        ? `<span class="badge bg-secondary">No editable</span>`
+<tr data-id="${id}">
+  <td class="text-center">${i + 1}</td>
+  <td>
+    <span class="cell-text" data-afecta="${afecta ? '1' : '0'}">${escapeHtml(x.Descripcion || '')}</span>
+    <input class="form-control form-control-sm cell-input" type="text"
+           value="${escapeAttr(x.Descripcion || '')}"
+           style="display:none;" ${blocked ? 'disabled' : ''}>
+  </td>
+  <td class="text-center">
+    <div class="form-check form-switch mb-0 d-flex justify-content-center">
+      <input class="form-check-input cell-check" type="checkbox" ${afecta ? 'checked' : ''} ${blocked ? 'disabled' : ''}>
+    </div>
+  </td>
+  <td class="text-nowrap text-center">
+    ${blocked
+                        ? `<span class="badge bg-success">No editable</span>`
                         : `
-                <button type="button" class="btn btn-sm btn-outline-primary btn-edit">Editar</button>
-                <button type="button" class="btn btn-sm btn-success btn-save" style="display:none;">Guardar</button>
-                <button type="button" class="btn btn-sm btn-secondary btn-cancel" style="display:none;">Cancelar</button>
-              `}
-          </td>
-        </tr>`;
+        <button type="button" class="btn btn-sm btn-outline-primary btn-edit">Editar</button>
+        <button type="button" class="btn btn-sm btn-success btn-save" style="display:none;">Guardar</button>
+        <button type="button" class="btn btn-sm btn-secondary btn-cancel" style="display:none;">Cancelar</button>
+      `}
+  </td>
+</tr>`;
             }).join('');
 
             contenedorListado.innerHTML = `
-      <table class="table table-bordered table-sm table-striped align-middle">
-        <thead>
-          <tr>
-            <th style="width:60px;">#</th>
-            <th>Descripcion</th>
-            <th style="width:210px;">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>`;
+<table class="table table-bordered table-sm table-striped align-middle">
+  <thead>
+    <tr>
+      <th style="width:60px;">#</th>
+      <th>Descripcion</th>
+      <th style="width:120px;" class="text-center">Afecta</th>
+      <th style="width:210px;">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+</table>`;
 
             wireRowHandlers('TipoOperacion');
         }
@@ -475,6 +502,7 @@
             }
 
             const input = tr.querySelector('.cell-input');
+            const chk = tr.querySelector('.cell-check');
             const btnEdit = tr.querySelector('.btn-edit');
             const btnSave = tr.querySelector('.btn-save');
             const btnCancel = tr.querySelector('.btn-cancel');
@@ -482,6 +510,7 @@
             if (editing) {
                 span.style.display = 'none';
                 input.style.display = '';
+                if (chk) chk.removeAttribute('disabled');
                 if (btnEdit) btnEdit.style.display = 'none';
                 if (btnSave) btnSave.style.display = '';
                 if (btnCancel) btnCancel.style.display = '';
@@ -489,9 +518,12 @@
             } else {
                 if (resetToSpan) {
                     input.value = span.textContent || '';
+                    const originalChecked = span.getAttribute('data-afecta') === '1';
+                    if (chk && span.hasAttribute('data-afecta')) chk.checked = originalChecked;
                 }
                 span.style.display = '';
                 input.style.display = 'none';
+                if (chk) chk.setAttribute('disabled', 'disabled');
                 if (btnEdit) btnEdit.style.display = '';
                 if (btnSave) btnSave.style.display = 'none';
                 if (btnCancel) btnCancel.style.display = 'none';
@@ -521,9 +553,10 @@
                 payload['UnidadMedidaID'] = id;
             }
 
-            // >>> TipoOperacion: actualizar solo Descripcion (sin Movimiento SAP)
             if (tipo === 'TipoOperacion') {
                 payload['TipoOperacionID'] = id;
+                const chk = tr.querySelector('.cell-check');
+                payload['AfectaInventario'] = !!(chk && chk.checked);
             }
 
             try {
@@ -533,13 +566,19 @@
                     return;
                 }
 
+                // actualizar UI
                 span.textContent = newDesc;
 
-                // Si cambia a una descripcion bloqueada, inmoviliza la fila
+                // guardar estado original del checkbox para futuros cancel
+                const chk = tr.querySelector('.cell-check');
+                if (chk) span.setAttribute('data-afecta', chk.checked ? '1' : '0');
+
+                // Si cambia a bloqueado, inmovilizar
                 if (tipo === 'TipoOperacion' && isBlockedTipoOperacion(newDesc)) {
                     input.setAttribute('disabled', 'disabled');
+                    if (chk) chk.setAttribute('disabled', 'disabled');
                     const actions = tr.querySelector('td.text-nowrap.text-center');
-                    if (actions) actions.innerHTML = `<span class="badge bg-secondary">No editable</span>`;
+                    if (actions) actions.innerHTML = `<span class="badge bg-success">No editable</span>`;
                 }
 
                 setEditMode(tr, tipo, false);
@@ -557,4 +596,34 @@
             return String(s).replace(/"/g, '&quot;');
         }
     });
+
+
+    (function () {
+        function showLoading() {
+            var m = document.getElementById('loadingModal');
+            if (m) m.style.display = 'block';
+        }
+        function hideLoading() {
+            var m = document.getElementById('loadingModal');
+            if (m) m.style.display = 'none';
+        }
+        // expone helpers por si quieres usarlos en otros fetch
+        window.showLoading = showLoading;
+        window.hideLoading = hideLoading;
+
+        // muestra lo antes posible (cuando el DOM ya esta parseado)
+        document.addEventListener('readystatechange', function () {
+            if (document.readyState === 'interactive') showLoading();
+        });
+
+        // oculta cuando ya cargo todo (assets incluidos)
+        window.addEventListener('load', function () {
+            setTimeout(hideLoading, 200);
+        });
+
+        // muestra al navegar/recargar (cuando cambias de pagina)
+        window.addEventListener('beforeunload', function () {
+            showLoading();
+        });
+    })();
 </script>

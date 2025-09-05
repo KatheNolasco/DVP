@@ -6,6 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Web;
 
+
 namespace DVP.Models
 {
     public class UserViewModel
@@ -30,6 +31,7 @@ namespace DVP.Models
         public int? _unidadOperativaId { get; set; }
         public int? _paisId { get; set; }
         public int? _gerenciaId { get; set; }
+        public int? _procesoId { get; set; }
         public bool _active { get; set; }
         public string _userIdProgreso { get; set; }
         public string _tipo { get; set; }
@@ -56,6 +58,8 @@ namespace DVP.Models
 
             public List<int> _plantaIds { get; set; } = new List<int>();
         }
+
+       
 
 
     }

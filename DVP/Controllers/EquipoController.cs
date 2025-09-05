@@ -172,37 +172,71 @@ namespace DVP.Controllers
         {
             try
             {
-                if (ModelState.IsValid)
+                data._descripcion = (data._descripcion ?? "").Trim();
+                data._condigoDetalle = (data._condigoDetalle ?? "").Trim();
+                data._condigoSAP = (data._condigoSAP ?? "").Trim();
+
+                if (!TryValidateModel(data))
                 {
-                    var nuevoEquipo = new Equipo
-                    {
-                        Descripcion = data._descripcion,
-                        CondigoDetalle = data._condigoDetalle,
-                        CondigoSAP = data._condigoSAP,
-                        ProcesoID = data._procesoId,
-                        PlantaID = data._plantaId,
-                        UnidadOperativaID = data._unidadOperativaId,
-                        PaisID = data._paisId,
-                        BuscarParo = data._buscarParo,
-                        Active = data._active,
-                        EnviarASAP = data._enviarASAP,
-                        FechaCreación = DateTime.Now,
-                    };
-
-                    _dvpEntities.Equipo.Add(nuevoEquipo);
-                    _dvpEntities.SaveChanges();
-
-                    return Json(new { success = true, message = "Creado exitosamente." });
+                    var errs = ModelState.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                    );
+                    return Json(new { success = false, message = "Datos inválidos.", errors = errs });
                 }
 
-                return Json(new { success = false, message = "Datos inválidos." });
+                if (string.IsNullOrWhiteSpace(data._descripcion) ||
+                    string.IsNullOrWhiteSpace(data._condigoDetalle) ||
+                    string.IsNullOrWhiteSpace(data._condigoSAP) ||
+                    !data._procesoId.HasValue ||
+                    !data._plantaId.HasValue ||
+                    !data._unidadOperativaId.HasValue ||
+                    !data._paisId.HasValue)
+                {
+                    return Json(new { success = false, message = "Campos requeridos incompletos." });
+                }
+
+                bool existe = _dvpEntities.Equipo.Any(e =>
+                    e.CondigoSAP == data._condigoSAP &&
+                    e.Descripcion == data._descripcion &&
+                    e.PlantaID == data._plantaId.Value &&
+                    e.UnidadOperativaID == data._unidadOperativaId.Value
+                );
+
+                if (existe)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Ya existe un equipo con la misma combinación (SAP + Planta + Unidad Operativa)."
+                    });
+                }
+
+                var nuevoEquipo = new Equipo
+                {
+                    Descripcion = data._descripcion,
+                    CondigoDetalle = data._condigoDetalle,
+                    CondigoSAP = data._condigoSAP,
+                    ProcesoID = data._procesoId.Value,
+                    PlantaID = data._plantaId.Value,
+                    UnidadOperativaID = data._unidadOperativaId.Value,
+                    PaisID = data._paisId.Value,
+                    BuscarParo = data._buscarParo,
+                    Active = data._active,
+                    EnviarASAP = data._enviarASAP,
+                    FechaCreación = DateTime.Now,
+                };
+
+                _dvpEntities.Equipo.Add(nuevoEquipo);
+                _dvpEntities.SaveChanges();
+
+                return Json(new { success = true, message = "Creado exitosamente." });
             }
             catch (Exception ex)
             {
                 return Json(new { success = false, message = "Error al crear el equipo: " + ex.Message });
             }
         }
-
 
         [HttpPost]
         public JsonResult EditEquipment(EquipoViewModel data)
@@ -268,6 +302,37 @@ namespace DVP.Controllers
 
             return Json(equipos, JsonRequestBehavior.AllowGet);
         }
+
+
+        [HttpGet]
+        public JsonResult GetEquiposporPlantalogguedUser()
+        {
+
+            var tokenEnSession = Session["token"]?.ToString();
+
+            if (string.IsNullOrEmpty(tokenEnSession))
+            {
+                return Json(new { success = false, message = "Sesión no iniciada" }, JsonRequestBehavior.AllowGet);
+            }
+
+            var usuario = _dvpEntities.Usuario.FirstOrDefault(u => u.Token == tokenEnSession);
+
+            if (usuario == null)
+            {
+                return Json(new { success = false, message = "Usuario no encontrado" }, JsonRequestBehavior.AllowGet);
+            }
+            var equipos = _dvpEntities.Equipo
+                                     .Select(s => new
+                                     {
+                                         EquipoID = s.EquipoID,
+                                         Descripcion = s.Descripcion,
+                                         PlantaID = s.PlantaID
+                                     }).Where(p => p.PlantaID == usuario.PlantaID)
+                                     .ToList();
+
+            return Json(equipos, JsonRequestBehavior.AllowGet);
+        }
+
 
 
     }

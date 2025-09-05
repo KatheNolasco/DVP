@@ -17,6 +17,9 @@ namespace DVP.Models
         public string _tipoOperacionDescripcion { get; set; }
         public int? _equipoId { get; set; }
         public string _equipoDescripcion { get; set; }
+        public int? _materialId { get; set; }
+        public string _materialDescripcion { get; set; }
+
 
     }
 }

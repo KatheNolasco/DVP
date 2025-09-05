@@ -5,7 +5,7 @@
 
 <h2>Index</h2>
 
-@model DVP.Models.EnergyViewModel
+@model DVP.Models.EquipoViewModel
 
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -111,8 +111,9 @@
                                             <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
                                                 <tr>
                                                     <th class="text-center">Status</th>
-                                                    <th class="text-center">Plant</th>
+                                                    <th class="text-center">Process</th>
                                                     <th class="text-center">Equipment</th>
+                                                    <th class="text-center">Plant</th>
                                                     <th class="text-center">Old SAP code</th>
                                                     <th class="text-center">New detail code </th>
                                                     <th class="text-center">Send to SAP</th>
@@ -517,8 +518,9 @@
 
                 row.innerHTML = `
                     <td class="text-center">${estadoIcon}</td>
-                    <td class="text-center">${item._plantaDescripcion ?? ''}</td>
+                    <td class="text-center">${item._procesoDescripcion ?? ''}</td>
                     <td class="text-center">${item._descripcion ?? ''}</td>
+                    <td class="text-center">${item._plantaDescripcion ?? ''}</td>
                     <td class="text-center">${item._condigoSAP ?? ''}</td>
                     <td class="text-center">${item._condigoDetalle ?? ''}</td>
                     <td class="text-center">

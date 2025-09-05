@@ -50,7 +50,8 @@ namespace DVP.Controllers
                                      .Select(s => new
                                      {
                                          TipoOperacionID = s.TipoOperacionID,
-                                         Descripcion = s.Descripcion
+                                         Descripcion = s.Descripcion,
+                                         AfectaInventario = s.AfectaInventario,
                                      })
                                      .ToList();
 
@@ -62,29 +63,53 @@ namespace DVP.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                    return Json(new { success = false, message = "Datos inválidos." });
+                data._descripcion = (data._descripcion ?? "").Trim();
+                data._tagName = (data._tagName ?? "").Trim();
+                data._tagCode = (data._tagCode ?? "").Trim();
+
+                if (!TryValidateModel(data))
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Datos inválidos.",
+                        errors = ModelState.ToDictionary(
+                        kvp => kvp.Key, kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray())
+                    });
 
                 if (data._equipoId == null || data._tipoOperacionId == null)
                     return Json(new { success = false, message = "Equipo y Tipo de operación son obligatorios." });
 
-                // DUP CHECK: ya existe un Tag para ese Equipo y ese TipoOperacion
-                bool yaExiste = _dvpEntities.TagEquipo.Any(t =>
-                    t.EquipoID == data._equipoId &&
-                    t.TipoOperacionID == data._tipoOperacionId
-                );
+                bool yaExiste;
+                if (data._materialId.HasValue)
+                {
+                    int materialId = data._materialId.Value;
+                    yaExiste = _dvpEntities.TagEquipo.Any(t =>
+                        t.EquipoID == data._equipoId.Value &&
+                        t.TipoOperacionID == data._tipoOperacionId.Value &&
+                        t.MaterialID == materialId
+                    );
+                }
+                else
+                {
+                    yaExiste = _dvpEntities.TagEquipo.Any(t =>
+                        t.EquipoID == data._equipoId.Value &&
+                        t.TipoOperacionID == data._tipoOperacionId.Value &&
+                        t.MaterialID == null
+                    );
+                }
 
                 if (yaExiste)
-                    return Json(new { success = false, message = "Ya existe un tag con ese Tipo de operación para este equipo." });
+                    return Json(new { success = false, message = "Ya existe un tag con esa combinación (Equipo, Tipo, Material)." });
 
                 var nuevo = new TagEquipo
                 {
                     Descripcion = data._descripcion,
                     TagName = data._tagName,
                     TagCode = data._tagCode,
-                    Activo = data._activo,
-                    TipoOperacionID = data._tipoOperacionId,
-                    EquipoID = data._equipoId
+                    Activo = true,
+                    TipoOperacionID = data._tipoOperacionId.Value,
+                    EquipoID = data._equipoId.Value,
+                    MaterialID = data._materialId 
                 };
 
                 _dvpEntities.TagEquipo.Add(nuevo);
@@ -97,6 +122,7 @@ namespace DVP.Controllers
                 return Json(new { success = false, message = "Error al crear el tag: " + ex.Message });
             }
         }
+
 
         [HttpPost]
         public JsonResult EditTag(TagViewModel data)
@@ -113,15 +139,15 @@ namespace DVP.Controllers
                 if (existente == null)
                     return Json(new { success = false, message = "No encontrado." });
 
-                // DUP CHECK: excluye el registro que se esta editando
-                bool yaExisteOtro = _dvpEntities.TagEquipo.Any(t =>
+                bool yaExiste = _dvpEntities.TagEquipo.Any(t =>
                     t.EquipoID == data._equipoId &&
-                    t.TipoOperacionID == data._tipoOperacionId &&
-                    t.TagEquipoID != data._tagEquipoId
+                    t.TipoOperacionID == data._tipoOperacionId && t.MaterialID == data._materialId ||
+                    t.EquipoID == data._equipoId &&
+                    t.TipoOperacionID == data._tipoOperacionId
                 );
 
-                if (yaExisteOtro)
-                    return Json(new { success = false, message = "Ya existe otro tag con ese Tipo de operación para este equipo." });
+                if (yaExiste)
+                    return Json(new { success = false, message = "Ya existe otro tag con ese Tipo de operación para este equipo ó material." });
 
                 existente.Descripcion = data._descripcion;
                 existente.TagName = data._tagName;
@@ -129,6 +155,7 @@ namespace DVP.Controllers
                 existente.Activo = data._activo;
                 existente.TipoOperacionID = data._tipoOperacionId;
                 existente.EquipoID = data._equipoId;
+                existente.MaterialID = data._materialId;
 
                 _dvpEntities.SaveChanges();
 
@@ -156,7 +183,8 @@ namespace DVP.Controllers
                     _tipoOperacionId = p.TipoOperacionID,
                     _tipoOperacionDescripcion = p.TipoOperacion.Descripcion,
                     _equipoId = p.EquipoID,
-                    _equipoDescripcion = p.Equipo.Descripcion
+                    _equipoDescripcion = p.Equipo.Descripcion,
+                    _materialId = p.Material.Descripcion
                 })
                 .FirstOrDefault();
 
@@ -182,7 +210,8 @@ namespace DVP.Controllers
                     _tipoOperacionId = p.TipoOperacionID,
                     _tipoOperacionDescripcion = p.TipoOperacion.Descripcion,
                     _equipoId = p.EquipoID,
-                    _equipoDescripcion = p.Equipo.Descripcion
+                    _equipoDescripcion = p.Equipo.Descripcion,
+                    _materialDescripcion = p.Material.Descripcion
                 })
                 .ToList();
 
@@ -193,5 +222,60 @@ namespace DVP.Controllers
 
             return Json(new { success = true, data = equipos }, JsonRequestBehavior.AllowGet);
         }
+
+        [HttpGet]
+        public JsonResult GetTagsByPlantAndEquipment()
+        {
+            try
+            {
+
+                var tokenEnSession = Session["token"] as string;
+                if (string.IsNullOrEmpty(tokenEnSession))
+                    return Json(new { success = false, message = "Sesión no iniciada" }, JsonRequestBehavior.AllowGet);
+
+                var usuario = _dvpEntities.Usuario
+                    .AsNoTracking()
+                    .FirstOrDefault(u => u.Token == tokenEnSession);
+
+                if (usuario == null)
+                    return Json(new { success = false, message = "Usuario no encontrado" }, JsonRequestBehavior.AllowGet);
+
+                if (usuario.PlantaID == null)
+                    return Json(new { success = false, message = "El usuario no tiene planta asignada" }, JsonRequestBehavior.AllowGet);
+
+                var tags = _dvpEntities.TagEquipo
+                    .AsNoTracking()
+                    .Where(t => t.Equipo != null && t.Equipo.PlantaID == usuario.PlantaID)
+                    .Select(p => new
+                    {
+                        _tagEquipoId = p.TagEquipoID,
+                        _descripcion = p.Descripcion,
+                        _tagName = p.TagName,
+                        _tagCode = p.TagCode,
+                        _activo = p.Activo,
+                        _tipoOperacionId = p.TipoOperacionID,
+                        _tipoOperacionDescripcion = p.TipoOperacion != null ? p.TipoOperacion.Descripcion : null,
+                        _equipoId = p.EquipoID,
+                        _equipoDescripcion = p.Equipo != null ? p.Equipo.Descripcion : null,
+                        _materialDescripcion = p.Material != null ? p.Material.Descripcion : null
+                    })
+                    .OrderBy(x => x._equipoDescripcion)
+                    .ThenBy(x => x._descripcion)
+                    .ToList();
+
+                if (tags.Count == 0)
+                    return Json(new { success = false, message = "No se encontraron tags para la planta del usuario." }, JsonRequestBehavior.AllowGet);
+
+                return Json(new { success = true, data = tags }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al obtener tags: " + ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+
+
+
     }
 }

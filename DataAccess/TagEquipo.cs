@@ -21,8 +21,10 @@ namespace DataAccess
         public Nullable<bool> Activo { get; set; }
         public Nullable<int> TipoOperacionID { get; set; }
         public Nullable<int> EquipoID { get; set; }
+        public Nullable<int> MaterialID { get; set; }
     
-        public virtual Equipo Equipo { get; set; }
         public virtual TipoOperacion TipoOperacion { get; set; }
+        public virtual Equipo Equipo { get; set; }
+        public virtual Material Material { get; set; }
     }
 }
