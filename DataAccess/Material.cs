@@ -17,11 +17,11 @@ namespace DataAccess
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         public Material()
         {
-            this.BillOfMaterial = new HashSet<BillOfMaterial>();
-            this.BillOfMaterial1 = new HashSet<BillOfMaterial>();
             this.DataOperacion = new HashSet<DataOperacion>();
             this.DataOperacion1 = new HashSet<DataOperacion>();
             this.TagEquipo = new HashSet<TagEquipo>();
+            this.BillOfMaterial = new HashSet<BillOfMaterial>();
+            this.BillOfMaterial1 = new HashSet<BillOfMaterial>();
         }
     
         public int MaterialID { get; set; }
@@ -37,10 +37,6 @@ namespace DataAccess
         public Nullable<int> PlantaID { get; set; }
         public Nullable<int> UnidadMedidaID { get; set; }
     
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<BillOfMaterial> BillOfMaterial { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<BillOfMaterial> BillOfMaterial1 { get; set; }
         public virtual ClasificacionMaterial ClasificacionMaterial { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<DataOperacion> DataOperacion { get; set; }
@@ -50,5 +46,9 @@ namespace DataAccess
         public virtual UnidadMedida UnidadMedida { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<TagEquipo> TagEquipo { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<BillOfMaterial> BillOfMaterial { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<BillOfMaterial> BillOfMaterial1 { get; set; }
     }
 }

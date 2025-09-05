@@ -22,6 +22,12 @@ namespace DVP.Models
         public DateTime _fechaBOM { get; set; }
         public int? _materialConsumoID { get; set; }
         public string _materialConsumoDescripcion { get; set; }
+        public bool _active { get; set; }
+
+        public List<int> _materialProduccionIDs { get; set; }
+        public List<int> _materialConsumoIDs { get; set; }
+        public List<int> _materialConsumoCombustibleIDs { get; set; }
+        public List<int> _materialAlternoIDs { get; set; }
 
 
     }

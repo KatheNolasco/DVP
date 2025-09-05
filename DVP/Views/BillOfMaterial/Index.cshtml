@@ -62,6 +62,8 @@
         font-weight: 500;
     }
 
+
+
 </style>
 
 <body>
@@ -105,8 +107,6 @@
                                                     <th class="text-center">SAP Movement Type</th>
                                                     <th class="text-center">Factor</th>
                                                     <th class="text-center">Equipment</th>
-                                                    <th class="text-center">Production Tag</th>
-                                                    <th class="text-center">Moisture Tag</th>
                                                     <th class="text-center">Dry Cons.</th>
                                                     <th class="text-center">Wet Cons.</th>
                                                     <th class="text-center">BOM Date</th>
@@ -342,12 +342,15 @@
 
 
     function cargando() {
-        document.getElementById("loadingModal").style.display = "block";
+        const m = document.getElementById("loadingModal");
+        if (m && m.style) m.style.display = "block";
+    }
+    function cargandoOff() {
+        const m = document.getElementById("loadingModal");
+        if (m && m.style) m.style.display = "none";
     }
 
 //___________________________________________________________________ Crear BOM __________________________________________________________________//
-
-
 function newBOM() {
     const modalElement = document.getElementById('newBOM');
     const modal = new bootstrap.Modal(modalElement);
@@ -356,21 +359,25 @@ function newBOM() {
     const form = document.querySelector('#newBOM form');
     if (form) form.reset();
 
-    
+    // clean selects
     limpiarSelect('_materialProduccionID');
     limpiarSelect('_tipoMovimientoSAPID');
     limpiarSelect('_equipoID');
     limpiarSelect('_materialConsumoID');
     limpiarSelect('_materialConsumoCombustibleID');
-    limpiarSelect('_materialAlternoID'); 
+    limpiarSelect('_materialAlternoID');
 
+    // load combos
     cargarCombosBOM();
 }
 
+// ===================================================================
+// Load static combos and init multiselect dropdowns
+// ===================================================================
 function cargarCombosBOM() {
-    // Carga de selects normales
-    const fetchTipoMovSAP = fetch('@Url.Action("GetTipoMovimientoSAP", "DatosOperacion")').then(r => r.json());
-    const fetchEquipos    = fetch('@Url.Action("GetEquiposporPaislogguedUser", "Equipo")').then(r => r.json());
+    // normal selects
+    const fetchTipoMovSAP = fetch('@Url.Action("GetTipoMovimientoSAP", "DatosOperacion")', { headers: { 'Accept': 'application/json' } }).then(r => r.json());
+    const fetchEquipos    = fetch('@Url.Action("GetEquiposporPaislogguedUser", "Equipo")', { headers: { 'Accept': 'application/json' } }).then(r => r.json());
 
     Promise.all([fetchTipoMovSAP, fetchEquipos])
         .then(([tiposMov, equipos]) => {
@@ -380,18 +387,20 @@ function cargarCombosBOM() {
         })
         .catch(err => {
             console.error(err);
-            alert('No se pudieron cargar los catálogos.');
+            alert('No se pudieron cargar los catalogos.');
         });
 
-    // Multiselects con checkboxes + búsqueda dentro del dropdown
+    // multiselects with search
+    // Material Produccion -> limit to 1
     initMultiSelectDropdown(
         '_materialProduccionID',
         '@Url.Action("GetMaterialProducidoOConsumido", "Material")',
         'MaterialID',
         'Descripcion',
-        { minChars: 2, pageSize: 30, placeholder: 'Seleccione material de produccion' }
+        { minChars: 2, pageSize: 30, placeholder: 'Seleccione material de produccion', maxSelected: 1 }
     );
 
+    // The rest can be multiple
     initMultiSelectDropdown(
         '_materialConsumoID',
         '@Url.Action("GetMaterialProducidoOConsumido", "Material")',
@@ -408,7 +417,6 @@ function cargarCombosBOM() {
         { minChars: 2, pageSize: 30, placeholder: 'Seleccione material combustible' }
     );
 
-    // NUEVO: Material Alterno (mismo endpoint que Combustible; cámbialo si tienes otro)
     initMultiSelectDropdown(
         '_materialAlternoID',
         '@Url.Action("GetMaterialCombustible", "Material")',
@@ -418,7 +426,9 @@ function cargarCombosBOM() {
     );
 }
 
-// ===================== helpers comunes =====================
+// ===================================================================
+// Helpers for regular selects
+// ===================================================================
 function llenarSelect(selectId, data, valueField, textField) {
     const select = document.getElementById(selectId);
     if (!select) return;
@@ -434,35 +444,46 @@ function limpiarSelect(selectId) {
     const select = document.getElementById(selectId);
     if (!select) return;
 
-    // Placeholder: sin valor, deshabilitado y oculto
+    // placeholder
     select.innerHTML = '<option value="" disabled hidden>Seleccione una opcion</option>';
 
-    // Multiselect solo para estos IDs:
+    // decide which are multiselects
     const multiIds = new Set([
         '_materialProduccionID',
         '_materialConsumoID',
         '_materialConsumoCombustibleID',
-        '_materialAlternoID' // NUEVO
+        '_materialAlternoID'
     ]);
 
     if (multiIds.has(selectId)) {
         select.setAttribute('multiple', 'multiple');
-        select.classList.add('d-none');   // UI visible es el dropdown custom
+        select.classList.add('d-none'); // hidden, UI is custom dropdown
     } else {
         select.removeAttribute('multiple');
         select.classList.remove('d-none');
     }
 
+    // remove previous wrapper if any
     const wrap = document.getElementById(selectId + '__mswrap');
     if (wrap && wrap.parentNode) wrap.parentNode.removeChild(wrap);
 }
 
-// ===================== multiselect "como select" =====================
+// ===================================================================
+// Multiselect with search (single file, no deps)
+// Supports: minChars, pageSize, placeholder, maxSelected
+// ===================================================================
 function initMultiSelectDropdown(selectId, fetchUrl, valueField, textField, opts = {}) {
-    const { minChars = 2, pageSize = 25, placeholder = 'Seleccione una opcion' } = opts;
+    const { minChars = 2, pageSize = 25, placeholder = 'Seleccione una opcion', maxSelected = 0 } = opts;
 
     const select = document.getElementById(selectId);
     if (!select) return;
+
+    // store limit in dataset for later use
+    if (maxSelected && maxSelected > 0) {
+        select.dataset.maxSelected = String(maxSelected);
+    } else {
+        delete select.dataset.maxSelected;
+    }
 
     select.setAttribute('multiple', 'multiple');
     select.classList.add('d-none');
@@ -523,32 +544,32 @@ function initMultiSelectDropdown(selectId, fetchUrl, valueField, textField, opts
     wrap.appendChild(menu);
 
     const debounced = debounce(() =>
-        runSearch(input, hint, list, select, fetchUrl, valueField, textField, pageSize, updateButtonText)
+        runSearch(input, hint, list, select, fetchUrl, valueField, textField, pageSize, updateButtonText, applyLimitState)
     );
 
     input.addEventListener('input', () => {
         if (input.value.trim().length < minChars) {
-            // Mostrar seleccionados; si no hay, lista vacía (sin "Sin resultados")
-            renderSelectedList(list, select, valueField, textField, /*quietIfEmpty=*/true);
+            renderSelectedList(list, select, valueField, textField, /*quietIfEmpty=*/true, applyLimitState);
             const n = Array.from(select.options).filter(o => o.selected && o.value).length;
             hint.textContent = n > 0
                 ? `Seleccionados (${n}). Escribe al menos ${minChars} letras para buscar`
                 : `Escribe al menos ${minChars} letras`;
+            applyLimitState();
             return;
         }
         hint.textContent = 'Buscando...';
         debounced();
     });
 
-    // Al abrir: enfoca y si no hay término, muestra seleccionados o vacío
     btn.addEventListener('shown.bs.dropdown', () => {
         input.focus();
         if (input.value.trim().length < minChars) {
-            renderSelectedList(list, select, valueField, textField, /*quietIfEmpty=*/true);
+            renderSelectedList(list, select, valueField, textField, /*quietIfEmpty=*/true, applyLimitState);
             const n = Array.from(select.options).filter(o => o.selected && o.value).length;
             hint.textContent = n > 0
                 ? `Seleccionados (${n}). Escribe al menos ${minChars} letras para buscar`
                 : `Escribe al menos ${minChars} letras`;
+            applyLimitState();
         } else {
             hint.textContent = 'Buscando...';
             debounced.flush && debounced.flush();
@@ -563,13 +584,33 @@ function initMultiSelectDropdown(selectId, fetchUrl, valueField, textField, opts
         else btnTextEl.textContent = selected.length + ' seleccionados';
     }
 
+    function getMaxSelected() {
+        const raw = parseInt(select.dataset.maxSelected || '0', 10);
+        return (Number.isNaN(raw) || raw <= 0) ? Infinity : raw;
+    }
+
+    function applyLimitState() {
+        const maxSel = getMaxSelected();
+        const selectedCount = Array.from(select.options).filter(o => o.selected && o.value).length;
+        const reached = selectedCount >= maxSel;
+
+        // disable unchecked boxes when limit reached
+        const boxes = list.querySelectorAll('input.msitem[type="checkbox"]');
+        boxes.forEach(cb => {
+            if (reached && !cb.checked) cb.disabled = true;
+            else cb.disabled = false;
+        });
+    }
+
     wrap._updateButtonText = updateButtonText;
     updateButtonText();
-    renderIdleList(list); // estado inicial: nada
+    renderIdleList(list);
 }
 
-// ===================== búsqueda remota (GET ?q=) + filtro cliente =====================
-async function runSearch(input, hint, list, select, fetchUrl, valueField, textField, pageSize, onAfterRender) {
+// ===================================================================
+// Remote search + client filter
+// ===================================================================
+async function runSearch(input, hint, list, select, fetchUrl, valueField, textField, pageSize, afterRenderBtnText, afterRenderLimitState) {
     const term = input.value.trim();
     if (!term) return;
 
@@ -584,14 +625,18 @@ async function runSearch(input, hint, list, select, fetchUrl, valueField, textFi
         const raw = await res.json();
         const arr = Array.isArray(raw) ? raw : (raw?.data ?? raw?.items ?? raw?.results ?? []);
 
-        // Filtro cliente sin acentos y case-insensitive
+        // case/diacritics insensitive filter
         const t = normStr(term);
         const filtered = (arr || []).filter(it => normStr(it[textField]).includes(t));
 
         if (filtered.length) {
             hint.textContent = filtered.length + ' resultado(s)';
             renderResults(list, filtered, select, valueField, textField);
-            onAfterRender && onAfterRender();
+            afterRenderBtnText && afterRenderBtnText();
+            afterRenderLimitState && afterRenderLimitState();
+
+            // enforce maxSelected on change
+            enforceMaxSelected(list, select);
         } else {
             hint.textContent = '';
             renderNoResults(list);
@@ -603,8 +648,10 @@ async function runSearch(input, hint, list, select, fetchUrl, valueField, textFi
     }
 }
 
-// ===================== mostrar seleccionados (o vacío si no hay) =====================
-function renderSelectedList(list, select, valueField, textField, quietIfEmpty = false) {
+// ===================================================================
+// Show selected list if any (or idle)
+// ===================================================================
+function renderSelectedList(list, select, valueField, textField, quietIfEmpty = false, afterRenderLimitState) {
     const selected = Array.from(select.options).filter(o => o.selected && o.value);
     if (selected.length === 0) {
         if (quietIfEmpty) renderIdleList(list); else renderNoResults(list);
@@ -612,15 +659,18 @@ function renderSelectedList(list, select, valueField, textField, quietIfEmpty = 
     }
     const items = selected.map(o => ({ [valueField]: o.value, [textField]: o.text }));
     renderResults(list, items, select, valueField, textField);
+    afterRenderLimitState && afterRenderLimitState();
+    enforceMaxSelected(list, select);
     return true;
 }
 
-// ===================== render de resultados con checkboxes =====================
+// ===================================================================
+// Render check list
+// ===================================================================
 function renderResults(list, items, select, valueField, textField) {
-    list._showingEmpty = false; // reset flag anti-duplicado
+    list._showingEmpty = false;
     list.innerHTML = '';
 
-    
     const filtered = (items || []).filter(it => {
         const v = String(it?.[valueField] ?? '');
         const t = String(it?.[textField] ?? '').trim().toLowerCase();
@@ -656,9 +706,36 @@ function renderResults(list, items, select, valueField, textField) {
         lb.textContent = txt;
 
         cb.addEventListener('change', () => {
+            // try to enforce selection limit
+            const maxSelRaw = parseInt(select.dataset.maxSelected || '0', 10);
+            const maxSel = (Number.isNaN(maxSelRaw) || maxSelRaw <= 0) ? Infinity : maxSelRaw;
+
+            if (cb.checked) {
+                const currentCount = Array.from(select.options).filter(o => o.selected && o.value).length;
+                // we will select now via syncSelectOption; check future count
+                if (currentCount >= maxSel) {
+                    // revert check
+                    cb.checked = false;
+                    // show quick hint
+                    const hintEl = document.getElementById(select.id + '__hint');
+                    if (hintEl) {
+                        const prev = hintEl.textContent;
+                        hintEl.textContent = `Solo puede seleccionar ${maxSel}`;
+                        setTimeout(() => { hintEl.textContent = prev; }, 1200);
+                    }
+                    return;
+                }
+            }
+
+            // sync hidden select
             syncSelectOption(select, val, txt, cb.checked);
+
+            // update button text
             const wrap = document.getElementById(select.id + '__mswrap');
             if (wrap && typeof wrap._updateButtonText === 'function') wrap._updateButtonText();
+
+            // disable others if needed
+            enforceMaxSelected(list, select);
         });
 
         row.appendChild(cb);
@@ -667,9 +744,29 @@ function renderResults(list, items, select, valueField, textField) {
     });
 }
 
-// ===================== estados de lista =====================
+// enforce maxSelected by disabling unchecked boxes when reached
+function enforceMaxSelected(list, select) {
+    const maxSelRaw = parseInt(select.dataset.maxSelected || '0', 10);
+    const maxSel = (Number.isNaN(maxSelRaw) || maxSelRaw <= 0) ? Infinity : maxSelRaw;
+    const selectedCount = Array.from(select.options).filter(o => o.selected && o.value).length;
+    const reached = selectedCount >= maxSel;
+
+    const boxes = list.querySelectorAll('input.msitem[type="checkbox"]');
+    boxes.forEach(cb => {
+        if (reached && !cb.checked) cb.disabled = true;
+        else cb.disabled = false;
+    });
+
+    // update button text if available
+    const wrap = document.getElementById(select.id + '__mswrap');
+    if (wrap && typeof wrap._updateButtonText === 'function') wrap._updateButtonText();
+}
+
+// ===================================================================
+// Empty / idle states
+// ===================================================================
 function renderNoResults(list) {
-    if (list._showingEmpty) return;  // evita duplicados por llamadas seguidas
+    if (list._showingEmpty) return;
     list._showingEmpty = true;
     list.innerHTML = '';
     const div = document.createElement('div');
@@ -680,12 +777,14 @@ function renderNoResults(list) {
 
 function renderIdleList(list) {
     list._showingEmpty = false;
-    list.innerHTML = ''; // estado inicial: nada
+    list.innerHTML = '';
 }
 
-// ===================== sync option del <select> oculto =====================
+// ===================================================================
+// Sync <select> hidden option
+// ===================================================================
 function syncSelectOption(select, value, text, selected) {
-    if (!value) return; 
+    if (!value) return;
     let opt = Array.from(select.options).find(o => o.value === value);
     if (!opt) {
         opt = document.createElement('option');
@@ -696,7 +795,9 @@ function syncSelectOption(select, value, text, selected) {
     opt.selected = !!selected;
 }
 
-// ===================== utils =====================
+// ===================================================================
+// Utils
+// ===================================================================
 function normStr(s) {
     return (s ?? '')
         .toString()
@@ -726,8 +827,215 @@ function debounce(fn, wait = 300) {
     return wrapped;
 }
 
+// ===================================================================
+// Submit: create BOM
+// - requires exactly 1 production material
+// - merges consumo + combustible + alterno into one array
+// ===================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    const btnCrear = document.getElementById('crearBOM');
+    if (!btnCrear) return;
 
-//___________________________________________________________________ Crear (POST) __________________________________________________________________//
+    btnCrear.addEventListener('click', async () => {
+        const url = btnCrear.getAttribute('data-url');
+        if (!url) { alert('No se encontro la URL de creacion.'); return; }
+
+        btnCrear.disabled = true;
+        try { cargando(); } catch (_) {}
+
+        // read helpers
+        const getSelectedInts = (selectId) => {
+            const el = document.getElementById(selectId);
+            if (!el) return [];
+            return Array.from(el.options)
+                .filter(o => o.selected && o.value)
+                .map(o => parseInt(o.value, 10))
+                .filter(n => !Number.isNaN(n));
+        };
+        const getInt = (id) => {
+            const el = document.getElementById(id); if (!el) return null;
+            const v = parseInt(el.value, 10); return Number.isNaN(v) ? null : v;
+        };
+        const getDec = (id) => {
+            const el = document.getElementById(id); if (!el) return null;
+            const v = parseFloat(el.value); return Number.isNaN(v) ? null : v;
+        };
+        const getBool = (id) => !!document.getElementById(id)?.checked;
+
+        // read values
+        const prodIds = getSelectedInts('_materialProduccionID'); // must be exactly 1
+        const consIds = getSelectedInts('_materialConsumoID');
+        const combIds = getSelectedInts('_materialConsumoCombustibleID');
+        const altIds  = getSelectedInts('_materialAlternoID');
+
+        const consumoAllIds = Array.from(new Set([ ...consIds, ...combIds, ...altIds ]));
+
+        const tipoMovId = getInt('_tipoMovimientoSAPID'); // optional
+        const equipoId  = getInt('_equipoID');            // required
+        const factor    = getDec('_factorConsumo');       // optional -> backend normalizes to 0
+        const seco      = getBool('_consumoSeco');
+        const humedo    = getBool('_consumoHumedo');
+
+        // validations
+        if (prodIds.length !== 1) {
+            alert('Debe seleccionar exactamente un (1) material de produccion.');
+            btnCrear.disabled = false;
+            document.getElementById('_materialProduccionID__btn')?.focus();
+            cargandoOff();
+            return;
+        }
+        if (!equipoId) {
+            alert('Debe seleccionar un equipo.');
+            btnCrear.disabled = false;
+            document.getElementById('_equipoID')?.focus();
+            cargandoOff();
+            return;
+        }
+        if (!consumoAllIds.length) {
+            alert('Debe seleccionar al menos un material de consumo (incluye combustible/alterno).');
+            btnCrear.disabled = false;
+            document.getElementById('_materialConsumoID__btn')?.focus();
+            cargandoOff();
+            return;
+        }
+
+        const payload = {
+            _materialProduccionIDs: prodIds,       // exactly one
+            _materialConsumoIDs: consumoAllIds,    // unified
+            _tipoMovimientoSAPID: tipoMovId,       // can be null
+            _equipoID: equipoId,
+            _factorConsumo: factor,                // can be null
+            _consumoSeco: seco,
+            _consumoHumedo: humedo
+        };
+
+        try {
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+            const data = await resp.json();
+            if (data && data.success) {
+                // reset UI
+                document.querySelector('#newBOM form')?.reset();
+                ['_materialProduccionID','_materialConsumoID','_materialConsumoCombustibleID','_materialAlternoID','_tipoMovimientoSAPID','_equipoID']
+                    .forEach(id => limpiarSelect(id));
+
+                // success alert
+                const alertEl = document.getElementById('alertSuccessBOM');
+                if (alertEl) {
+                    alertEl.textContent = data.message || 'Creado exitosamente';
+                    alertEl.style.display = 'block';
+                    setTimeout(() => { alertEl.style.display = 'none'; }, 3500);
+                }
+
+                // close modal
+                const modalEl = document.getElementById('newBOM');
+                (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)).hide();
+
+                // refresh table if present
+                if (typeof loadTable === 'function') loadTable();
+            } else {
+                alert((data && data.message) ? data.message : 'No se pudo crear la BOM.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error inesperado al crear la BOM.');
+        } finally {
+            btnCrear.disabled = false;
+            cargandoOff();
+        }
+    });
+});
+
+
+    //___________________________________________________________________ Mostrar BOM __________________________________________________________________//
+
+
+    function loadTable() {
+    const tbody = document.getElementById('bomTableBody');
+    tbody.innerHTML = ''; // limpiar contenido anterior
+
+    cargando();
+
+    fetch('@Url.Action("GetBOMs", "BillOfMaterial")')
+        .then(response => {
+            if (!response.ok) throw new Error("Error al obtener los datos.");
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success || !Array.isArray(data.data)) {
+                alert("La respuesta del servidor no es válida.");
+                return;
+            }
+
+            const boms = data.data;
+
+            // guardamos ultimo valor impreso por columna
+            let lastProd = null;
+            let lastOp   = null;
+            let lastMov  = null;
+            let lastFactor = null;
+            let lastEq   = null;
+            let lastFecha = null;
+
+            boms.forEach(item => {
+                const row = document.createElement('tr');
+
+                // si es igual al anterior -> cadena vacía
+                const prod  = (item._materialProduccionDescripcion === lastProd) ? '' : item._materialProduccionDescripcion || '';
+                const op    = (item._tipoOperacionDescripcion === lastOp) ? '' : item._tipoOperacionDescripcion || '';
+                const mov   = (item._tipoMovimientoSAPDescripcion === lastMov) ? '' : item._tipoMovimientoSAPDescripcion || '';
+                const fact  = (item._factorConsumo === lastFactor) ? '' : (item._factorConsumo ?? '');
+                const eq    = (item._equipoDescripcion === lastEq) ? '' : item._equipoDescripcion || '';
+                const fecha = (item._fechaBOM === lastFecha) ? '' : (item._fechaBOM ? new Date(item._fechaBOM).toLocaleDateString() : '');
+
+                row.innerHTML = `
+                    <td class="text-center">${prod}</td>
+                    <td class="text-center">${op}</td>
+                    <td class="text-center">${mov}</td>
+                    <td class="text-center">${fact}</td>
+                    <td class="text-center">${eq}</td>
+                    <td class="text-center">
+                        ${item._consumoSeco ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}
+                    </td>
+                    <td class="text-center">
+                        ${item._consumoHumedo ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}
+                    </td>
+                    <td class="text-center">${fecha}</td>
+                    <td class="text-center">${item._materialConsumoDescripcion || ''}</td>
+                    <td class="text-center bg-white">
+                        <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditar(${item._billOfMaterialID})">
+                            <i class="bi bi-pencil me-2"></i>
+                        </a>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+
+                // actualizar ultimos valores
+                lastProd   = item._materialProduccionDescripcion;
+                lastOp     = item._tipoOperacionDescripcion;
+                lastMov    = item._tipoMovimientoSAPDescripcion;
+                lastFactor = item._factorConsumo;
+                lastEq     = item._equipoDescripcion;
+                lastFecha  = item._fechaBOM;
+            });
+        })
+        .catch(error => {
+            console.error("Error cargando la tabla BOM:", error);
+            alert("Ocurrió un error al cargar la BOM.");
+        })
+        .finally(() => {
+            const lm = document.getElementById("loadingModal");
+            if (lm) lm.style.display = "none";
+        });
+}
+
+document.addEventListener('DOMContentLoaded', loadTable);
 
 
 </script>

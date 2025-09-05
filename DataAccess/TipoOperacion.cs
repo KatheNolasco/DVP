@@ -18,8 +18,8 @@ namespace DataAccess
         public TipoOperacion()
         {
             this.DataOperacion = new HashSet<DataOperacion>();
-            this.BillOfMaterial = new HashSet<BillOfMaterial>();
             this.TagEquipo = new HashSet<TagEquipo>();
+            this.BillOfMaterial = new HashSet<BillOfMaterial>();
         }
     
         public int TipoOperacionID { get; set; }
@@ -29,8 +29,8 @@ namespace DataAccess
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<DataOperacion> DataOperacion { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<BillOfMaterial> BillOfMaterial { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<TagEquipo> TagEquipo { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<BillOfMaterial> BillOfMaterial { get; set; }
     }
 }

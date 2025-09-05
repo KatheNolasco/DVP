@@ -19,6 +19,7 @@
           <Property Name="ConsumoHumedo" Type="bit" />
           <Property Name="FechaBOM" Type="datetime" />
           <Property Name="MaterialConsumoID" Type="int" />
+          <Property Name="Active" Type="bit" />
         </EntityType>
         <EntityType Name="CierreStatus">
           <Key>
@@ -1627,15 +1628,6 @@
             <End Role="UnidadMedida" EntitySet="UnidadMedida" />
             <End Role="DataOperacion" EntitySet="DataOperacion" />
           </AssociationSet>
-          <EntitySet Name="BillOfMaterial" EntityType="DVPModel.BillOfMaterial" />
-          <AssociationSet Name="FK_TipoMovimientoSAPID_BillOfMaterial" Association="DVPModel.FK_TipoMovimientoSAPID_BillOfMaterial">
-            <End Role="TipoMovimientoSAP" EntitySet="TipoMovimientoSAP" />
-            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
-          </AssociationSet>
-          <AssociationSet Name="FK_TipoOperacion_BillOfMaterial" Association="DVPModel.FK_TipoOperacion_BillOfMaterial">
-            <End Role="TipoOperacion" EntitySet="TipoOperacion" />
-            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
-          </AssociationSet>
           <EntitySet Name="TagEquipo" EntityType="DVPModel.TagEquipo" />
           <AssociationSet Name="FK_TagEquipo_TipoOperacion" Association="DVPModel.FK_TagEquipo_TipoOperacion">
             <End Role="TipoOperacion" EntitySet="TipoOperacion" />
@@ -1646,10 +1638,6 @@
           <EntitySet Name="Equipo" EntityType="DVPModel.Equipo" />
           <EntitySet Name="SubEquipo" EntityType="DVPModel.SubEquipo" />
           <EntitySet Name="TipoFalla" EntityType="DVPModel.TipoFalla" />
-          <AssociationSet Name="FK_BillOfMaterial_Equipo" Association="DVPModel.FK_BillOfMaterial_Equipo">
-            <End Role="Equipo" EntitySet="Equipo" />
-            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
-          </AssociationSet>
           <AssociationSet Name="FK_Clasificacion_Paros" Association="DVPModel.FK_Clasificacion_Paros">
             <End Role="Clasificacion" EntitySet="Clasificacion" />
             <End Role="Paros" EntitySet="Paros" />
@@ -1711,14 +1699,6 @@
             <End Role="Paros" EntitySet="Paros" />
           </AssociationSet>
           <EntitySet Name="Material" EntityType="DVPModel.Material" />
-          <AssociationSet Name="FK_BillOfMaterial_MaterialConsumo" Association="DVPModel.FK_BillOfMaterial_MaterialConsumo">
-            <End Role="Material" EntitySet="Material" />
-            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
-          </AssociationSet>
-          <AssociationSet Name="FK_Material_BillOfMaterial" Association="DVPModel.FK_Material_BillOfMaterial">
-            <End Role="Material" EntitySet="Material" />
-            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
-          </AssociationSet>
           <AssociationSet Name="FK_ClasificacionMaterial_Material" Association="DVPModel.FK_ClasificacionMaterial_Material">
             <End Role="ClasificacionMaterial" EntitySet="ClasificacionMaterial" />
             <End Role="Material" EntitySet="Material" />
@@ -1742,6 +1722,27 @@
           <AssociationSet Name="FK_TagEquipo_Material" Association="DVPModel.FK_TagEquipo_Material">
             <End Role="Material" EntitySet="Material" />
             <End Role="TagEquipo" EntitySet="TagEquipo" />
+          </AssociationSet>
+          <EntitySet Name="BillOfMaterial" EntityType="DVPModel.BillOfMaterial" />
+          <AssociationSet Name="FK_BillOfMaterial_Equipo" Association="DVPModel.FK_BillOfMaterial_Equipo">
+            <End Role="Equipo" EntitySet="Equipo" />
+            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
+          </AssociationSet>
+          <AssociationSet Name="FK_BillOfMaterial_MaterialConsumo" Association="DVPModel.FK_BillOfMaterial_MaterialConsumo">
+            <End Role="Material" EntitySet="Material" />
+            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Material_BillOfMaterial" Association="DVPModel.FK_Material_BillOfMaterial">
+            <End Role="Material" EntitySet="Material" />
+            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TipoMovimientoSAPID_BillOfMaterial" Association="DVPModel.FK_TipoMovimientoSAPID_BillOfMaterial">
+            <End Role="TipoMovimientoSAP" EntitySet="TipoMovimientoSAP" />
+            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
+          </AssociationSet>
+          <AssociationSet Name="FK_TipoOperacion_BillOfMaterial" Association="DVPModel.FK_TipoOperacion_BillOfMaterial">
+            <End Role="TipoOperacion" EntitySet="TipoOperacion" />
+            <End Role="BillOfMaterial" EntitySet="BillOfMaterial" />
           </AssociationSet>
         </EntityContainer>
         <ComplexType Name="sp_helpdiagramdefinition_Result">
@@ -1775,8 +1776,8 @@
           <Property Name="Descripcion" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
           <Property Name="AfectaInventario" Type="Boolean" />
           <NavigationProperty Name="DataOperacion" Relationship="DVPModel.FK_TipoOperacion_DataOperacion" FromRole="TipoOperacion" ToRole="DataOperacion" />
-          <NavigationProperty Name="BillOfMaterial" Relationship="DVPModel.FK_TipoOperacion_BillOfMaterial" FromRole="TipoOperacion" ToRole="BillOfMaterial" />
           <NavigationProperty Name="TagEquipo" Relationship="DVPModel.FK_TagEquipo_TipoOperacion" FromRole="TipoOperacion" ToRole="TagEquipo" />
+          <NavigationProperty Name="BillOfMaterial" Relationship="DVPModel.FK_TipoOperacion_BillOfMaterial" FromRole="TipoOperacion" ToRole="BillOfMaterial" />
         </EntityType>
         <EntityType Name="DataOperacion">
           <Key>
@@ -1833,50 +1834,6 @@
             </Principal>
             <Dependent Role="DataOperacion">
               <PropertyRef Name="UnidadMedidaID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <EntityType Name="BillOfMaterial">
-          <Key>
-            <PropertyRef Name="BillOfMaterialID" />
-          </Key>
-          <Property Name="BillOfMaterialID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="MaterialProduccionID" Type="Int32" />
-          <Property Name="TipoOperacionID" Type="Int32" />
-          <Property Name="TipoMovimientoSAPID" Type="Int32" />
-          <Property Name="FactorConsumo" Type="Decimal" Precision="18" Scale="5" />
-          <Property Name="EquipoID" Type="Int32" />
-          <Property Name="ConsumoSeco" Type="Boolean" />
-          <Property Name="ConsumoHumedo" Type="Boolean" />
-          <Property Name="FechaBOM" Type="DateTime" Precision="3" />
-          <Property Name="MaterialConsumoID" Type="Int32" />
-          <NavigationProperty Name="TipoMovimientoSAP" Relationship="DVPModel.FK_TipoMovimientoSAPID_BillOfMaterial" FromRole="BillOfMaterial" ToRole="TipoMovimientoSAP" />
-          <NavigationProperty Name="TipoOperacion" Relationship="DVPModel.FK_TipoOperacion_BillOfMaterial" FromRole="BillOfMaterial" ToRole="TipoOperacion" />
-          <NavigationProperty Name="Equipo" Relationship="DVPModel.FK_BillOfMaterial_Equipo" FromRole="BillOfMaterial" ToRole="Equipo" />
-          <NavigationProperty Name="Material" Relationship="DVPModel.FK_BillOfMaterial_MaterialConsumo" FromRole="BillOfMaterial" ToRole="Material" />
-          <NavigationProperty Name="Material1" Relationship="DVPModel.FK_Material_BillOfMaterial" FromRole="BillOfMaterial" ToRole="Material" />
-          </EntityType>
-        <Association Name="FK_TipoMovimientoSAPID_BillOfMaterial">
-          <End Type="DVPModel.TipoMovimientoSAP" Role="TipoMovimientoSAP" Multiplicity="0..1" />
-          <End Type="DVPModel.BillOfMaterial" Role="BillOfMaterial" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="TipoMovimientoSAP">
-              <PropertyRef Name="TipoMovimientoSAPID" />
-            </Principal>
-            <Dependent Role="BillOfMaterial">
-              <PropertyRef Name="TipoMovimientoSAPID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_TipoOperacion_BillOfMaterial">
-          <End Type="DVPModel.TipoOperacion" Role="TipoOperacion" Multiplicity="0..1" />
-          <End Type="DVPModel.BillOfMaterial" Role="BillOfMaterial" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="TipoOperacion">
-              <PropertyRef Name="TipoOperacionID" />
-            </Principal>
-            <Dependent Role="BillOfMaterial">
-              <PropertyRef Name="TipoOperacionID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -1949,7 +1906,6 @@
           <Property Name="EnviarASAP" Type="Boolean" />
           <Property Name="FechaCreación" Type="DateTime" Precision="3" />
           <Property Name="CodigoDet" Type="String" MaxLength="500" FixedLength="false" Unicode="true" />
-          <NavigationProperty Name="BillOfMaterial" Relationship="DVPModel.FK_BillOfMaterial_Equipo" FromRole="Equipo" ToRole="BillOfMaterial" />
           <NavigationProperty Name="DataOperacion" Relationship="DVPModel.FK_Equipo_DataOperacion" FromRole="Equipo" ToRole="DataOperacion" />
           <NavigationProperty Name="Paros" Relationship="DVPModel.FK_Equipo_Paros" FromRole="Equipo" ToRole="Paros" />
           <NavigationProperty Name="SubEquipo" Relationship="DVPModel.FK_Equipo_SeccionEquipo" FromRole="Equipo" ToRole="SubEquipo" />
@@ -1958,6 +1914,7 @@
           <NavigationProperty Name="Proceso" Relationship="DVPModel.FK_Proceso_Equipo" FromRole="Equipo" ToRole="Proceso" />
           <NavigationProperty Name="TagEquipo" Relationship="DVPModel.FK_TagEquipo_Equipo" FromRole="Equipo" ToRole="TagEquipo" />
           <NavigationProperty Name="UnidadOperativa" Relationship="DVPModel.FK_UnidadOperativa_Equipo" FromRole="Equipo" ToRole="UnidadOperativa" />
+          <NavigationProperty Name="BillOfMaterial" Relationship="DVPModel.FK_BillOfMaterial_Equipo" FromRole="Equipo" ToRole="BillOfMaterial" />
         </EntityType>
         <EntityType Name="SubEquipo">
           <Key>
@@ -1984,18 +1941,6 @@
           <NavigationProperty Name="ComponenteEquipo" Relationship="DVPModel.FK_ComponenteEquipo_TipoFalla" FromRole="TipoFalla" ToRole="ComponenteEquipo" />
           <NavigationProperty Name="Paros" Relationship="DVPModel.FK_TipoFalla_Paros" FromRole="TipoFalla" ToRole="Paros" />
         </EntityType>
-        <Association Name="FK_BillOfMaterial_Equipo">
-          <End Type="DVPModel.Equipo" Role="Equipo" Multiplicity="0..1" />
-          <End Type="DVPModel.BillOfMaterial" Role="BillOfMaterial" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Equipo">
-              <PropertyRef Name="EquipoID" />
-            </Principal>
-            <Dependent Role="BillOfMaterial">
-              <PropertyRef Name="EquipoID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK_Clasificacion_Paros">
           <End Type="DVPModel.Clasificacion" Role="Clasificacion" Multiplicity="0..1" />
           <End Type="DVPModel.Paros" Role="Paros" Multiplicity="*" />
@@ -2192,39 +2137,15 @@
           <Property Name="Activo" Type="Boolean" />
           <Property Name="PlantaID" Type="Int32" />
           <Property Name="UnidadMedidaID" Type="Int32" />
-          <NavigationProperty Name="BillOfMaterial" Relationship="DVPModel.FK_BillOfMaterial_MaterialConsumo" FromRole="Material" ToRole="BillOfMaterial" />
-          <NavigationProperty Name="BillOfMaterial1" Relationship="DVPModel.FK_Material_BillOfMaterial" FromRole="Material" ToRole="BillOfMaterial" />
           <NavigationProperty Name="ClasificacionMaterial" Relationship="DVPModel.FK_ClasificacionMaterial_Material" FromRole="Material" ToRole="ClasificacionMaterial" />
           <NavigationProperty Name="DataOperacion" Relationship="DVPModel.FK_CantidadReal_DataOperacion" FromRole="Material" ToRole="DataOperacion" />
           <NavigationProperty Name="DataOperacion1" Relationship="DVPModel.FK_Material_DataOperacion" FromRole="Material" ToRole="DataOperacion" />
           <NavigationProperty Name="Planta" Relationship="DVPModel.FK_Material_Planta" FromRole="Material" ToRole="Planta" />
           <NavigationProperty Name="UnidadMedida" Relationship="DVPModel.FK_Material_UnidadMedida" FromRole="Material" ToRole="UnidadMedida" />
           <NavigationProperty Name="TagEquipo" Relationship="DVPModel.FK_TagEquipo_Material" FromRole="Material" ToRole="TagEquipo" />
+          <NavigationProperty Name="BillOfMaterial" Relationship="DVPModel.FK_BillOfMaterial_MaterialConsumo" FromRole="Material" ToRole="BillOfMaterial" />
+          <NavigationProperty Name="BillOfMaterial1" Relationship="DVPModel.FK_Material_BillOfMaterial" FromRole="Material" ToRole="BillOfMaterial" />
         </EntityType>
-        <Association Name="FK_BillOfMaterial_MaterialConsumo">
-          <End Type="DVPModel.Material" Role="Material" Multiplicity="0..1" />
-          <End Type="DVPModel.BillOfMaterial" Role="BillOfMaterial" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Material">
-              <PropertyRef Name="MaterialID" />
-            </Principal>
-            <Dependent Role="BillOfMaterial">
-              <PropertyRef Name="MaterialConsumoID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_Material_BillOfMaterial">
-          <End Type="DVPModel.Material" Role="Material" Multiplicity="0..1" />
-          <End Type="DVPModel.BillOfMaterial" Role="BillOfMaterial" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Material">
-              <PropertyRef Name="MaterialID" />
-            </Principal>
-            <Dependent Role="BillOfMaterial">
-              <PropertyRef Name="MaterialProduccionID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK_ClasificacionMaterial_Material">
           <End Type="DVPModel.ClasificacionMaterial" Role="ClasificacionMaterial" Multiplicity="0..1" />
           <End Type="DVPModel.Material" Role="Material" Multiplicity="*" />
@@ -2294,6 +2215,87 @@
             </Principal>
             <Dependent Role="TagEquipo">
               <PropertyRef Name="MaterialID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="BillOfMaterial">
+          <Key>
+            <PropertyRef Name="BillOfMaterialID" />
+          </Key>
+          <Property Name="BillOfMaterialID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="MaterialProduccionID" Type="Int32" />
+          <Property Name="TipoOperacionID" Type="Int32" />
+          <Property Name="TipoMovimientoSAPID" Type="Int32" />
+          <Property Name="FactorConsumo" Type="Decimal" Precision="18" Scale="5" />
+          <Property Name="EquipoID" Type="Int32" />
+          <Property Name="ConsumoSeco" Type="Boolean" />
+          <Property Name="ConsumoHumedo" Type="Boolean" />
+          <Property Name="FechaBOM" Type="DateTime" Precision="3" />
+          <Property Name="MaterialConsumoID" Type="Int32" />
+          <Property Name="Active" Type="Boolean" />
+          <NavigationProperty Name="Equipo" Relationship="DVPModel.FK_BillOfMaterial_Equipo" FromRole="BillOfMaterial" ToRole="Equipo" />
+          <NavigationProperty Name="Material" Relationship="DVPModel.FK_BillOfMaterial_MaterialConsumo" FromRole="BillOfMaterial" ToRole="Material" />
+          <NavigationProperty Name="Material1" Relationship="DVPModel.FK_Material_BillOfMaterial" FromRole="BillOfMaterial" ToRole="Material" />
+          <NavigationProperty Name="TipoMovimientoSAP" Relationship="DVPModel.FK_TipoMovimientoSAPID_BillOfMaterial" FromRole="BillOfMaterial" ToRole="TipoMovimientoSAP" />
+          <NavigationProperty Name="TipoOperacion" Relationship="DVPModel.FK_TipoOperacion_BillOfMaterial" FromRole="BillOfMaterial" ToRole="TipoOperacion" />
+        </EntityType>
+        <Association Name="FK_BillOfMaterial_Equipo">
+          <End Type="DVPModel.Equipo" Role="Equipo" Multiplicity="0..1" />
+          <End Type="DVPModel.BillOfMaterial" Role="BillOfMaterial" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Equipo">
+              <PropertyRef Name="EquipoID" />
+            </Principal>
+            <Dependent Role="BillOfMaterial">
+              <PropertyRef Name="EquipoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_BillOfMaterial_MaterialConsumo">
+          <End Type="DVPModel.Material" Role="Material" Multiplicity="0..1" />
+          <End Type="DVPModel.BillOfMaterial" Role="BillOfMaterial" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Material">
+              <PropertyRef Name="MaterialID" />
+            </Principal>
+            <Dependent Role="BillOfMaterial">
+              <PropertyRef Name="MaterialConsumoID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Material_BillOfMaterial">
+          <End Type="DVPModel.Material" Role="Material" Multiplicity="0..1" />
+          <End Type="DVPModel.BillOfMaterial" Role="BillOfMaterial" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Material">
+              <PropertyRef Name="MaterialID" />
+            </Principal>
+            <Dependent Role="BillOfMaterial">
+              <PropertyRef Name="MaterialProduccionID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TipoMovimientoSAPID_BillOfMaterial">
+          <End Type="DVPModel.TipoMovimientoSAP" Role="TipoMovimientoSAP" Multiplicity="0..1" />
+          <End Type="DVPModel.BillOfMaterial" Role="BillOfMaterial" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoMovimientoSAP">
+              <PropertyRef Name="TipoMovimientoSAPID" />
+            </Principal>
+            <Dependent Role="BillOfMaterial">
+              <PropertyRef Name="TipoMovimientoSAPID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_TipoOperacion_BillOfMaterial">
+          <End Type="DVPModel.TipoOperacion" Role="TipoOperacion" Multiplicity="0..1" />
+          <End Type="DVPModel.BillOfMaterial" Role="BillOfMaterial" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoOperacion">
+              <PropertyRef Name="TipoOperacionID" />
+            </Principal>
+            <Dependent Role="BillOfMaterial">
+              <PropertyRef Name="TipoOperacionID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -2589,22 +2591,6 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="BillOfMaterial">
-            <EntityTypeMapping TypeName="DVPModel.BillOfMaterial">
-              <MappingFragment StoreEntitySet="BillOfMaterial">
-                <ScalarProperty Name="MaterialConsumoID" ColumnName="MaterialConsumoID" />
-                <ScalarProperty Name="FechaBOM" ColumnName="FechaBOM" />
-                <ScalarProperty Name="ConsumoHumedo" ColumnName="ConsumoHumedo" />
-                <ScalarProperty Name="ConsumoSeco" ColumnName="ConsumoSeco" />
-                <ScalarProperty Name="EquipoID" ColumnName="EquipoID" />
-                <ScalarProperty Name="FactorConsumo" ColumnName="FactorConsumo" />
-                <ScalarProperty Name="TipoMovimientoSAPID" ColumnName="TipoMovimientoSAPID" />
-                <ScalarProperty Name="TipoOperacionID" ColumnName="TipoOperacionID" />
-                <ScalarProperty Name="MaterialProduccionID" ColumnName="MaterialProduccionID" />
-                <ScalarProperty Name="BillOfMaterialID" ColumnName="BillOfMaterialID" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <EntitySetMapping Name="TagEquipo">
             <EntityTypeMapping TypeName="DVPModel.TagEquipo">
               <MappingFragment StoreEntitySet="TagEquipo">
@@ -2695,6 +2681,23 @@
                 <ScalarProperty Name="CodSAPNuevo" ColumnName="CodSAPNuevo" />
                 <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
                 <ScalarProperty Name="MaterialID" ColumnName="MaterialID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="BillOfMaterial">
+            <EntityTypeMapping TypeName="DVPModel.BillOfMaterial">
+              <MappingFragment StoreEntitySet="BillOfMaterial">
+                <ScalarProperty Name="Active" ColumnName="Active" />
+                <ScalarProperty Name="MaterialConsumoID" ColumnName="MaterialConsumoID" />
+                <ScalarProperty Name="FechaBOM" ColumnName="FechaBOM" />
+                <ScalarProperty Name="ConsumoHumedo" ColumnName="ConsumoHumedo" />
+                <ScalarProperty Name="ConsumoSeco" ColumnName="ConsumoSeco" />
+                <ScalarProperty Name="EquipoID" ColumnName="EquipoID" />
+                <ScalarProperty Name="FactorConsumo" ColumnName="FactorConsumo" />
+                <ScalarProperty Name="TipoMovimientoSAPID" ColumnName="TipoMovimientoSAPID" />
+                <ScalarProperty Name="TipoOperacionID" ColumnName="TipoOperacionID" />
+                <ScalarProperty Name="MaterialProduccionID" ColumnName="MaterialProduccionID" />
+                <ScalarProperty Name="BillOfMaterialID" ColumnName="BillOfMaterialID" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>

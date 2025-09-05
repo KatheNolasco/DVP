@@ -44,9 +44,6 @@
         <AssociationConnector Association="DVPModel.FK_TipoMovimientoSAPID_DataOperacion" />
         <AssociationConnector Association="DVPModel.FK_TipoOperacion_DataOperacion" />
         <AssociationConnector Association="DVPModel.FK_UnidadMedida_DataOperacion" />
-        <EntityTypeShape EntityType="DVPModel.BillOfMaterial" Width="1.5" PointX="13.625" PointY="13.625" />
-        <AssociationConnector Association="DVPModel.FK_TipoMovimientoSAPID_BillOfMaterial" />
-        <AssociationConnector Association="DVPModel.FK_TipoOperacion_BillOfMaterial" />
         <EntityTypeShape EntityType="DVPModel.TagEquipo" Width="1.5" PointX="9.625" PointY="7" />
         <AssociationConnector Association="DVPModel.FK_TagEquipo_TipoOperacion" />
         <EntityTypeShape EntityType="DVPModel.Clasificacion" Width="1.5" PointX="7.5" PointY="28.625" />
@@ -54,7 +51,6 @@
         <EntityTypeShape EntityType="DVPModel.Equipo" Width="1.5" PointX="3" PointY="16" />
         <EntityTypeShape EntityType="DVPModel.SubEquipo" Width="1.5" PointX="5.25" PointY="22.375" />
         <EntityTypeShape EntityType="DVPModel.TipoFalla" Width="1.5" PointX="12.75" PointY="20.375" />
-        <AssociationConnector Association="DVPModel.FK_BillOfMaterial_Equipo" />
         <AssociationConnector Association="DVPModel.FK_Clasificacion_Paros" />
         <AssociationConnector Association="DVPModel.FK_Clasificacion_TipoFalla" />
         <AssociationConnector Association="DVPModel.FK_ComponenteEquipo_Paros" />
@@ -71,14 +67,18 @@
         <AssociationConnector Association="DVPModel.FK_SubEquipo_Paros" />
         <AssociationConnector Association="DVPModel.FK_TipoFalla_Paros" />
         <EntityTypeShape EntityType="DVPModel.Material" Width="1.5" PointX="5.25" PointY="8.875" />
-        <AssociationConnector Association="DVPModel.FK_BillOfMaterial_MaterialConsumo" />
-        <AssociationConnector Association="DVPModel.FK_Material_BillOfMaterial" />
         <AssociationConnector Association="DVPModel.FK_ClasificacionMaterial_Material" />
         <AssociationConnector Association="DVPModel.FK_CantidadReal_DataOperacion" />
         <AssociationConnector Association="DVPModel.FK_Material_DataOperacion" />
         <AssociationConnector Association="DVPModel.FK_Material_Planta" />
         <AssociationConnector Association="DVPModel.FK_Material_UnidadMedida" />
         <AssociationConnector Association="DVPModel.FK_TagEquipo_Material" />
+        <EntityTypeShape EntityType="DVPModel.BillOfMaterial" Width="1.5" PointX="13.625" PointY="14" />
+        <AssociationConnector Association="DVPModel.FK_BillOfMaterial_Equipo" />
+        <AssociationConnector Association="DVPModel.FK_BillOfMaterial_MaterialConsumo" />
+        <AssociationConnector Association="DVPModel.FK_Material_BillOfMaterial" />
+        <AssociationConnector Association="DVPModel.FK_TipoMovimientoSAPID_BillOfMaterial" />
+        <AssociationConnector Association="DVPModel.FK_TipoOperacion_BillOfMaterial" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

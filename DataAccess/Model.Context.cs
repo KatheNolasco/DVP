@@ -50,7 +50,6 @@ namespace DataAccess
         public virtual DbSet<Inventarios> Inventarios { get; set; }
         public virtual DbSet<TipoOperacion> TipoOperacion { get; set; }
         public virtual DbSet<DataOperacion> DataOperacion { get; set; }
-        public virtual DbSet<BillOfMaterial> BillOfMaterial { get; set; }
         public virtual DbSet<TagEquipo> TagEquipo { get; set; }
         public virtual DbSet<Clasificacion> Clasificacion { get; set; }
         public virtual DbSet<ComponenteEquipo> ComponenteEquipo { get; set; }
@@ -58,6 +57,7 @@ namespace DataAccess
         public virtual DbSet<SubEquipo> SubEquipo { get; set; }
         public virtual DbSet<TipoFalla> TipoFalla { get; set; }
         public virtual DbSet<Material> Material { get; set; }
+        public virtual DbSet<BillOfMaterial> BillOfMaterial { get; set; }
     
         public virtual int sp_alterdiagram(string diagramname, Nullable<int> owner_id, Nullable<int> version, byte[] definition)
         {
