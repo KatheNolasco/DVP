@@ -15,6 +15,7 @@ namespace DVP.Models
         public string _codSAPNuevo { get; set; }
         public string _codOldSAP { get; set; }
         public bool? _producido { get; set; }
+        public bool? _consumido { get; set; }
         public int? _clasificacionMaterialID { get; set; }
         public string _clasificacionMaterialdescripcion { get; set; }
         public bool? _alterno { get; set; }

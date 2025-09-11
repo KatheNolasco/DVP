@@ -110,6 +110,8 @@
                                                     <th class="text-center">New SAP code</th>
                                                     <th class="text-center">ID Stock</th>
                                                     <th class="text-center">Unidad Medida</th>
+                                                    <th class="text-center">Producido</th>
+                                                    <th class="text-center">Consumido</th>
                                                     <th class="text-center">Actions</th>
                                                 </tr>
                                             </thead>
@@ -201,6 +203,10 @@
                                         <div class="form-check form-switch mb-3">
                                             <input class="form-check-input" type="checkbox" id="_producido" name="Producido">
                                             <label class="form-check-label" for="_producido">Producido</label>
+                                        </div>
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="_consumido" name="Consumido">
+                                            <label class="form-check-label" for="_consumido">Consumido</label>
                                         </div>
                                         <div class="form-check form-switch mb-3">
                                             <input class="form-check-input" type="checkbox" id="_alterno" name="Alterno">
@@ -312,6 +318,10 @@
                                                     <input class="form-check-input" type="checkbox" id="_producidoeditar">
                                                     <label class="form-check-label" for="_producidoeditar">Producido</label>
                                                 </div>
+                                                <div class="form-check form-switch mb-3">
+                                                    <input class="form-check-input" type="checkbox" id="_consumidoeditar">
+                                                    <label class="form-check-label" for="_consumidoeditar">Consumido</label>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -419,6 +429,7 @@
         const plantaId = document.getElementById("_plantaId").value;
         const unidadMedidaId = document.getElementById("_unidadMedidaId").value;
         const producido = document.getElementById("_producido").checked;
+        const consumido = document.getElementById("_consumido").checked;
         const alterno = document.getElementById("_alterno").checked;
         const afectaInventario = document.getElementById("_afectaInventario").checked;
         const activo = document.getElementById("_activo").checked;
@@ -437,7 +448,8 @@
             _alterno: alterno,
             _afectaInventario: afectaInventario,
             _activo: activo,
-            _unidadMedidaId: unidadMedidaId
+            _unidadMedidaId: unidadMedidaId,
+            _consumido: consumido
         };
 
         // Enviar al backend vía fetch
@@ -512,6 +524,14 @@
                     ? '<i class="bi bi-check-circle-fill text-success"></i>'
                     : '<i class="bi bi-x-circle-fill text-danger"></i>';
 
+                const Producido = item._producido
+                    ? '<i class="bi bi-check-circle-fill text-success"></i>'
+                    : '<i class="bi bi-x-circle-fill text-danger"></i>';
+
+                const Consumido = item._consumido
+                    ? '<i class="bi bi-check-circle-fill text-success"></i>'
+                    : '<i class="bi bi-x-circle-fill text-danger"></i>';
+
                 row.innerHTML = `
                     <td class="text-center">
                         ${iconActivo}
@@ -520,6 +540,12 @@
                     <td class="text-center">${item._codSAPNuevo || ''}</td>
                     <td class="text-center">${item._idStock || ''}</td>
                     <td class="text-center">${item._unidadDescripcion || ''}</td>
+                    <td class="text-center">
+                       ${Producido}
+                    </td>
+                    <td class="text-center">
+                       ${Consumido}
+                    </td>
                     <td class="text-center bg-white">
                         <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditar(${item._materialID})">
                             <i class="bi bi-pencil me-2"></i>
@@ -617,6 +643,8 @@
       document.getElementById("_alternoeditar").checked = !!data._alterno;
       document.getElementById("_afectaInventarioeditar").checked = !!data._afectaInventario;
       document.getElementById("_idStockeditar").value = data._idStock || "";
+      document.getElementById("_consumidoeditar").checked = !!data._consumido;
+
 
       // Planta
       const plantaFromData = data._plantaId;
@@ -695,6 +723,7 @@
     _codSAPNuevo: (document.getElementById('_codSAPNuevoeditar').value || '').trim(),
     _codOldSAP: (document.getElementById('_codOldSAPeditar').value || '').trim(),
     _producido: document.getElementById('_producidoeditar').checked,
+    _consumido: document.getElementById('_consumidoeditar').checked,
     _clasificacionMaterialID: clasifVal === '' ? null : parseInt(clasifVal, 10),
     _activo: document.getElementById('_activoedit').checked,
     _alterno: document.getElementById('_alternoeditar').checked,

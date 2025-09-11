@@ -173,6 +173,7 @@
 
 
 <script>
+
     document.addEventListener("DOMContentLoaded", function () {
         // --------------------- helpers UI ---------------------
         const form = document.getElementById('formElemento');
@@ -259,9 +260,15 @@
 
             if (tipo === 'TipoMovimientoSAP') {
                 contenedor.innerHTML = `
-<div class="mb-3">
-  <label class="form-label">Descripcion</label>
-  <input type="text" class="form-control" id="_descripcion" required />
+<div class="row g-3">
+  <div class="col-md-6">
+    <label class="form-label">Descripcion</label>
+    <input type="text" class="form-control" id="_descripcion" placeholder="Ej. 261, 262, etc." required />
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Movimiento</label>
+    <input type="text" class="form-control" id="_descMov" placeholder="Ej. Produccion, Consumo, etc." required />
+  </div>
 </div>`;
             }
 
@@ -292,7 +299,13 @@
                 payload = { _descripcion: descripcion, _afectaInventario: afecta };
             }
 
-            if (tipo === 'TipoMovimientoSAP' || tipo === 'UnidadMedida') {
+            if (tipo === 'TipoMovimientoSAP') {
+                const descripcion = document.getElementById('_descripcion')?.value.trim();
+                const descMov = document.getElementById('_descMov')?.value.trim();
+                payload = { _descripcion: descripcion, descMov: descMov };
+            }
+
+            if (tipo === 'UnidadMedida') {
                 const descripcion = document.getElementById('_descripcion')?.value.trim();
                 payload = { _descripcion: descripcion };
             }
@@ -355,8 +368,14 @@
 <tr data-id="${x.TipoMovimientoSAPID}">
   <td class="text-center">${i + 1}</td>
   <td>
-    <span class="cell-text">${escapeHtml(x.Descripcion || '')}</span>
-    <input class="form-control form-control-sm cell-input" type="text" value="${escapeAttr(x.Descripcion || '')}" style="display:none;">
+    <span class="cell-text" data-field="Descripcion">${escapeHtml(x.Descripcion || '')}</span>
+    <input class="form-control form-control-sm cell-input" data-field="Descripcion" type="text"
+           value="${escapeAttr(x.Descripcion || '')}" style="display:none;">
+  </td>
+  <td>
+    <span class="cell-text" data-field="DescripcionMovimiento">${escapeHtml(x.DescripcionMovimiento || '')}</span>
+    <input class="form-control form-control-sm cell-input" data-field="DescripcionMovimiento" type="text"
+           value="${escapeAttr(x.DescripcionMovimiento || '')}" style="display:none;">
   </td>
   <td class="text-nowrap text-center">
     <button type="button" class="btn btn-sm btn-outline-primary btn-edit">Editar</button>
@@ -371,7 +390,8 @@
   <thead>
     <tr>
       <th style="width:60px;">#</th>
-      <th>Descripcion</th>
+      <th>Descripción</th>
+      <th>Movimiento</th>
       <th style="width:210px;">Acciones</th>
     </tr>
   </thead>
@@ -407,7 +427,7 @@
   <thead>
     <tr>
       <th style="width:60px;">#</th>
-      <th>Descripcion</th>
+      <th>Descripción</th>
       <th style="width:210px;">Acciones</th>
     </tr>
   </thead>
@@ -417,7 +437,6 @@
             wireRowHandlers('UnidadMedida');
         }
 
-        // >>> TipoOperacion CON columna Afecta Inventario como switch (sin texto) <<<
         function renderTablaTipoOperacion(data) {
             if (!Array.isArray(data) || data.length === 0) {
                 contenedorListado.innerHTML = '<div class="alert alert-warning">Sin datos.</div>';
@@ -460,8 +479,8 @@
   <thead>
     <tr>
       <th style="width:60px;">#</th>
-      <th>Descripcion</th>
-      <th style="width:120px;" class="text-center">Afecta</th>
+      <th>Descripción</th>
+      <th style="width:120px;" class="text-center">Afecta Inventario</th>
       <th style="width:210px;">Acciones</th>
     </tr>
   </thead>
@@ -471,7 +490,7 @@
             wireRowHandlers('TipoOperacion');
         }
 
-        // ---------- Edicion inline comun ----------
+        // ---------- Edicion inline comun (múltiples campos por fila) ----------
         function wireRowHandlers(tipo) {
             contenedorListado.querySelectorAll('.btn-edit').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -494,35 +513,48 @@
         }
 
         function setEditMode(tr, tipo, editing, resetToSpan = false) {
-            const span = tr.querySelector('.cell-text');
-            const descActual = span?.textContent || '';
-            if (tipo === 'TipoOperacion' && isBlockedTipoOperacion(descActual)) {
-                alert('Este TipoOperacion no es editable.');
-                return;
+            const spans = Array.from(tr.querySelectorAll('.cell-text'));
+            const inputs = Array.from(tr.querySelectorAll('.cell-input'));
+
+            // Proteccion de TipoOperacion bloqueado
+            if (tipo === 'TipoOperacion') {
+                const spanDesc = spans[0];
+                const descActual = spanDesc?.textContent || '';
+                if (isBlockedTipoOperacion(descActual)) {
+                    alert('Este TipoOperacion no es editable.');
+                    return;
+                }
             }
 
-            const input = tr.querySelector('.cell-input');
             const chk = tr.querySelector('.cell-check');
             const btnEdit = tr.querySelector('.btn-edit');
             const btnSave = tr.querySelector('.btn-save');
             const btnCancel = tr.querySelector('.btn-cancel');
 
             if (editing) {
-                span.style.display = 'none';
-                input.style.display = '';
+                spans.forEach(s => s.style.display = 'none');
+                inputs.forEach(i => i.style.display = '');
                 if (chk) chk.removeAttribute('disabled');
                 if (btnEdit) btnEdit.style.display = 'none';
                 if (btnSave) btnSave.style.display = '';
                 if (btnCancel) btnCancel.style.display = '';
-                input.focus(); input.select();
+
+                if (inputs[0]) { inputs[0].focus(); inputs[0].select(); }
             } else {
                 if (resetToSpan) {
-                    input.value = span.textContent || '';
-                    const originalChecked = span.getAttribute('data-afecta') === '1';
-                    if (chk && span.hasAttribute('data-afecta')) chk.checked = originalChecked;
+                    inputs.forEach(i => {
+                        const field = i.getAttribute('data-field');
+                        const spanMatch = spans.find(s => s.getAttribute('data-field') === field);
+                        if (spanMatch) i.value = spanMatch.textContent || '';
+                    });
+
+                    const spanDesc = spans[0];
+                    const originalChecked = spanDesc?.getAttribute('data-afecta') === '1';
+                    if (chk && spanDesc?.hasAttribute('data-afecta')) chk.checked = originalChecked;
                 }
-                span.style.display = '';
-                input.style.display = 'none';
+
+                spans.forEach(s => s.style.display = '');
+                inputs.forEach(i => i.style.display = 'none');
                 if (chk) chk.setAttribute('disabled', 'disabled');
                 if (btnEdit) btnEdit.style.display = '';
                 if (btnSave) btnSave.style.display = 'none';
@@ -531,60 +563,112 @@
         }
 
         async function saveRow(tr, tipo) {
-            const span = tr.querySelector('.cell-text');
-            const descActual = span?.textContent || '';
-            if (tipo === 'TipoOperacion' && isBlockedTipoOperacion(descActual)) {
-                alert('Este TipoOperacion no es editable.');
+            const id = Number(tr.getAttribute('data-id'));
+
+            // ----- TipoMovimientoSAP: Descripcion + DescripcionMovimiento -----
+            if (tipo === 'TipoMovimientoSAP') {
+                const inpDesc = tr.querySelector('.cell-input[data-field="Descripcion"]');
+                const inpMov = tr.querySelector('.cell-input[data-field="DescripcionMovimiento"]');
+                const newDesc = (inpDesc?.value || '').trim();
+                const newMov = (inpMov?.value || '').trim();
+
+                if (!newDesc) { alert('La descripcion no puede estar vacia.'); return; }
+                if (!newMov) { alert('El movimiento no puede estar vacio.'); return; }
+
+                const payload = {
+                    TipoMovimientoSAPID: id,
+                    Descripcion: newDesc,
+                    DescripcionMovimiento: newMov
+                };
+
+                try {
+                    const resp = await postJson(updateEndpoints[tipo], payload, false);
+                    if (resp?.success === false) {
+                        alert(resp?.message || 'No se pudo guardar.');
+                        return;
+                    }
+
+                    const spanDesc = tr.querySelector('.cell-text[data-field="Descripcion"]');
+                    const spanMov = tr.querySelector('.cell-text[data-field="DescripcionMovimiento"]');
+                    if (spanDesc) spanDesc.textContent = newDesc;
+                    if (spanMov) spanMov.textContent = newMov;
+
+                    setEditMode(tr, tipo, false);
+                } catch (err) {
+                    console.error(err);
+                    alert('Error guardando el registro.');
+                }
                 return;
             }
 
-            const id = Number(tr.getAttribute('data-id'));
-            const input = tr.querySelector('.cell-input');
-            const newDesc = (input.value || '').trim();
-            if (!newDesc) { alert('La descripcion no puede estar vacia.'); return; }
-
-            let payload = { Descripcion: newDesc };
-
-            if (tipo === 'TipoMovimientoSAP') {
-                payload['TipoMovimientoSAPID'] = id;
-            }
-
+            // ----- UnidadMedida -----
             if (tipo === 'UnidadMedida') {
-                payload['UnidadMedidaID'] = id;
+                const input = tr.querySelector('.cell-input');
+                const newDesc = (input.value || '').trim();
+                if (!newDesc) { alert('La descripcion no puede estar vacia.'); return; }
+
+                const payload = { UnidadMedidaID: id, Descripcion: newDesc };
+
+                try {
+                    const resp = await postJson(updateEndpoints[tipo], payload, false);
+                    if (resp?.success === false) {
+                        alert(resp?.message || 'No se pudo guardar.');
+                        return;
+                    }
+                    const span = tr.querySelector('.cell-text');
+                    if (span) span.textContent = newDesc;
+                    setEditMode(tr, tipo, false);
+                } catch (err) {
+                    console.error(err);
+                    alert('Error guardando el registro.');
+                }
+                return;
             }
 
+            // ----- TipoOperacion -----
             if (tipo === 'TipoOperacion') {
-                payload['TipoOperacionID'] = id;
-                const chk = tr.querySelector('.cell-check');
-                payload['AfectaInventario'] = !!(chk && chk.checked);
-            }
-
-            try {
-                const resp = await postJson(updateEndpoints[tipo], payload, false);
-                if (resp?.success === false) {
-                    alert(resp?.message || 'No se pudo guardar.');
+                const span = tr.querySelector('.cell-text');
+                const descActual = span?.textContent || '';
+                if (isBlockedTipoOperacion(descActual)) {
+                    alert('Este TipoOperacion no es editable.');
                     return;
                 }
 
-                // actualizar UI
-                span.textContent = newDesc;
+                const input = tr.querySelector('.cell-input');
+                const newDesc = (input.value || '').trim();
+                if (!newDesc) { alert('La descripcion no puede estar vacia.'); return; }
 
-                // guardar estado original del checkbox para futuros cancel
                 const chk = tr.querySelector('.cell-check');
-                if (chk) span.setAttribute('data-afecta', chk.checked ? '1' : '0');
+                const payload = {
+                    TipoOperacionID: id,
+                    Descripcion: newDesc,
+                    AfectaInventario: !!(chk && chk.checked)
+                };
 
-                // Si cambia a bloqueado, inmovilizar
-                if (tipo === 'TipoOperacion' && isBlockedTipoOperacion(newDesc)) {
-                    input.setAttribute('disabled', 'disabled');
-                    if (chk) chk.setAttribute('disabled', 'disabled');
-                    const actions = tr.querySelector('td.text-nowrap.text-center');
-                    if (actions) actions.innerHTML = `<span class="badge bg-success">No editable</span>`;
+                try {
+                    const resp = await postJson(updateEndpoints[tipo], payload, false);
+                    if (resp?.success === false) {
+                        alert(resp?.message || 'No se pudo guardar.');
+                        return;
+                    }
+
+                    // actualizar UI
+                    span.textContent = newDesc;
+                    if (chk) span.setAttribute('data-afecta', chk.checked ? '1' : '0');
+
+                    // Si cambia a bloqueado, inmovilizar
+                    if (isBlockedTipoOperacion(newDesc)) {
+                        input.setAttribute('disabled', 'disabled');
+                        if (chk) chk.setAttribute('disabled', 'disabled');
+                        const actions = tr.querySelector('td.text-nowrap.text-center');
+                        if (actions) actions.innerHTML = `<span class="badge bg-success">No editable</span>`;
+                    }
+
+                    setEditMode(tr, tipo, false);
+                } catch (err) {
+                    console.error(err);
+                    alert('Error guardando el registro.');
                 }
-
-                setEditMode(tr, tipo, false);
-            } catch (err) {
-                console.error(err);
-                alert('Error guardando el registro.');
             }
         }
 

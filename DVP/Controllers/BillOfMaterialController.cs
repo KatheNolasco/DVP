@@ -44,7 +44,6 @@ namespace DVP.Controllers
             return View();
         }
 
-
         [HttpPost]
         public JsonResult CreateBOM(BillOfMaterialViewModel data)
         {
@@ -56,6 +55,15 @@ namespace DVP.Controllers
                 // normalizaciones
                 var prod = (data._materialProduccionIDs ?? new List<int>()).Where(x => x > 0).Distinct().ToList();
                 var cons = (data._materialConsumoIDs ?? new List<int>()).Where(x => x > 0).Distinct().ToList();
+                var equipos = (data._equipoIDs ?? new List<int>()).Where(x => x > 0).Distinct().ToList();
+                
+                // retrocompatibilidad: si no viene _equipoIDs, usar _equipoID
+                if (!equipos.Any())
+                {
+                    if (data._equipoID == null || data._equipoID <= 0)
+                        return Json(new { success = false, message = "Equipo es requerido." });
+                    equipos.Add(data._equipoID.Value);
+                }
 
                 // validaciones
                 if (prod.Count != 1)
@@ -64,37 +72,40 @@ namespace DVP.Controllers
                 if (cons.Count == 0)
                     return Json(new { success = false, message = "Debe indicar al menos un material de consumo." });
 
-                if (data._equipoID == null || data._equipoID <= 0)
-                    return Json(new { success = false, message = "Equipo es requerido." });
-
                 if (cons.Intersect(prod).Any())
                     return Json(new { success = false, message = "Un material no puede ser simultaneamente de produccion y de consumo." });
+
+                if (data._consumoSeco && data._consumoHumedo)
+                    return Json(new { success = false, message = "Consumo Seco y Consumo Humedo no pueden estar ambos activos." });
 
                 var materialProduccionID = prod[0];
                 var factor = data._factorConsumo ?? 0m;
                 var tipoOperacionProduccion = 2;
+                var tipoMovimientoSAP = 1;
 
                 var nuevasFilas = new List<BillOfMaterial>();
 
-                foreach (var materialConsumoID in cons)
+                foreach (var equipoID in equipos)
                 {
-                    var fila = new BillOfMaterial
+                    foreach (var materialConsumoID in cons)
                     {
-                        MaterialProduccionID = materialProduccionID,
-                        MaterialConsumoID = materialConsumoID,
-                        TipoOperacionID = tipoOperacionProduccion,          
-                        TipoMovimientoSAPID = data._tipoMovimientoSAPID,    
-                        EquipoID = data._equipoID.Value,
-                        FactorConsumo = factor,
-                        ConsumoSeco = data._consumoSeco,
-                        ConsumoHumedo = data._consumoHumedo,
-                        FechaBOM = DateTime.Now,
-                        Active = true
-                    };
+                        var fila = new BillOfMaterial
+                        {
+                            MaterialProduccionID = materialProduccionID,
+                            MaterialConsumoID = materialConsumoID,
+                            TipoOperacionID = tipoOperacionProduccion,
+                            TipoMovimientoSAPID = tipoMovimientoSAP,    
+                            EquipoID = equipoID,
+                            FactorConsumo = factor,
+                            ConsumoSeco = data._consumoSeco,
+                            ConsumoHumedo = data._consumoHumedo,
+                            FechaBOM = DateTime.Now, 
+                            Active = true
+                        };
 
-                    // evitar duplicados (ajusta la regla a tu clave logica)
-                    if (!ExisteDuplicado(fila))
-                        nuevasFilas.Add(fila);
+                        if (!ExisteDuplicado(fila))
+                            nuevasFilas.Add(fila);
+                    }
                 }
 
                 if (nuevasFilas.Count == 0)
@@ -115,6 +126,7 @@ namespace DVP.Controllers
                 return Json(new { success = false, message = "Error al crear BOM: " + ex.Message });
             }
         }
+
 
         private bool ExisteDuplicado(BillOfMaterial m)
         {
@@ -161,6 +173,7 @@ namespace DVP.Controllers
 
                 // regla fija
                 var tipoOperacionProduccion = 2;
+                var tipoMovimientoSAP = 1;
                 var nuevoFactor = data._factorConsumo ?? 0m;
 
                 // validar duplicado con la nueva combinacion (excluyendose a si mismo)
@@ -169,7 +182,7 @@ namespace DVP.Controllers
                     materialProduccionID: data._materialProduccionID.Value,
                     materialConsumoID: data._materialConsumoID.Value,
                     tipoOperacionID: tipoOperacionProduccion,
-                    tipoMovimientoSAPID: data._tipoMovimientoSAPID,
+                    tipoMovimientoSAPID: tipoMovimientoSAP,
                     equipoID: data._equipoID.Value,
                     consumoSeco: data._consumoSeco,
                     consumoHumedo: data._consumoHumedo))
@@ -179,17 +192,12 @@ namespace DVP.Controllers
 
                 // actualizar
                 row.MaterialProduccionID = data._materialProduccionID;
-                row.MaterialConsumoID = data._materialConsumoID;
-                row.TipoOperacionID = tipoOperacionProduccion;          // fijo segun tu regla
-                row.TipoMovimientoSAPID = data._tipoMovimientoSAPID;    // puede ser null
+                row.MaterialConsumoID = data._materialConsumoID;  
                 row.EquipoID = data._equipoID;
                 row.FactorConsumo = nuevoFactor;
                 row.ConsumoSeco = data._consumoSeco;
                 row.ConsumoHumedo = data._consumoHumedo;
-
-                if (data._active)
-                    row.Active = data._active;
-
+                row.Active = data._active;
                 _dvpEntities.SaveChanges();
 
                 return Json(new { success = true, message = "Actualizado exitosamente." });
@@ -283,10 +291,8 @@ namespace DVP.Controllers
 
                         _consumoSeco = b.ConsumoSeco,
                         _consumoHumedo = b.ConsumoHumedo,
-
-                        // devuélvela cruda y/o como ISO para que JS no diga "Invalid Date"
                         _fechaBOM = b.FechaBOM,
-                        _fechaBOMIso = b.FechaBOM, // si usas Newtonsoft dará ISO; si usas JavaScriptSerializer dará /Date(...)/
+                        _fechaBOMIso = b.FechaBOM, 
 
                         _materialConsumoID = b.MaterialConsumoID,
                         _materialConsumoDescripcion = _dvpEntities.Material
@@ -308,6 +314,41 @@ namespace DVP.Controllers
         }
 
 
+        [HttpGet]
+        public JsonResult GetBOMsByMaterial(int materialProduccionId)
+        {
+            try
+            {
+                var lista = _dvpEntities.BillOfMaterial
+                    .Where(b => b.MaterialProduccionID == materialProduccionId)
+                    .Select(b => new
+                    {
+                        _billOfMaterialID = b.BillOfMaterialID,
+                        _materialProduccionID = b.MaterialProduccionID,
+                        _materialProduccionDescripcion = b.Material1.Descripcion,
+                        _tipoOperacionID = b.TipoOperacionID,
+                        _tipoOperacionDescripcion = b.TipoOperacion.Descripcion,
+                        _tipoMovimientoSAPID = b.TipoMovimientoSAPID,
+                        _tipoMovimientoSAPDescripcion = b.TipoMovimientoSAP.Descripcion,
+                        _factorConsumo = b.FactorConsumo,
+                        _equipoID = b.EquipoID,
+                        _equipoDescripcion = b.Equipo.Descripcion,
+                        _consumoSeco = b.ConsumoSeco,
+                        _consumoHumedo = b.ConsumoHumedo,
+                        _fechaBOM = b.FechaBOM,
+                        _materialConsumoID = b.MaterialConsumoID,
+                        _materialConsumoDescripcion = b.Material.Descripcion,
+                        _active = b.Active
+                    })
+                    .ToList();
+
+                return Json(new { success = true, data = lista }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: " + ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
 
 
     }

@@ -28,6 +28,9 @@ namespace DVP.Models
         public List<int> _materialConsumoIDs { get; set; }
         public List<int> _materialConsumoCombustibleIDs { get; set; }
         public List<int> _materialAlternoIDs { get; set; }
+        public List<int> _equipoIDs { get; set; }
+
+        
 
 
     }

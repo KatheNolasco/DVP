@@ -92,12 +92,15 @@ namespace DVP.Controllers
                     return Json(new { success = false, message = "Datos invalidos." });
 
                 var desc = (data._descripcion ?? string.Empty).Trim();
+                var descMov = (data._descripcionMovimiento ?? string.Empty).Trim();
+
                 if (string.IsNullOrWhiteSpace(desc))
                     return Json(new { success = false, message = "Descripcion es obligatoria." });
 
                 var nuevo = new TipoMovimientoSAP
                 {
-                    Descripcion = desc
+                    Descripcion = desc,
+                    DescripcionMovimiento = descMov
                 };
 
                 _dvpEntities.TipoMovimientoSAP.Add(nuevo);
@@ -172,12 +175,13 @@ namespace DVP.Controllers
         }
 
         [HttpPost]
-        public JsonResult UpdateTipoMovimientoSAP(int TipoMovimientoSAPID, string Descripcion)
+        public JsonResult UpdateTipoMovimientoSAP(int TipoMovimientoSAPID, string Descripcion, string DescripcionMovimiento)
         {
             var row = _dvpEntities.TipoMovimientoSAP.FirstOrDefault(x => x.TipoMovimientoSAPID == TipoMovimientoSAPID);
             if (row == null) return Json(new { success = false, message = "No encontrado" });
 
             row.Descripcion = Descripcion;
+            row.DescripcionMovimiento = DescripcionMovimiento;
 
             _dvpEntities.SaveChanges();
             return Json(new { success = true });
@@ -202,7 +206,8 @@ namespace DVP.Controllers
                                     .Select(s => new
                                     {
                                         TipoMovimientoSAPID = s.TipoMovimientoSAPID,
-                                        Descripcion = s.Descripcion
+                                        Descripcion = s.Descripcion,
+                                        DescripcionMovimiento = s.DescripcionMovimiento
                                     })
                                     .ToList();
 

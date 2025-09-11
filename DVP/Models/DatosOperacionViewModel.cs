@@ -34,6 +34,9 @@ namespace DVP.Models
 
             [Column("Descripcion")]
             public string _descripcion { get; set; }
+
+            [Column("DescripcionMovimiento")]
+            public string _descripcionMovimiento { get; set; }
         }
 
         [Table("UnidadMedida")]

@@ -78,6 +78,7 @@ namespace DVP.Controllers
                     _afectaInventario = p.AfectaInventario,
                     _idStock = p.IDStock,
                     _activo = p.Activo,
+                    _consumido = p.Consumido,
                     _plantaId = p.PlantaID,
                     _plantaDescripcion = p.Planta.Descripcion,
                     _unidadMedidaId = p.UnidadMedidaID,
@@ -110,6 +111,7 @@ namespace DVP.Controllers
                     _afectaInventario = p.AfectaInventario,
                     _idStock = p.IDStock,
                     _activo = p.Activo,
+                    _consumido = p.Consumido,
                     _plantaId = p.PlantaID,
                     _plantaDescripcion = p.Planta.Descripcion,
                     _unidadMedidaId = p.UnidadMedidaID,
@@ -177,9 +179,10 @@ namespace DVP.Controllers
                     Alterno = data._alterno,
                     AfectaInventario = data._afectaInventario,
                     IDStock = data._idStock,
-                    Activo = data._activo,
+                    Activo = true,
                     PlantaID = data._plantaId.Value,
-                    UnidadMedidaID = data._unidadMedidaId.Value
+                    UnidadMedidaID = data._unidadMedidaId.Value,
+                    Consumido = data._consumido
                 };
 
                 _dvpEntities.Material.Add(nuevo);
@@ -247,10 +250,41 @@ namespace DVP.Controllers
         }
 
         [HttpGet]
+        public JsonResult GetMaterialProducido()
+        {
+            var list = _dvpEntities.Material
+                                     .Where(s => s.Producido == true)
+                                     .Select(s => new
+                                     {
+                                         MaterialID = s.MaterialID,
+                                         Descripcion = s.Descripcion
+                                     })
+                                     .ToList();
+
+            return Json(list, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult GetMaterialConsumido()
+        {
+            var list = _dvpEntities.Material
+                                     .Where(s => s.Consumido == true)
+                                     .Select(s => new
+                                     {
+                                         MaterialID = s.MaterialID,
+                                         Descripcion = s.Descripcion
+                                     })
+                                     .ToList();
+
+            return Json(list, JsonRequestBehavior.AllowGet);
+        }
+
+
+        [HttpGet]
         public JsonResult GetMaterialCombustible()
         {
             var list = _dvpEntities.Material
-                                     .Where(s => s.Producido == false && s.AfectaInventario == false)
+                                     .Where(s => s.ClasificacionMaterial.Descripcion == "COMBUSTIBLE")
                                      .Select(s => new
                                      {
                                          MaterialID = s.MaterialID,
@@ -265,7 +299,7 @@ namespace DVP.Controllers
         public JsonResult GetMaterialAlterno()
         {
             var list = _dvpEntities.Material
-                                     .Where(s => s.Alterno == true && s.AfectaInventario == false)
+                                     .Where(s => s.Alterno == true)
                                      .Select(s => new
                                      {
                                          MaterialID = s.MaterialID,

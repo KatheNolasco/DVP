@@ -17,16 +17,17 @@ namespace DataAccess
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         public TipoMovimientoSAP()
         {
-            this.DataOperacion = new HashSet<DataOperacion>();
             this.BillOfMaterial = new HashSet<BillOfMaterial>();
+            this.DataOperacion = new HashSet<DataOperacion>();
         }
     
         public int TipoMovimientoSAPID { get; set; }
         public string Descripcion { get; set; }
+        public string DescripcionMovimiento { get; set; }
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<DataOperacion> DataOperacion { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<BillOfMaterial> BillOfMaterial { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<DataOperacion> DataOperacion { get; set; }
     }
 }
