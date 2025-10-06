@@ -26,10 +26,12 @@ namespace DataAccess
         public Nullable<bool> Ajeno { get; set; }
         public Nullable<bool> AfectaTMEF { get; set; }
         public string CodigoDet { get; set; }
+        public Nullable<int> TipoParoID { get; set; }
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<Paros> Paros { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<TipoFalla> TipoFalla { get; set; }
+        public virtual TipoParo TipoParo { get; set; }
     }
 }

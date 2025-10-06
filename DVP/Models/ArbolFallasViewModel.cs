@@ -25,6 +25,9 @@ namespace DVP.Models
 
             [Column("EquipoID")]
             public int? _equipoId { get; set; }
+
+            [Column("CodigoDet")]
+            public string _codigoDet { get; set; }
         }
 
         [Table("ComponenteEquipo")]
@@ -39,6 +42,9 @@ namespace DVP.Models
 
             [Column("SubEquipoID")]
             public int? _subEquipoId { get; set; }
+
+            [Column("CodigoDet")]
+            public string _codigoDet { get; set; }
         }
 
         [Table("Clasificacion")]
@@ -56,6 +62,12 @@ namespace DVP.Models
 
             [Column("AfectaTMEF")]
             public bool _afectaTMEF { get; set; }
+
+            [Column("CodigoDet")]
+            public string _codigoDet { get; set; }
+
+            [Column("TipoParoID")]
+            public int? _tipoParoId { get; set; }
         }
 
         [Table("TipoFalla")]
@@ -73,6 +85,20 @@ namespace DVP.Models
 
             [Column("ComponenteEquipoID")]
             public int? _componenteEquipoId { get; set; }
+
+            [Column("CodigoDet")]
+            public string _codigoDet { get; set; }
+        }
+
+        [Table("TipoParo")]
+        public class TipoParo
+        {
+            [Key]
+            [Column("TipoParoID")]
+            public int? _tipoFallaId { get; set; }
+
+            [Column("Descripcion")]
+            public string _descripcion { get; set; }
         }
     }
 }

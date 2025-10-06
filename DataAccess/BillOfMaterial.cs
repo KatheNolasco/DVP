@@ -25,6 +25,8 @@ namespace DataAccess
         public Nullable<System.DateTime> FechaBOM { get; set; }
         public Nullable<int> MaterialConsumoID { get; set; }
         public Nullable<bool> Active { get; set; }
+        public Nullable<bool> ProduccionSeca { get; set; }
+        public Nullable<bool> ProduccionHumeda { get; set; }
     
         public virtual Equipo Equipo { get; set; }
         public virtual TipoOperacion TipoOperacion { get; set; }

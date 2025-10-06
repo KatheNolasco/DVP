@@ -20,6 +20,8 @@
           <Property Name="FechaBOM" Type="datetime" />
           <Property Name="MaterialConsumoID" Type="int" />
           <Property Name="Active" Type="bit" />
+          <Property Name="ProduccionSeca" Type="bit" />
+          <Property Name="ProduccionHumeda" Type="bit" />
         </EntityType>
         <EntityType Name="CierreStatus">
           <Key>
@@ -41,6 +43,7 @@
           <Property Name="Ajeno" Type="bit" />
           <Property Name="AfectaTMEF" Type="bit" />
           <Property Name="CodigoDet" Type="nvarchar" MaxLength="500" />
+          <Property Name="TipoParoID" Type="int" />
         </EntityType>
         <EntityType Name="ClasificacionMaterial">
           <Key>
@@ -73,6 +76,7 @@
           <Property Name="FechaReporte" Type="datetime" />
           <Property Name="StatusClose" Type="bit" />
           <Property Name="StatusValidate" Type="bit" />
+          <Property Name="OrdenProcesoSAP" Type="nvarchar(max)" />
         </EntityType>
         <EntityType Name="Entradas">
           <Key>
@@ -286,6 +290,13 @@
           <Property Name="Descripcion" Type="nvarchar" MaxLength="100" />
           <Property Name="AfectaInventario" Type="bit" />
         </EntityType>
+        <EntityType Name="TipoParo">
+          <Key>
+            <PropertyRef Name="TipoParoID" />
+          </Key>
+          <Property Name="TipoParoID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="200" Nullable="false" />
+        </EntityType>
         <EntityType Name="TokenRegistro">
           <Key>
             <PropertyRef Name="TokenRegistroID" />
@@ -441,6 +452,18 @@
             </Principal>
             <Dependent Role="TipoFalla">
               <PropertyRef Name="ClasificacionID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Clasificacion_TipoParo">
+          <End Role="TipoParo" Type="Self.TipoParo" Multiplicity="0..1" />
+          <End Role="Clasificacion" Type="Self.Clasificacion" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoParo">
+              <PropertyRef Name="TipoParoID" />
+            </Principal>
+            <Dependent Role="Clasificacion">
+              <PropertyRef Name="TipoParoID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -925,6 +948,7 @@
           <EntitySet Name="TipoFalla" EntityType="Self.TipoFalla" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="TipoMovimientoSAP" EntityType="Self.TipoMovimientoSAP" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="TipoOperacion" EntityType="Self.TipoOperacion" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="TipoParo" EntityType="Self.TipoParo" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="TokenRegistro" EntityType="Self.TokenRegistro" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="UnidadMedida" EntityType="Self.UnidadMedida" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="UnidadOperativa" EntityType="Self.UnidadOperativa" Schema="dbo" store:Type="Tables" />
@@ -962,6 +986,10 @@
           <AssociationSet Name="FK_Clasificacion_TipoFalla" Association="Self.FK_Clasificacion_TipoFalla">
             <End Role="Clasificacion" EntitySet="Clasificacion" />
             <End Role="TipoFalla" EntitySet="TipoFalla" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Clasificacion_TipoParo" Association="Self.FK_Clasificacion_TipoParo">
+            <End Role="TipoParo" EntitySet="TipoParo" />
+            <End Role="Clasificacion" EntitySet="Clasificacion" />
           </AssociationSet>
           <AssociationSet Name="FK_ClasificacionMaterial_Material" Association="Self.FK_ClasificacionMaterial_Material">
             <End Role="ClasificacionMaterial" EntitySet="ClasificacionMaterial" />
@@ -1186,11 +1214,11 @@
           <NavigationProperty Name="CierreStatus" Relationship="Self.FK_Paros_CierreStatus" FromRole="Paros" ToRole="CierreStatus" />
           <NavigationProperty Name="TipoEvento" Relationship="Self.FK_TipoEvento_Paros" FromRole="Paros" ToRole="TipoEvento" />
           <NavigationProperty Name="Usuario" Relationship="Self.FK_UsuarioValidador_Paros" FromRole="Paros" ToRole="Usuario" />
-          <NavigationProperty Name="Clasificacion" Relationship="DVPModel.FK_Clasificacion_Paros" FromRole="Paros" ToRole="Clasificacion" />
           <NavigationProperty Name="ComponenteEquipo" Relationship="DVPModel.FK_ComponenteEquipo_Paros" FromRole="Paros" ToRole="ComponenteEquipo" />
           <NavigationProperty Name="Equipo" Relationship="DVPModel.FK_Equipo_Paros" FromRole="Paros" ToRole="Equipo" />
           <NavigationProperty Name="SubEquipo" Relationship="DVPModel.FK_SubEquipo_Paros" FromRole="Paros" ToRole="SubEquipo" />
           <NavigationProperty Name="TipoFalla" Relationship="DVPModel.FK_TipoFalla_Paros" FromRole="Paros" ToRole="TipoFalla" />
+          <NavigationProperty Name="Clasificacion" Relationship="DVPModel.FK_Clasificacion_Paros" FromRole="Paros" ToRole="Clasificacion" />
         </EntityType>
         <EntityType Name="Planta">
           <Key>
@@ -1621,19 +1649,10 @@
             <End Role="TipoOperacion" EntitySet="TipoOperacion" />
             <End Role="TagEquipo" EntitySet="TagEquipo" />
           </AssociationSet>
-          <EntitySet Name="Clasificacion" EntityType="DVPModel.Clasificacion" />
           <EntitySet Name="ComponenteEquipo" EntityType="DVPModel.ComponenteEquipo" />
           <EntitySet Name="Equipo" EntityType="DVPModel.Equipo" />
           <EntitySet Name="SubEquipo" EntityType="DVPModel.SubEquipo" />
           <EntitySet Name="TipoFalla" EntityType="DVPModel.TipoFalla" />
-          <AssociationSet Name="FK_Clasificacion_Paros" Association="DVPModel.FK_Clasificacion_Paros">
-            <End Role="Clasificacion" EntitySet="Clasificacion" />
-            <End Role="Paros" EntitySet="Paros" />
-          </AssociationSet>
-          <AssociationSet Name="FK_Clasificacion_TipoFalla" Association="DVPModel.FK_Clasificacion_TipoFalla">
-            <End Role="Clasificacion" EntitySet="Clasificacion" />
-            <End Role="TipoFalla" EntitySet="TipoFalla" />
-          </AssociationSet>
           <AssociationSet Name="FK_ComponenteEquipo_Paros" Association="DVPModel.FK_ComponenteEquipo_Paros">
             <End Role="ComponenteEquipo" EntitySet="ComponenteEquipo" />
             <End Role="Paros" EntitySet="Paros" />
@@ -1737,6 +1756,20 @@
             <End Role="TipoMovimientoSAP" EntitySet="TipoMovimientoSAP" />
             <End Role="DataOperacion" EntitySet="DataOperacion" />
           </AssociationSet>
+          <EntitySet Name="Clasificacion" EntityType="DVPModel.Clasificacion" />
+          <EntitySet Name="TipoParo" EntityType="DVPModel.TipoParo" />
+          <AssociationSet Name="FK_Clasificacion_Paros" Association="DVPModel.FK_Clasificacion_Paros">
+            <End Role="Clasificacion" EntitySet="Clasificacion" />
+            <End Role="Paros" EntitySet="Paros" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Clasificacion_TipoFalla" Association="DVPModel.FK_Clasificacion_TipoFalla">
+            <End Role="Clasificacion" EntitySet="Clasificacion" />
+            <End Role="TipoFalla" EntitySet="TipoFalla" />
+          </AssociationSet>
+          <AssociationSet Name="FK_Clasificacion_TipoParo" Association="DVPModel.FK_Clasificacion_TipoParo">
+            <End Role="TipoParo" EntitySet="TipoParo" />
+            <End Role="Clasificacion" EntitySet="Clasificacion" />
+          </AssociationSet>
           </EntityContainer>
         <ComplexType Name="sp_helpdiagramdefinition_Result">
           <Property Type="Int32" Name="version" Nullable="true" />
@@ -1793,6 +1826,7 @@
           <NavigationProperty Name="Material" Relationship="DVPModel.FK_CantidadReal_DataOperacion" FromRole="DataOperacion" ToRole="Material" />
           <NavigationProperty Name="Material1" Relationship="DVPModel.FK_Material_DataOperacion" FromRole="DataOperacion" ToRole="Material" />
           <NavigationProperty Name="TipoMovimientoSAP" Relationship="DVPModel.FK_TipoMovimientoSAPID_DataOperacion" FromRole="DataOperacion" ToRole="TipoMovimientoSAP" />
+          <Property Name="OrdenProcesoSAP" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
           </EntityType>
         <Association Name="FK_TipoOperacion_DataOperacion">
           <End Type="DVPModel.TipoOperacion" Role="TipoOperacion" Multiplicity="0..1" />
@@ -1846,18 +1880,6 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <EntityType Name="Clasificacion">
-          <Key>
-            <PropertyRef Name="ClasificacionID" />
-          </Key>
-          <Property Name="ClasificacionID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="Descripcion" Type="String" Nullable="false" MaxLength="Max" FixedLength="false" Unicode="true" />
-          <Property Name="Ajeno" Type="Boolean" />
-          <Property Name="AfectaTMEF" Type="Boolean" />
-          <Property Name="CodigoDet" Type="String" MaxLength="500" FixedLength="false" Unicode="true" />
-          <NavigationProperty Name="Paros" Relationship="DVPModel.FK_Clasificacion_Paros" FromRole="Clasificacion" ToRole="Paros" />
-          <NavigationProperty Name="TipoFalla" Relationship="DVPModel.FK_Clasificacion_TipoFalla" FromRole="Clasificacion" ToRole="TipoFalla" />
-        </EntityType>
         <EntityType Name="ComponenteEquipo">
           <Key>
             <PropertyRef Name="ComponenteEquipoID" />
@@ -1918,34 +1940,10 @@
           <Property Name="ClasificacionID" Type="Int32" />
           <Property Name="ComponenteEquipoID" Type="Int32" />
           <Property Name="CodigoDet" Type="String" MaxLength="500" FixedLength="false" Unicode="true" />
-          <NavigationProperty Name="Clasificacion" Relationship="DVPModel.FK_Clasificacion_TipoFalla" FromRole="TipoFalla" ToRole="Clasificacion" />
           <NavigationProperty Name="ComponenteEquipo" Relationship="DVPModel.FK_ComponenteEquipo_TipoFalla" FromRole="TipoFalla" ToRole="ComponenteEquipo" />
           <NavigationProperty Name="Paros" Relationship="DVPModel.FK_TipoFalla_Paros" FromRole="TipoFalla" ToRole="Paros" />
+          <NavigationProperty Name="Clasificacion" Relationship="DVPModel.FK_Clasificacion_TipoFalla" FromRole="TipoFalla" ToRole="Clasificacion" />
         </EntityType>
-        <Association Name="FK_Clasificacion_Paros">
-          <End Type="DVPModel.Clasificacion" Role="Clasificacion" Multiplicity="0..1" />
-          <End Type="DVPModel.Paros" Role="Paros" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Clasificacion">
-              <PropertyRef Name="ClasificacionID" />
-            </Principal>
-            <Dependent Role="Paros">
-              <PropertyRef Name="ClasificacionID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK_Clasificacion_TipoFalla">
-          <End Type="DVPModel.Clasificacion" Role="Clasificacion" Multiplicity="0..1" />
-          <End Type="DVPModel.TipoFalla" Role="TipoFalla" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="Clasificacion">
-              <PropertyRef Name="ClasificacionID" />
-            </Principal>
-            <Dependent Role="TipoFalla">
-              <PropertyRef Name="ClasificacionID" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
         <Association Name="FK_ComponenteEquipo_Paros">
           <End Type="DVPModel.ComponenteEquipo" Role="ComponenteEquipo" Multiplicity="0..1" />
           <End Type="DVPModel.Paros" Role="Paros" Multiplicity="*" />
@@ -2122,6 +2120,8 @@
           <NavigationProperty Name="Material" Relationship="DVPModel.FK_BillOfMaterial_MaterialConsumo" FromRole="BillOfMaterial" ToRole="Material" />
           <NavigationProperty Name="Material1" Relationship="DVPModel.FK_Material_BillOfMaterial" FromRole="BillOfMaterial" ToRole="Material" />
           <NavigationProperty Name="TipoMovimientoSAP" Relationship="DVPModel.FK_TipoMovimientoSAPID_BillOfMaterial" FromRole="BillOfMaterial" ToRole="TipoMovimientoSAP" />
+          <Property Name="ProduccionSeca" Type="Boolean" />
+          <Property Name="ProduccionHumeda" Type="Boolean" />
         </EntityType>
         <Association Name="FK_BillOfMaterial_Equipo">
           <End Type="DVPModel.Equipo" Role="Equipo" Multiplicity="0..1" />
@@ -2300,6 +2300,64 @@
             </Principal>
             <Dependent Role="DataOperacion">
               <PropertyRef Name="TipoMovimientoSAPID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="Clasificacion">
+          <Key>
+            <PropertyRef Name="ClasificacionID" />
+          </Key>
+          <Property Name="ClasificacionID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" Nullable="false" MaxLength="Max" FixedLength="false" Unicode="true" />
+          <Property Name="Ajeno" Type="Boolean" />
+          <Property Name="AfectaTMEF" Type="Boolean" />
+          <Property Name="CodigoDet" Type="String" MaxLength="500" FixedLength="false" Unicode="true" />
+          <Property Name="TipoParoID" Type="Int32" />
+          <NavigationProperty Name="Paros" Relationship="DVPModel.FK_Clasificacion_Paros" FromRole="Clasificacion" ToRole="Paros" />
+          <NavigationProperty Name="TipoFalla" Relationship="DVPModel.FK_Clasificacion_TipoFalla" FromRole="Clasificacion" ToRole="TipoFalla" />
+          <NavigationProperty Name="TipoParo" Relationship="DVPModel.FK_Clasificacion_TipoParo" FromRole="Clasificacion" ToRole="TipoParo" />
+        </EntityType>
+        <EntityType Name="TipoParo">
+          <Key>
+            <PropertyRef Name="TipoParoID" />
+          </Key>
+          <Property Name="TipoParoID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" Nullable="false" MaxLength="200" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="Clasificacion" Relationship="DVPModel.FK_Clasificacion_TipoParo" FromRole="TipoParo" ToRole="Clasificacion" />
+        </EntityType>
+        <Association Name="FK_Clasificacion_Paros">
+          <End Type="DVPModel.Clasificacion" Role="Clasificacion" Multiplicity="0..1" />
+          <End Type="DVPModel.Paros" Role="Paros" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Clasificacion">
+              <PropertyRef Name="ClasificacionID" />
+            </Principal>
+            <Dependent Role="Paros">
+              <PropertyRef Name="ClasificacionID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Clasificacion_TipoFalla">
+          <End Type="DVPModel.Clasificacion" Role="Clasificacion" Multiplicity="0..1" />
+          <End Type="DVPModel.TipoFalla" Role="TipoFalla" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Clasificacion">
+              <PropertyRef Name="ClasificacionID" />
+            </Principal>
+            <Dependent Role="TipoFalla">
+              <PropertyRef Name="ClasificacionID" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_Clasificacion_TipoParo">
+          <End Type="DVPModel.TipoParo" Role="TipoParo" Multiplicity="0..1" />
+          <End Type="DVPModel.Clasificacion" Role="Clasificacion" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="TipoParo">
+              <PropertyRef Name="TipoParoID" />
+            </Principal>
+            <Dependent Role="Clasificacion">
+              <PropertyRef Name="TipoParoID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -2573,6 +2631,7 @@
           <EntitySetMapping Name="DataOperacion">
             <EntityTypeMapping TypeName="DVPModel.DataOperacion">
               <MappingFragment StoreEntitySet="DataOperacion">
+                <ScalarProperty Name="OrdenProcesoSAP" ColumnName="OrdenProcesoSAP" />
                 <ScalarProperty Name="StatusValidate" ColumnName="StatusValidate" />
                 <ScalarProperty Name="StatusClose" ColumnName="StatusClose" />
                 <ScalarProperty Name="FechaReporte" ColumnName="FechaReporte" />
@@ -2598,17 +2657,6 @@
                 <ScalarProperty Name="TagName" ColumnName="TagName" />
                 <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
                 <ScalarProperty Name="TagEquipoID" ColumnName="TagEquipoID" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="Clasificacion">
-            <EntityTypeMapping TypeName="DVPModel.Clasificacion">
-              <MappingFragment StoreEntitySet="Clasificacion">
-                <ScalarProperty Name="CodigoDet" ColumnName="CodigoDet" />
-                <ScalarProperty Name="AfectaTMEF" ColumnName="AfectaTMEF" />
-                <ScalarProperty Name="Ajeno" ColumnName="Ajeno" />
-                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
-                <ScalarProperty Name="ClasificacionID" ColumnName="ClasificacionID" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -2665,6 +2713,8 @@
           <EntitySetMapping Name="BillOfMaterial">
             <EntityTypeMapping TypeName="DVPModel.BillOfMaterial">
               <MappingFragment StoreEntitySet="BillOfMaterial">
+                <ScalarProperty Name="ProduccionHumeda" ColumnName="ProduccionHumeda" />
+                <ScalarProperty Name="ProduccionSeca" ColumnName="ProduccionSeca" />
                 <ScalarProperty Name="Active" ColumnName="Active" />
                 <ScalarProperty Name="MaterialConsumoID" ColumnName="MaterialConsumoID" />
                 <ScalarProperty Name="FechaBOM" ColumnName="FechaBOM" />
@@ -2704,6 +2754,26 @@
                 <ScalarProperty Name="DescripcionMovimiento" ColumnName="DescripcionMovimiento" />
                 <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
                 <ScalarProperty Name="TipoMovimientoSAPID" ColumnName="TipoMovimientoSAPID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Clasificacion">
+            <EntityTypeMapping TypeName="DVPModel.Clasificacion">
+              <MappingFragment StoreEntitySet="Clasificacion">
+                <ScalarProperty Name="TipoParoID" ColumnName="TipoParoID" />
+                <ScalarProperty Name="CodigoDet" ColumnName="CodigoDet" />
+                <ScalarProperty Name="AfectaTMEF" ColumnName="AfectaTMEF" />
+                <ScalarProperty Name="Ajeno" ColumnName="Ajeno" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="ClasificacionID" ColumnName="ClasificacionID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="TipoParo">
+            <EntityTypeMapping TypeName="DVPModel.TipoParo">
+              <MappingFragment StoreEntitySet="TipoParo">
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="TipoParoID" ColumnName="TipoParoID" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>

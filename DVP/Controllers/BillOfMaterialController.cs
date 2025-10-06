@@ -2,6 +2,7 @@
 using DVP.Models;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
@@ -78,6 +79,9 @@ namespace DVP.Controllers
                 if (data._consumoSeco && data._consumoHumedo)
                     return Json(new { success = false, message = "Consumo Seco y Consumo Humedo no pueden estar ambos activos." });
 
+                if (data._produccionSeca && data._produccionHumeda)
+                    return Json(new { success = false, message = "Producción Seca y Producción Humeda no pueden estar ambos activos." });
+
                 var materialProduccionID = prod[0];
                 var factor = data._factorConsumo ?? 0m;
                 var tipoOperacionProduccion = 2;
@@ -100,7 +104,9 @@ namespace DVP.Controllers
                             ConsumoSeco = data._consumoSeco,
                             ConsumoHumedo = data._consumoHumedo,
                             FechaBOM = DateTime.Now, 
-                            Active = true
+                            Active = true,
+                            ProduccionSeca = data._produccionSeca,
+                            ProduccionHumeda = data._produccionHumeda
                         };
 
                         if (!ExisteDuplicado(fila))
@@ -137,7 +143,9 @@ namespace DVP.Controllers
                 (x.TipoMovimientoSAPID ?? 0) == (m.TipoMovimientoSAPID ?? 0) &&
                 x.EquipoID == m.EquipoID &&
                 x.ConsumoSeco == m.ConsumoSeco &&
-                x.ConsumoHumedo == m.ConsumoHumedo
+                x.ConsumoHumedo == m.ConsumoHumedo &&
+                x.ProduccionSeca == m.ProduccionSeca &&
+                x.ProduccionHumeda == m.ProduccionHumeda
             );
         }
 
@@ -149,15 +157,8 @@ namespace DVP.Controllers
                 if (data == null)
                     return Json(new { success = false, message = "Payload invalido." });
 
-                // validaciones minimas
                 if (data._billOfMaterialID <= 0)
                     return Json(new { success = false, message = "ID invalido." });
-
-                if (data._materialProduccionID <= 0)
-                    return Json(new { success = false, message = "Material de produccion es requerido." });
-
-                if (data._materialConsumoID <= 0)
-                    return Json(new { success = false, message = "Material de consumo es requerido." });
 
                 if (data._equipoID <= 0)
                     return Json(new { success = false, message = "Equipo es requerido." });
@@ -185,7 +186,9 @@ namespace DVP.Controllers
                     tipoMovimientoSAPID: tipoMovimientoSAP,
                     equipoID: data._equipoID.Value,
                     consumoSeco: data._consumoSeco,
-                    consumoHumedo: data._consumoHumedo))
+                    consumoHumedo: data._consumoHumedo,
+                    produccionSeca: data._produccionSeca,
+                    produccionHumeda: data._produccionHumeda))
                 {
                     return Json(new { success = false, message = "Ya existe una BOM con la misma combinacion." });
                 }
@@ -198,6 +201,8 @@ namespace DVP.Controllers
                 row.ConsumoSeco = data._consumoSeco;
                 row.ConsumoHumedo = data._consumoHumedo;
                 row.Active = data._active;
+                row.ProduccionSeca = data._produccionSeca;
+                row.ProduccionHumeda = data._produccionHumeda;
                 _dvpEntities.SaveChanges();
 
                 return Json(new { success = true, message = "Actualizado exitosamente." });
@@ -216,7 +221,9 @@ namespace DVP.Controllers
             int? tipoMovimientoSAPID,
             int equipoID,
             bool consumoSeco,
-            bool consumoHumedo)
+            bool consumoHumedo,
+            bool produccionSeca,
+            bool produccionHumeda)
         {
             return _dvpEntities.BillOfMaterial.Any(x =>
                 x.BillOfMaterialID != excludeId &&
@@ -226,7 +233,9 @@ namespace DVP.Controllers
                 (x.TipoMovimientoSAPID ?? 0) == (tipoMovimientoSAPID ?? 0) &&
                 x.EquipoID == equipoID &&
                 x.ConsumoSeco == consumoSeco &&
-                x.ConsumoHumedo == consumoHumedo
+                x.ConsumoHumedo == consumoHumedo &&
+                x.ProduccionSeca == produccionSeca &&
+                x.ProduccionHumeda == produccionHumeda
             );
         }
 
@@ -252,7 +261,9 @@ namespace DVP.Controllers
                     _consumoHumedo = b.ConsumoHumedo,
                     _fechaBOM = b.FechaBOM,
                     _materialConsumoID = b.MaterialConsumoID,
-                    _materialConsumoDescripcion = b.Material.Descripcion
+                    _materialConsumoDescripcion = b.Material.Descripcion,
+                    _produccionSeca = b.ProduccionSeca,
+                    _produccionHumeda = b.ProduccionHumeda
                 })
                 .FirstOrDefault();
 
@@ -291,6 +302,8 @@ namespace DVP.Controllers
 
                         _consumoSeco = b.ConsumoSeco,
                         _consumoHumedo = b.ConsumoHumedo,
+                        _produccionSeca = b.ProduccionSeca,
+                        _produccionHumedo = b.ProduccionHumeda,
                         _fechaBOM = b.FechaBOM,
                         _fechaBOMIso = b.FechaBOM, 
 
@@ -313,7 +326,6 @@ namespace DVP.Controllers
             }
         }
 
-
         [HttpGet]
         public JsonResult GetBOMsByMaterial(int materialProduccionId)
         {
@@ -335,6 +347,8 @@ namespace DVP.Controllers
                         _equipoDescripcion = b.Equipo.Descripcion,
                         _consumoSeco = b.ConsumoSeco,
                         _consumoHumedo = b.ConsumoHumedo,
+                        _produccionSeca = b.ProduccionSeca,
+                        _produccionHumeda = b.ProduccionHumeda,
                         _fechaBOM = b.FechaBOM,
                         _materialConsumoID = b.MaterialConsumoID,
                         _materialConsumoDescripcion = b.Material.Descripcion,
@@ -351,5 +365,105 @@ namespace DVP.Controllers
         }
 
 
+        [HttpGet]
+        public JsonResult GetBOMsConsumoByEquipo(int equipoId)
+        {
+            try
+            {
+                var lista = _dvpEntities.BillOfMaterial
+                    .Where(b => b.EquipoID == equipoId)
+                    .Select(b => new
+                    {
+                        _billOfMaterialID = b.BillOfMaterialID,
+                        _tipoOperacionID = b.TipoOperacionID,
+                        _tipoOperacionDescripcion = b.TipoOperacion.Descripcion,
+                        _tipoMovimientoSAPID = b.TipoMovimientoSAPID,
+                        _tipoMovimientoSAPDescripcion = b.TipoMovimientoSAP.Descripcion,
+                        _factorConsumo = b.FactorConsumo,
+                        _equipoID = b.EquipoID,
+                        _equipoDescripcion = b.Equipo.Descripcion,
+                        _consumoSeco = b.ConsumoSeco,
+                        _consumoHumedo = b.ConsumoHumedo,
+                        _produccionSeca = b.ProduccionSeca,
+                        _produccionHumeda = b.ProduccionHumeda,
+                        _fechaBOM = b.FechaBOM,
+                        _materialConsumoID = b.MaterialConsumoID,
+                        _materialConsumoDescripcion = b.Material.Descripcion,
+                        _active = b.Active
+                    })
+                    .ToList();
+
+                return Json(new { success = true, data = lista }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: " + ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+
+        [HttpGet]
+        public JsonResult GetBOMsProduccionByEquipo(int equipoId)
+        {
+            try
+            {
+                var lista = _dvpEntities.BillOfMaterial
+                    .Where(b => b.EquipoID == equipoId)
+                    .Select(b => new
+                    {
+                        _billOfMaterialID = b.BillOfMaterialID,
+                        _materialProduccionID = b.MaterialProduccionID,
+                        _materialProduccionDescripcion = b.Material1.Descripcion,
+                        _tipoOperacionID = b.TipoOperacionID,
+                        _tipoOperacionDescripcion = b.TipoOperacion.Descripcion,
+                        _tipoMovimientoSAPID = b.TipoMovimientoSAPID,
+                        _tipoMovimientoSAPDescripcion = b.TipoMovimientoSAP.Descripcion,
+                        _factorConsumo = b.FactorConsumo,
+                        _equipoID = b.EquipoID,
+                        _equipoDescripcion = b.Equipo.Descripcion,
+                        _consumoSeco = b.ConsumoSeco,
+                        _consumoHumedo = b.ConsumoHumedo,
+                        _produccionSeca = b.ProduccionSeca,
+                        _produccionHumeda = b.ProduccionHumeda,
+                        _fechaBOM = b.FechaBOM,
+                        _active = b.Active
+                    })
+                    .ToList();
+
+                return Json(new { success = true, data = lista }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: " + ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+
+        [HttpPost]
+        public JsonResult DeleteBOM(int id)
+        {
+            try
+            {
+                var entity = _dvpEntities.BillOfMaterial.FirstOrDefault(x => x.BillOfMaterialID == id);
+                if (entity == null)
+                {
+                    return Json(new { success = false, message = "Registro no encontrado." });
+                }
+
+                _dvpEntities.BillOfMaterial.Remove(entity);
+                _dvpEntities.SaveChanges();
+                return Json(new { success = true, message = "Eliminado correctamente." });
+
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Error al eliminar: " + ex.Message
+                });
+            }
+
+        }
     }
 }

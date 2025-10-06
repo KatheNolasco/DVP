@@ -25,6 +25,7 @@ namespace DataAccess
         public Nullable<System.DateTime> FechaReporte { get; set; }
         public Nullable<bool> StatusClose { get; set; }
         public Nullable<bool> StatusValidate { get; set; }
+        public string OrdenProcesoSAP { get; set; }
     
         public virtual TipoOperacion TipoOperacion { get; set; }
         public virtual UnidadMedida UnidadMedida { get; set; }

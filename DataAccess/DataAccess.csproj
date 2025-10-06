@@ -147,6 +147,9 @@
     <Compile Include="TipoOperacion.cs">
       <DependentUpon>Model.tt</DependentUpon>
     </Compile>
+    <Compile Include="TipoParo.cs">
+      <DependentUpon>Model.tt</DependentUpon>
+    </Compile>
     <Compile Include="TokenRegistro.cs">
       <DependentUpon>Model.tt</DependentUpon>
     </Compile>

@@ -151,7 +151,6 @@
 
 
 
-
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     'use strict';
@@ -159,6 +158,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const selectListado = document.getElementById('selectListado');
     const contenedorListado = document.getElementById('contenedorListado');
     const btnAgregar = document.getElementById('agregar'); // debe existir un botón con id="agregar"
+    const filtrosListado = document.getElementById('filtrosListado'); // contenedor de filtros (opcional)
 
     // endpoints
     const URL_MATERIALES         = '@Url.Action("GetMaterialProducido","Material")';
@@ -167,8 +167,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const URL_CREATE_BOM         = '@Url.Action("CreateBOM","BillOfMaterial")';
     const URL_EQUIPOS_USER       = '@Url.Action("GetEquiposporPaislogguedUser","Equipo")';
     const URL_MATERIAL_CONSUMIDO = '@Url.Action("GetMaterialConsumido","Material")';
+    const URL_DELETE_BOM         = '@Url.Action("DeleteBOM","BillOfMaterial")'; // NUEVO
 
     let cacheMateriales = null;
+
+    // Estado para filtro y datos en memoria
+    let currentRows = [];            // última respuesta de /GetBOMsByMaterial
+    let equipoFilterValue = '';      // EquipoID seleccionado en el filtro
 
     // ================= Helpers =================
     function option(el, value, text) {
@@ -256,6 +261,52 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ========== Filtro por Equipo (UI) ==========
+    function ensureEquipoFilter(){
+        if(!filtrosListado) return;                       // si no hay contenedor, no lo dibujamos
+        if(document.getElementById('filterEquipo')) return;
+
+        const col = document.createElement('div');
+        col.className = 'col-md-4';
+        col.innerHTML = `
+            <label class="form-label">Equipo</label>
+            <select id="filterEquipo" class="form-select">
+                <option value="">Todos los equipos</option>
+            </select>
+        `;
+        filtrosListado.appendChild(col);
+
+        const sel = col.querySelector('#filterEquipo');
+        sel.disabled = true;
+        fetch(URL_EQUIPOS_USER,{headers:{'Accept':'application/json'}})
+        .then(r=>{if(!r.ok) throw new Error('HTTP '+r.status); return r.json();})
+        .then(data=>{
+            const list = Array.isArray(data)?data:(data && Array.isArray(data.data)?data.data:[]);
+            fillSelectFromArray(sel, list, 'EquipoID', 'Descripcion', true, 'Todos los equipos');
+            sel.disabled = false;
+        })
+        .catch(err=>{
+            console.error('[Filtro Equipo] ', err);
+            sel.innerHTML = '<option value="">(error)</option>';
+            sel.disabled = false;
+        });
+
+        sel.addEventListener('change', ()=>{
+            equipoFilterValue = sel.value || '';
+            renderTablaBOM(currentRows);                  // re-render con filtro aplicado
+        });
+    }
+
+    // ========== Filtro lógico ==========
+    function aplicarFiltros(rows){
+        const eqVal = String(equipoFilterValue || '');
+        return (rows||[]).filter(r=>{
+            const eqId = String(r._equipoID ?? r.EquipoID ?? '');
+            const byEq = !eqVal || eqId === eqVal;
+            return byEq;
+        });
+    }
+
     // ========== Tabla ==========
     function collapseColumnDuplicates(table, colIndex) {
         const tbody = table.tBodies[0]; if (!tbody) return;
@@ -278,6 +329,8 @@ document.addEventListener('DOMContentLoaded', function () {
             <th class="text-center">Tipo Mov SAP</th>
             <th class="text-center">Factor</th>
             <th class="text-center">Equipo</th>
+            <th class="text-center">Prod Seca</th>
+            <th class="text-center">Prod Húmeda</th>
             <th class="text-center">Cons Seco</th>
             <th class="text-center">Cons Húmedo</th>
             <th class="text-center">Fecha BOM</th>
@@ -300,10 +353,19 @@ document.addEventListener('DOMContentLoaded', function () {
         return table;
     }
     function renderTablaBOM(rows){
-        if(!rows || !rows.length){ showMsg('No hay registros para el material seleccionado','warning'); return; }
+        const data = aplicarFiltros(rows);
+        if(!data || !data.length){
+            showMsg('No hay registros para los filtros aplicados','warning');
+            return;
+        }
+
         let tbody='<tbody>';
-        rows.forEach(r=>{
-            const sec=!!r._consumoSeco, hum=!!r._consumoHumedo;
+        data.forEach(r=>{
+            const prodSec = !!r._produccionSeca;
+            const prodHum = !!r._produccionHumeda;
+            const sec     = !!r._consumoSeco;
+            const hum     = !!r._consumoHumedo;
+
             tbody+=`<tr
                 data-bomid="${r._billOfMaterialID}"
                 data-materialprodid="${r.dataset?.materialprodid || r._materialProduccionID || ''}"
@@ -312,6 +374,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 data-equipoid="${r._equipoID}"
                 data-matconsid="${r._materialConsumoID}"
                 data-factor="${r._factorConsumo ?? ''}"
+                data-prosec="${prodSec?1:0}"
+                data-prohum="${prodHum?1:0}"
                 data-conssec="${sec?1:0}"
                 data-conshum="${hum?1:0}"
                 data-fecha="${fmtFechaISO(r._fechaBOM)}"
@@ -321,13 +385,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 <td class="text-center">${r._tipoMovimientoSAPDescripcion?escapeHtml(r._tipoMovimientoSAPDescripcion):'-'}</td>
                 <td class="text-center">${r._factorConsumo ?? ''}</td>
                 <td class="text-center">${escapeHtml(r._equipoDescripcion ?? '')}</td>
+                <td class="text-center prod-seca">${renderCheck(prodSec)}</td>
+                <td class="text-center prod-hum">${renderCheck(prodHum)}</td>
                 <td class="text-center consumo-seco">${renderCheck(sec)}</td>
                 <td class="text-center consumo-hum">${renderCheck(hum)}</td>
                 <td class="text-center">${fmtFechaISO(r._fechaBOM)}</td>
                 <td class="text-center">${escapeHtml(r._materialConsumoDescripcion ?? '')}</td>
                 <td class="text-center estatus">${renderCheck(!!r._active)}</td>
                 <td class="text-center acciones">
-                    <button class="btn btn-sm btn-primary btn-editar">Editar</button>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button class="btn btn-primary btn-editar">Editar</button>
+                        <button class="btn btn-outline-danger btn-eliminar">Eliminar</button>
+                    </div>
                 </td>
             </tr>`;
         });
@@ -340,10 +409,56 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>`;
         const table=document.getElementById('tablaBOM');
 
+        // seguir agrupando primeras columnas si lo usas
         collapseDuplicates(table,[0,1]);
 
+        // Editar
         table.querySelectorAll('.btn-editar').forEach(btn=>{
             btn.addEventListener('click',()=>openEditOverlayFromRow(btn.closest('tr')));
+        });
+        // Eliminar
+        table.querySelectorAll('.btn-eliminar').forEach(btn=>{
+            btn.addEventListener('click',()=>handleDeleteClick(btn.closest('tr')));
+        });
+    }
+
+    // ========== Eliminar ==========
+    function handleDeleteClick(tr){
+        if(!tr) return;
+        const bomId  = Number(tr.dataset.bomid || 0);
+        const matId  = tr.dataset.materialprodid || selectListado.value || '';
+
+        if(!bomId){
+            alert('No se pudo identificar el registro a eliminar.');
+            return;
+        }
+
+        // Doble confirmacion
+        const c1 = confirm('¿Seguro que quieres ELIMINAR este BOM? Esta accion no se puede deshacer.');
+        if(!c1) return;
+        const c2 = prompt('Para confirmar escribe: ELIMINAR');
+        if((c2 || '').trim().toUpperCase() !== 'ELIMINAR'){
+            alert('Confirmacion cancelada. No se elimino el registro.');
+            return;
+        }
+
+        // POST al backend
+        fetch(URL_DELETE_BOM, {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json' },
+            body: JSON.stringify({ id: bomId })
+        })
+        .then(r=>r.json())
+        .then(res=>{
+            if(res && res.success){
+                recargarTablaActual(matId);
+            }else{
+                alert('No se pudo eliminar: ' + (res?.message || 'Error desconocido'));
+            }
+        })
+        .catch(err=>{
+            console.error(err);
+            alert('Error al eliminar el BOM.');
         });
     }
 
@@ -355,7 +470,8 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
         .then(res=>{
             const rows = Array.isArray(res)?res:(res && res.success && Array.isArray(res.data)?res.data:[]);
-            renderTablaBOM(rows);
+            currentRows = rows;             // guardamos para filtros
+            renderTablaBOM(currentRows);    // dibuja respetando filtro de equipo
         })
         .catch(err=>{console.error(err);showMsg('No se pudo cargar los datos','danger');});
     }
@@ -528,6 +644,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
 
                     <div class="col-md-4">
+                        <label class="form-label">Producción</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="form-check form-switch m-0">
+                                <input class="form-check-input" type="checkbox" id="cr_prodSeca">
+                                <label class="form-check-label" for="cr_prodSeca">Seca</label>
+                            </div>
+                            <div class="form-check form-switch m-0">
+                                <input class="form-check-input" type="checkbox" id="cr_prodHum">
+                                <label class="form-check-label" for="cr_prodHum">Húmeda</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
                         <label class="form-label">Consumo</label>
                         <div class="d-flex align-items-center gap-3">
                             <div class="form-check form-switch m-0">
@@ -571,6 +701,12 @@ document.addEventListener('DOMContentLoaded', function () {
         createEl.querySelector('#cr_guardar').addEventListener('click', ()=>guardarDesdeCreateOverlay(false));
         createEl.querySelector('#cr_guardar_keep').addEventListener('click', ()=>guardarDesdeCreateOverlay(true));
 
+        // exclusión mutua para Producción y Consumo
+        const chkPSe = createEl.querySelector('#cr_prodSeca');
+        const chkPHu = createEl.querySelector('#cr_prodHum');
+        chkPSe.addEventListener('change',()=>{ if(chkPSe.checked) chkPHu.checked=false; });
+        chkPHu.addEventListener('change',()=>{ if(chkPHu.checked) chkPSe.checked=false; });
+
         const chkSeco = createEl.querySelector('#cr_conSeco');
         const chkHum  = createEl.querySelector('#cr_conHum');
         chkSeco.addEventListener('change',()=>{ if(chkSeco.checked) chkHum.checked=false; });
@@ -584,7 +720,6 @@ document.addEventListener('DOMContentLoaded', function () {
         montarMatConsDropdown(createEl.querySelector('#cr_matConsDD'), createEl.querySelector('#cr_matConsSel'), 'Seleccione material(es)');
     }
     function showCreateOverlay(){
-        // bloqueo: debe haber material seleccionado
         if (!requireMaterialSeleccionado()) return;
 
         ensureCreateOverlay();
@@ -630,11 +765,18 @@ document.addEventListener('DOMContentLoaded', function () {
             const matSel = createEl.querySelector('#cr_matConsSel');
             const matConsIds = Array.from((matSel?.options||[])).filter(o=>o.selected && o.value).map(o=>Number(o.value));
 
+            const prodSeca = !!createEl.querySelector('#cr_prodSeca')?.checked;
+            const prodHum  = !!createEl.querySelector('#cr_prodHum')?.checked;
+
             const conSeco = !!createEl.querySelector('#cr_conSeco')?.checked;
             const conHum  = !!createEl.querySelector('#cr_conHum')?.checked;
 
             if(!matProdId || !equipoIds.length || !matConsIds.length){
                 alert('Completa: Material Producción, al menos un Equipo y al menos un Material de Consumo.');
+                return;
+            }
+            if(prodSeca && prodHum){
+                alert('Prod Seca y Prod Húmeda no pueden estar ambos activos.');
                 return;
             }
             if(conSeco && conHum){
@@ -649,6 +791,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     _materialConsumoIDs:   matConsIds,
                     _equipoID:             eqId,
                     _factorConsumo:        Number.isFinite(factor)?factor:0,
+                    _produccionSeca:       prodSeca,
+                    _produccionHumeda:     prodHum,
                     _consumoSeco:          conSeco,
                     _consumoHumedo:        conHum
                 };
@@ -729,6 +873,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
 
                     <div class="col-md-4">
+                        <label class="form-label">Producción</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="form-check form-switch m-0">
+                                <input class="form-check-input" type="checkbox" id="ed_prodSeca">
+                                <label class="form-check-label" for="ed_prodSeca">Seca</label>
+                            </div>
+                            <div class="form-check form-switch m-0">
+                                <input class="form-check-input" type="checkbox" id="ed_prodHum">
+                                <label class="form-check-label" for="ed_prodHum">Húmeda</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
                         <label class="form-label">Consumo</label>
                         <div class="d-flex align-items-center gap-3">
                             <div class="form-check form-switch m-0">
@@ -768,6 +926,12 @@ document.addEventListener('DOMContentLoaded', function () {
         editBg.addEventListener('click', hideEditOverlay);
         editEl.querySelector('#ed_close_top').addEventListener('click', hideEditOverlay);
         editEl.querySelector('#ed_cancel').addEventListener('click', hideEditOverlay);
+
+        // exclusión mutua para Producción y Consumo
+        const chkPSe = editEl.querySelector('#ed_prodSeca');
+        const chkPHu = editEl.querySelector('#ed_prodHum');
+        chkPSe.addEventListener('change',()=>{ if(chkPSe.checked) chkPHu.checked=false; });
+        chkPHu.addEventListener('change',()=>{ if(chkPHu.checked) chkPSe.checked=false; });
 
         const chkSeco = editEl.querySelector('#ed_conSeco');
         const chkHum  = editEl.querySelector('#ed_conHum');
@@ -818,10 +982,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         mcObs.observe(mcSel, { childList:true }); setTimeout(()=>mcObs.disconnect(), 1200);
 
-        // Factor, consumos, fecha, activo
+        // Factor, producción, consumos, fecha, activo
         editEl.querySelector('#ed_factor').value = tr.dataset.factor || '';
-        editEl.querySelector('#ed_conSeco').checked = tr.dataset.conssec === '1';
-        editEl.querySelector('#ed_conHum').checked  = tr.dataset.conshum === '1';
+        editEl.querySelector('#ed_prodSeca').checked = tr.dataset.prosec === '1';
+        editEl.querySelector('#ed_prodHum').checked  = tr.dataset.prohum === '1';
+        editEl.querySelector('#ed_conSeco').checked  = tr.dataset.conssec === '1';
+        editEl.querySelector('#ed_conHum').checked   = tr.dataset.conshum === '1';
         editEl.querySelector('#ed_fecha').value = tr.dataset.fecha || new Date().toISOString().split('T')[0];
         editEl.querySelector('#ed_activo').checked = tr.dataset.active === '1';
 
@@ -843,12 +1009,18 @@ document.addEventListener('DOMContentLoaded', function () {
         const matCons = Number(editEl.querySelector('#ed_matCons')?.value||0);
         const factorV = editEl.querySelector('#ed_factor')?.value||'';
         const factor  = factorV===''?0:Number(factorV);
+        const prodSec = !!editEl.querySelector('#ed_prodSeca')?.checked;
+        const prodHum = !!editEl.querySelector('#ed_prodHum')?.checked;
         const conSeco = !!editEl.querySelector('#ed_conSeco')?.checked;
         const conHum  = !!editEl.querySelector('#ed_conHum')?.checked;
         const activo  = !!editEl.querySelector('#ed_activo')?.checked;
 
         if(!bomId || !matProd || !equipo || !matCons){
             alert('Complete: Material Prod, Equipo y Material Consumo.');
+            btn.disabled = false; return;
+        }
+        if(prodSec && prodHum){
+            alert('Prod Seca y Prod Húmeda no pueden estar ambos activos.');
             btn.disabled = false; return;
         }
         if(conSeco && conHum){
@@ -863,6 +1035,8 @@ document.addEventListener('DOMContentLoaded', function () {
             _materialConsumoID:     matCons,
             _equipoID:              equipo,
             _factorConsumo:         Number.isFinite(factor)?factor:0,
+            _produccionSeca:        prodSec,
+            _produccionHumeda:      prodHum,
             _consumoSeco:           conSeco,
             _consumoHumedo:         conHum,
             _active:                activo
@@ -913,16 +1087,21 @@ document.addEventListener('DOMContentLoaded', function () {
         updateAgregarState();
     }
 
-    // Cambiar filtro -> recarga tabla y habilita/deshabilita Agregar
+    // Cambiar filtro -> recarga tabla y resetea el filtro de equipo
     selectListado.addEventListener('change',function(){
         updateAgregarState();
+        const ef = document.getElementById('filterEquipo');
+        if(ef){ ef.value=''; equipoFilterValue=''; }
         cargarBOMPorMaterial(this.value);
     });
 
     // init
+    ensureEquipoFilter(); // dibuja filtro de Equipo si hay contenedor disponible
     cargarMateriales();
 });
 </script>
+
+
 
 
 

@@ -110,9 +110,13 @@ namespace DVP.Models
 
         public IEnumerable<Clasificacion> GetClasificacionFalla()
         {
-            IEnumerable<Clasificacion> listaclasificacion = _dvpEntities.Clasificacion.ToList();
+            IEnumerable<Clasificacion> listaclasificacion = _dvpEntities.Clasificacion
+                .Include("TipoParo")
+                .ToList();
+
             return listaclasificacion;
         }
+
 
 
         public List<DowntimeViewModel> GetdowntimeListByDate(DateTime fecha)

@@ -4,9 +4,9 @@
   <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
-      <Diagram DiagramId="2a73dd5b4c63469eb50612572cc070ff" Name="Diagram1" ZoomLevel="77">
+      <Diagram DiagramId="2a73dd5b4c63469eb50612572cc070ff" Name="Diagram1" ZoomLevel="80">
         <EntityTypeShape EntityType="DVPModel.CierreStatus" Width="1.5" PointX="12" PointY="24.5" IsExpanded="true" />
-        <EntityTypeShape EntityType="DVPModel.ClasificacionMaterial" Width="1.5" PointX="0.75" PointY="6.875" IsExpanded="true" />
+        <EntityTypeShape EntityType="DVPModel.ClasificacionMaterial" Width="2.625" PointX="1" PointY="7.25" IsExpanded="true" />
         <EntityTypeShape EntityType="DVPModel.Entradas" Width="1.5" PointX="0.75" PointY="0.75" IsExpanded="true" />
         <EntityTypeShape EntityType="DVPModel.Gerencia" Width="1.5" PointX="3.75" PointY="26.75" IsExpanded="true" />
         <EntityTypeShape EntityType="DVPModel.Pais" Width="1.5" PointX="0.75" PointY="12.75" IsExpanded="true" />
@@ -44,13 +44,10 @@
         <AssociationConnector Association="DVPModel.FK_UnidadMedida_DataOperacion" />
         <EntityTypeShape EntityType="DVPModel.TagEquipo" Width="1.5" PointX="9.625" PointY="7" />
         <AssociationConnector Association="DVPModel.FK_TagEquipo_TipoOperacion" />
-        <EntityTypeShape EntityType="DVPModel.Clasificacion" Width="1.5" PointX="7.5" PointY="28.625" />
         <EntityTypeShape EntityType="DVPModel.ComponenteEquipo" Width="1.5" PointX="7.5" PointY="22.375" />
         <EntityTypeShape EntityType="DVPModel.Equipo" Width="1.5" PointX="3" PointY="16" />
         <EntityTypeShape EntityType="DVPModel.SubEquipo" Width="1.5" PointX="5.25" PointY="22.375" />
         <EntityTypeShape EntityType="DVPModel.TipoFalla" Width="1.5" PointX="12.75" PointY="20.375" />
-        <AssociationConnector Association="DVPModel.FK_Clasificacion_Paros" />
-        <AssociationConnector Association="DVPModel.FK_Clasificacion_TipoFalla" />
         <AssociationConnector Association="DVPModel.FK_ComponenteEquipo_Paros" />
         <AssociationConnector Association="DVPModel.FK_ComponenteEquipo_TipoFalla" />
         <AssociationConnector Association="DVPModel.FK_SubEquipo_ComponenteEquipo" />
@@ -79,6 +76,11 @@
         <EntityTypeShape EntityType="DVPModel.TipoMovimientoSAP" Width="1.5" PointX="9.375" PointY="0.875" />
         <AssociationConnector Association="DVPModel.FK_TipoMovimientoSAPID_BillOfMaterial" />
         <AssociationConnector Association="DVPModel.FK_TipoMovimientoSAPID_DataOperacion" />
+        <EntityTypeShape EntityType="DVPModel.Clasificacion" Width="1.5" PointX="13.625" PointY="1" />
+        <EntityTypeShape EntityType="DVPModel.TipoParo" Width="1.5" PointX="11.375" PointY="1.5" />
+        <AssociationConnector Association="DVPModel.FK_Clasificacion_Paros" />
+        <AssociationConnector Association="DVPModel.FK_Clasificacion_TipoFalla" />
+        <AssociationConnector Association="DVPModel.FK_Clasificacion_TipoParo" />
         </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

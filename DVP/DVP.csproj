@@ -187,12 +187,11 @@
     <Compile Include="Controllers\BillOfMaterialController.cs" />
     <Compile Include="Controllers\DatosOperacionController.cs" />
     <Compile Include="Controllers\DowntimeController.cs" />
-    <Compile Include="Controllers\EnergyController.cs" />
+    <Compile Include="Controllers\OperationDataToReportController.cs" />
     <Compile Include="Controllers\EquipoController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\InventoryController.cs" />
     <Compile Include="Controllers\MaterialController.cs" />
-    <Compile Include="Controllers\OperationController.cs" />
     <Compile Include="Controllers\TagController.cs" />
     <Compile Include="Controllers\UserController.cs" />
     <Compile Include="Global.asax.cs">
@@ -203,11 +202,10 @@
     <Compile Include="Models\BillOfMaterialViewModel.cs" />
     <Compile Include="Models\DatosOperacionViewModel.cs" />
     <Compile Include="Models\DowntimeViewModel.cs" />
-    <Compile Include="Models\EnergyViewModel.cs" />
+    <Compile Include="Models\OperationDataToReportViewModel.cs" />
     <Compile Include="Models\EquipoViewModel.cs" />
     <Compile Include="Models\InventoryViewModelcs.cs" />
     <Compile Include="Models\MaterialViewModel.cs" />
-    <Compile Include="Models\OperationViewModel.cs" />
     <Compile Include="Models\TagViewModel.cs" />
     <Compile Include="Models\UserViewModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -926,8 +924,7 @@
     <Content Include="Views\Account\Index.cshtml" />
     <Content Include="Views\Downtime\Index.cshtml" />
     <Content Include="Views\User\Index.cshtml" />
-    <Content Include="Views\Energy\Index.cshtml" />
-    <Content Include="Views\Operation\Index.cshtml" />
+    <Content Include="Views\OperationDataToReport\Index.cshtml" />
     <Content Include="Views\Inventory\Index.cshtml" />
     <Content Include="Views\Equipo\Index.cshtml" />
     <Content Include="Views\Material\Index.cshtml" />
@@ -936,6 +933,9 @@
     <Content Include="Views\ArbolFallas\Index.cshtml" />
     <Content Include="Views\DatosOperacion\Index.cshtml" />
     <Content Include="Views\BillOfMaterial\Index.cshtml" />
+    <Content Include="Views\OperationDataToReport\Energy.cshtml" />
+    <Content Include="Views\OperationDataToReport\Operation.cshtml" />
+    <Content Include="Views\OperationDataToReport\CapturaHumedad.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

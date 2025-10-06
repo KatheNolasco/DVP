@@ -23,6 +23,8 @@ namespace DVP.Models
         public int? _materialConsumoID { get; set; }
         public string _materialConsumoDescripcion { get; set; }
         public bool _active { get; set; }
+        public bool _produccionSeca { get; set; }
+        public bool _produccionHumeda { get; set; }
 
         public List<int> _materialProduccionIDs { get; set; }
         public List<int> _materialConsumoIDs { get; set; }

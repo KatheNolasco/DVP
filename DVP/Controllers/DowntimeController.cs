@@ -64,7 +64,8 @@ namespace DVP.Controllers
                                      .Select(s => new
                                      {
                                          SubEquipoID = s.SubEquipoID,
-                                         Descripcion = s.Descripcion
+                                         Descripcion = s.Descripcion,
+                                         CodigoDet = s.CodigoDet
                                      })
                                      .ToList();
 
@@ -84,7 +85,8 @@ namespace DVP.Controllers
                                      .Select(s => new
                                      {
                                          ComponenteEquipoID = s.ComponenteEquipoID,
-                                         Descripcion = s.Descripcion
+                                         Descripcion = s.Descripcion,
+                                         CodigoDet = s.CodigoDet
                                      })
                                      .ToList();
 
@@ -104,7 +106,8 @@ namespace DVP.Controllers
                                      .Select(s => new
                                      {
                                          TipoFallaID = s.TipoFallaID,
-                                         Descripcion = s.Descripcion
+                                         Descripcion = s.Descripcion,
+                                         CodigoDet = s.CodigoDet
                                      })
                                      .ToList();
 
@@ -119,6 +122,26 @@ namespace DVP.Controllers
                                      .Select(s => new
                                      {
                                          ClasificacionID = s.ClasificacionID,
+                                         Descripcion = s.Descripcion,
+                                         Ajeno = s.Ajeno,
+                                         AfectaMTF = s.AfectaTMEF,
+                                         CodigoDet = s.CodigoDet,
+                                         TipoParoID = s.TipoParoID,
+                                         TipoParoDescripcion = s.TipoParo.Descripcion
+                                     })
+                                     .ToList();
+
+            return Json(clasificaciones, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult GetTipoParo()
+        {
+
+            var clasificaciones = _dvpEntities.TipoParo
+                                     .Select(s => new
+                                     {
+                                         TipoParoID = s.TipoParoID,
                                          Descripcion = s.Descripcion
                                      })
                                      .ToList();
@@ -957,65 +980,100 @@ namespace DVP.Controllers
             var paro = _dvpEntities.Paros.FirstOrDefault(p => p.ParosID == paroId);
 
             if (paro == null || paro.ParoRelacionadoID == null)
-            {
                 return Json(new List<object>(), JsonRequestBehavior.AllowGet);
-            }
 
             var paroRelacionadoId = paro.ParoRelacionadoID;
+            var eventosQuery = _dvpEntities.Paros
+                .Where(p => p.ParoRelacionadoID == paroRelacionadoId && p.StatusDelete == false);
 
-            var eventos = _dvpEntities.Paros
-                .Where(p => p.ParoRelacionadoID == paroRelacionadoId && p.StatusDelete == false)
-                .ToList();
+
+            var eventos = eventosQuery.ToList();
 
             var eventoInactive = eventos.FirstOrDefault(p => p.TipoEventoID == INACTIVE_EVENT);
             var eventoActive = eventos.FirstOrDefault(p => p.TipoEventoID == ACTIVE_EVENT);
             var eventoPendingActive = eventos
-                  .Where(p => (p.TipoEventoID == DAY_DELAY_EVENT || p.TipoEventoID == RECLASIFICATION_EVENT))
-                  .OrderByDescending(p => p.FechaEvento)
-                  .FirstOrDefault();
-            var fechaRestaEventoInactive = DateTime.Now;
+                .Where(p => (p.TipoEventoID == DAY_DELAY_EVENT || p.TipoEventoID == RECLASIFICATION_EVENT))
+                .OrderByDescending(p => p.FechaEvento)
+                .FirstOrDefault();
+
+            // helper seguro para minutos entre fechas (DateTime?):
+            Func<DateTime?, DateTime?, double?> minsAbs = (a, b) =>
+            {
+                if (a.HasValue && b.HasValue) return Math.Abs((a.Value - b.Value).TotalMinutes);
+                return (double?)null;
+            };
 
             double? resultado = null;
 
             if (eventoInactive != null && eventoActive != null)
             {
-                // Caso normal: existe INACTIVE y ACTIVE
-                resultado = Math.Abs((eventoInactive.FechaEvento - eventoActive.FechaEvento)?.TotalMinutes ?? 0);
+                // INACTIVE y ACTIVE presentes
+                resultado = minsAbs(eventoInactive.FechaEvento, eventoActive.FechaEvento);
+            }
+            else if (eventoInactive != null && eventoActive == null && eventoPendingActive == null)
+            {
+                // Solo INACTIVE: INACTIVE - ahora
+                resultado = minsAbs(eventoInactive.FechaEvento, DateTime.Now);
+            }
+            else if (eventoInactive != null && eventoActive == null && eventoPendingActive != null)
+            {
+                // Sin ACTIVE: INACTIVE - ultimo (day delay / reclasificacion)
+                resultado = minsAbs(eventoInactive.FechaEvento, eventoPendingActive.FechaEvento);
             }
             else
             {
-                if (eventoActive == null && eventoPendingActive == null)
-                {
-                    resultado = Math.Abs((eventoInactive.FechaEvento - fechaRestaEventoInactive)?.TotalMinutes ?? 0);
-
-                }
-                else
-                {
-                    // Caso alterno: NO existe ACTIVE => restamos eventoInactive - paro
-                    resultado = Math.Abs((eventoInactive.FechaEvento - eventoPendingActive.FechaEvento)?.TotalMinutes ?? 0);
-                }
+                // No hay INACTIVE; no se puede calcular de forma consistente
+                resultado = null;
             }
-            
-            
 
             var downtimes = eventos
                 .Select(choose => new
                 {
                     _paroId = choose.ParosID,
-                    _fechaCreacionParo = choose.FechaCreacion,
-                    _fechaEvento = choose.FechaEvento,
+                    _fechaCreacionParo = choose.FechaCreacion,      
+                    _fechaEvento = choose.FechaEvento,              
                     _comment = choose.Comentario,
+
                     _equipoId = choose.EquipoID,
-                    _equipoName = choose.Equipo?.Descripcion,
-                    _componenteEquipoName = choose.ComponenteEquipo?.Descripcion,
-                    _tipoFallaName = choose.TipoFalla?.Descripcion,
-                    _clasificacionName = choose.Clasificacion?.Descripcion,
+                    _equipoName = choose.Equipo != null ? choose.Equipo.Descripcion : null,
+
+                    _componenteEquipoName = choose.ComponenteEquipo != null
+                        ? choose.ComponenteEquipo.Descripcion
+                        : null,
+
+                    _tipoFallaName = choose.TipoFalla != null
+                        ? choose.TipoFalla.Descripcion
+                        : null,
+
+                    _clasificacionName = choose.Clasificacion != null
+                        ? choose.Clasificacion.Descripcion
+                        : null,
+
+                    _clasificacionDisplay = choose.Clasificacion == null
+                        ? null
+                        : (
+                            (choose.Clasificacion.Descripcion ?? "")
+                            + " ("
+                            + (
+                                choose.Clasificacion.TipoParo != null
+                                    ? (choose.Clasificacion.TipoParo.Descripcion ?? "Sin Tipo Paro")
+                                    : "Sin Tipo Paro"
+                              )
+                            + ")"
+                          ),
+
+                    _tipoParoDescripcion = (choose.Clasificacion != null && choose.Clasificacion.TipoParo != null)
+                        ? choose.Clasificacion.TipoParo.Descripcion
+                        : null,
+
                     _statusValidate = choose.StatusValidate,
                     _statusDelete = choose.StatusDelete,
                     _tipoEventoId = choose.TipoEventoID,
-                    _tipoEventoName = choose.TipoEvento?.Descripcion,
+                    _tipoEventoName = choose.TipoEvento != null ? choose.TipoEvento.Descripcion : null,
+
                     _paroRelacionadoId = choose.ParoRelacionadoID,
                     _cerrado = choose.Cerrado,
+
                     _diferenciaEnHoras = resultado
                 })
                 .ToList();

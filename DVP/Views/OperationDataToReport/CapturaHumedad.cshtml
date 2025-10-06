@@ -1,0 +1,667 @@
+﻿@model DVP.Models.OperationDataToReportViewModel
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Downtime Page";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+
+<style>
+    /* Estilo para el contenedor de la fecha y hora */
+    .container {
+        font-family: Arial, sans-serif;
+        display: flex; /* Usamos flex para alinearlos horizontalmente */
+        justify-content: center; /* Centra los elementos horizontalmente */
+        align-items: center; /* Centra los elementos verticalmente */
+        gap: 20px; /* Espacio entre los divs */
+        margin-top: 20px;
+    }
+    /* Estilo para los divs de fecha y hora */
+    .input-container {
+        font-size: 18px;
+        display: flex;
+        flex-direction: column; /* Los inputs se alinean de arriba hacia abajo */
+        align-items: center;
+    }
+
+    input {
+        padding: 10px;
+        font-size: 16px;
+        margin-top: 10px;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        background-color: #f0f0f0;
+    }
+
+    .scrollable-table {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa; /* color fondo header */
+        z-index: 2;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .table tbody td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 45px;
+        height: 24px;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+            .switch .slider:before {
+                position: absolute;
+                content: "";
+                height: 18px;
+                width: 18px;
+                left: 3px;
+                bottom: 3px;
+                background-color: white;
+                transition: .4s;
+                border-radius: 50%;
+            }
+
+        .switch input:checked + .slider {
+            background-color: #13DEB9; /* Verde menta */
+        }
+
+            .switch input:checked + .slider:before {
+                transform: translateX(21px);
+            }
+
+    .switch-label {
+        font-size: 14px;
+        color: #555;
+        vertical-align: middle;
+    }
+</style>
+
+
+<body>
+
+    <div class="container-fluid" style="padding-left: 200px;">
+        <br /><br /><br />
+        <div class="card">
+            <div class="container-fluid">
+                <div class="container-fluid">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
+                                Agregado correctamente!
+                            </div>
+                            <h5 class="card-title fw-semibold mb-4">Configuration humidity of materials</h5>
+                            <div class="card-body" style="text-align: right;">
+                                <input type="date" id="fechaReporte" style="text-align: right;" onchange="filtrarPorFecha()">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Agregar por Equipo y Material de Consumo ó Producción</label>
+                            <div class="d-flex">
+                                <select class="form-select" id="selectEquipo"></select>
+                                <select class="form-select" id="selectConsumo"></select>
+                                <select class="form-select" id="selectProduccion"></select>
+                                <button id="agregar" class="btn btn-sm btn-primary ms-2">Agregar</button>
+                            </div>
+                            <br />
+                            <label class="form-label">Listar por Equipo y Material de Consumo ó Producción</label>
+                            <div class="d-flex">
+                                <select class="form-select" id="selectEquipoList"></select>
+                                <select class="form-select" id="selectMaterial">
+                                    <option value="Produccion">Producción</option>
+                                    <option value="Consumo">Consumo</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="filtrosListado" class="row g-3 mb-2"></div>
+                        <div id="contenedorListado" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @*___________________________________________________________________Modal Cargando__________________________________________________*@
+    <div id="loadingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: rgba(0, 0, 0, 0.5);">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 25px 35px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.3); min-width: 250px;">
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <img src="/Content/loading-green-loading.gif" alt="Cargando..." style="width: 40px; height: 40px; margin-right: 15px;" />
+                <span style="color: black; font-size: 16px;">Cargando...</span>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+
+  const btnAgregar       = document.getElementById('agregar');
+  const selectEquipo     = document.getElementById('selectEquipo');
+  const selectConsumo    = document.getElementById('selectConsumo');
+  const selectProduccion = document.getElementById('selectProduccion');
+  const inputFecha       = document.getElementById('fechaReporte'); // se enviará en el payload
+
+  const URL_EQUIPOS          = '@Url.Action("GetEquiposporPaislogguedUser", "Equipo")';
+  const URL_BOMS_CONSUMO     = '@Url.Action("GetBOMsConsumoByEquipo", "BillOfMaterial")';
+  const URL_BOMS_PRODUCCION  = '@Url.Action("GetBOMsProduccionByEquipo", "BillOfMaterial")';
+  const URL_CREATE_HUMEDAD   = '@Url.Action("CrearCapturaHumedad", "OperationDataToReport")';
+
+  function option(el, value, text){ const o=document.createElement('option'); o.value=value; o.textContent=text; el.appendChild(o); }
+  function fillSelect(selectEl, list, valueKey, textKey, placeholder){
+    if(!selectEl) return;
+    selectEl.innerHTML=''; option(selectEl,'',placeholder);
+    (list||[]).forEach(x=>{
+      const v=x?.[valueKey], t=x?.[textKey];
+      if(v!==undefined && t!==undefined) option(selectEl,String(v),String(t));
+    });
+  }
+  function showAlert(msg){
+    const el=document.getElementById('alertsuccesclose');
+    if(el){ el.textContent=msg; el.style.display='block'; setTimeout(()=>el.style.display='none',2500); }
+    else alert(msg);
+  }
+  function hoyISO(){ return new Date().toISOString().split('T')[0]; }
+
+  function loadEquipos(){
+    selectEquipo.disabled=true;
+    selectEquipo.innerHTML='<option value="">Cargando equipos...</option>';
+    fetch(URL_EQUIPOS,{headers:{'Accept':'application/json'}})
+      .then(r=>r.json())
+      .then(data=>{
+        if(data && data.success===false){ fillSelect(selectEquipo,[], '', '', '(sesión no iniciada)'); return; }
+        const list = Array.isArray(data)?data:(Array.isArray(data?.data)?data.data:[]);
+        fillSelect(selectEquipo,list,'EquipoID','Descripcion','Seleccione equipo');
+      })
+      .catch(e=>{ console.error('[Equipos]',e); fillSelect(selectEquipo,[], '', '', '(error al cargar equipos)'); })
+      .finally(()=>{ selectEquipo.disabled=false; });
+  }
+  function loadBOMConsumo(equipoId){
+    selectConsumo.disabled=true;
+    selectConsumo.innerHTML='<option value="">Cargando consumo...</option>';
+    if(!equipoId){ fillSelect(selectConsumo,[], '', '', 'Seleccione material consumo'); selectConsumo.disabled=false; return; }
+    fetch(`${URL_BOMS_CONSUMO}?equipoId=${encodeURIComponent(equipoId)}`,{headers:{'Accept':'application/json'}})
+      .then(r=>r.json())
+      .then(res=>{
+        const arr=(res && res.success && Array.isArray(res.data))?res.data:[];
+        const items=[]; const seen=new Set();
+        arr.forEach(x=>{ const id=x?._materialConsumoID, txt=x?._materialConsumoDescripcion; if(id && txt && !seen.has(id)){ seen.add(id); items.push({id,txt}); } });
+        fillSelect(selectConsumo,items,'id','txt','Seleccione material consumo');
+      })
+      .catch(e=>{ console.error('[Consumo]',e); fillSelect(selectConsumo,[], '', '', '(error al cargar consumo)'); })
+      .finally(()=>{ selectConsumo.disabled=false; });
+  }
+  function loadBOMProduccion(equipoId){
+    selectProduccion.disabled=true;
+    selectProduccion.innerHTML='<option value="">Cargando producción...</option>';
+    if(!equipoId){ fillSelect(selectProduccion,[], '', '', 'Seleccione material producción'); selectProduccion.disabled=false; return; }
+    fetch(`${URL_BOMS_PRODUCCION}?equipoId=${encodeURIComponent(equipoId)}`,{headers:{'Accept':'application/json'}})
+      .then(r=>r.json())
+      .then(res=>{
+        const arr=(res && res.success && Array.isArray(res.data))?res.data:[];
+        const items=[]; const seen=new Set();
+        arr.forEach(x=>{ const id=x?._materialProduccionID, txt=x?._materialProduccionDescripcion; if(id && txt && !seen.has(id)){ seen.add(id); items.push({id,txt}); } });
+        fillSelect(selectProduccion,items,'id','txt','Seleccione material producción');
+      })
+      .catch(e=>{ console.error('[Producción]',e); fillSelect(selectProduccion,[], '', '', '(error al cargar producción)'); })
+      .finally(()=>{ selectProduccion.disabled=false; });
+  }
+
+  // Bloqueo cruzado
+  selectConsumo.addEventListener('change', ()=>{ if(selectConsumo.value){ selectProduccion.value=''; selectProduccion.disabled=true; } else { selectProduccion.disabled=false; } });
+  selectProduccion.addEventListener('change', ()=>{ if(selectProduccion.value){ selectConsumo.value=''; selectConsumo.disabled=true; } else { selectConsumo.disabled=false; } });
+
+  selectEquipo.addEventListener('change', function(){
+    const eqId = this.value ? Number(this.value) : 0;
+    selectConsumo.disabled=false; selectConsumo.value='';
+    selectProduccion.disabled=false; selectProduccion.value='';
+    loadBOMConsumo(eqId);
+    loadBOMProduccion(eqId);
+  });
+
+  // ---------- MODAL CREATE ----------
+  let createBg=null, createEl=null;
+
+  function ensureCreateOverlay(){
+    if(createBg && createEl) return;
+
+    createBg=document.createElement('div');
+    createBg.id='overlayCrear_bg';
+    createBg.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:2050;display:none;';
+
+    createEl=document.createElement('div');
+    createEl.id='overlayCrear';
+    createEl.style.cssText='position:fixed;left:50%;top:8vh;transform:translateX(-50%);z-index:2051;display:none;max-width:760px;width:calc(100% - 32px);background:#fff;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.2);';
+
+    createEl.innerHTML=`
+      <div style="padding:.75rem 1rem;border-bottom:1px solid #e9ecef;" class="d-flex align-items-center justify-content-between">
+        <strong>Nueva Captura de Humedad</strong>
+        <button type="button" id="cr_close_top" class="btn btn-sm btn-outline-secondary">Cerrar</button>
+      </div>
+      <div style="padding:1rem;">
+        <div class="row g-2">
+
+          <!-- ocultos para ids -->
+          <input id="cr_equipoId" type="hidden">
+          <input id="cr_materialId" type="hidden">
+
+          <div class="col-md-6">
+            <label class="form-label">Equipo</label>
+            <input id="cr_equipoDesc" class="form-control" disabled>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Material</label>
+            <input id="cr_materialDesc" class="form-control" disabled>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Cant PIMS (opcional)</label>
+            <div class="input-group">
+              <input id="cr_cantPims" type="number" step="0.000001" class="form-control text-end">
+              <span class="input-group-text" style="min-width:56px;">%</span>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Cant Validada</label>
+            <div class="input-group">
+              <input id="cr_cantVal" type="number" step="0.000001" class="form-control text-end">
+              <span class="input-group-text" style="min-width:56px;">%</span>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="alert alert-info py-2 mb-0">
+              Esta acción quedará registrada con la fecha/hora del servidor.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:.75rem 1rem;border-top:1px solid #e9ecef;" class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-secondary" id="cr_cancel">Cancelar</button>
+        <button type="button" class="btn btn-success" id="cr_guardar">Guardar</button>
+      </div>
+    `;
+
+    document.body.appendChild(createBg);
+    document.body.appendChild(createEl);
+
+    createBg.addEventListener('click', hideCreateOverlay);
+    createEl.querySelector('#cr_close_top').addEventListener('click', hideCreateOverlay);
+    createEl.querySelector('#cr_cancel').addEventListener('click', hideCreateOverlay);
+    createEl.querySelector('#cr_guardar').addEventListener('click', guardarDesdeCreateOverlay);
+  }
+
+  function showCreateOverlay(){
+    const eqId = Number(selectEquipo.value || 0);
+    const eqDesc = selectEquipo.options[selectEquipo.selectedIndex]?.text || '';
+    const matConsId   = Number(selectConsumo.value || 0);
+    const matConsDesc = matConsId ? (selectConsumo.options[selectConsumo.selectedIndex]?.text || '') : '';
+    const matProdId   = Number(selectProduccion.value || 0);
+    const matProdDesc = matProdId ? (selectProduccion.options[selectProduccion.selectedIndex]?.text || '') : '';
+
+    if(!eqId){ alert('Debe seleccionar un equipo.'); return; }
+    if(!matConsId && !matProdId){ alert('Seleccione un material de consumo o uno de producción.'); return; }
+
+    ensureCreateOverlay();
+
+    createEl.querySelector('#cr_equipoId').value      = eqId;
+    createEl.querySelector('#cr_materialId').value    = matConsId || matProdId;
+    createEl.querySelector('#cr_equipoDesc').value    = eqDesc;
+    createEl.querySelector('#cr_materialDesc').value  = matConsDesc || matProdDesc;
+
+    // limpiar cantidades
+    createEl.querySelector('#cr_cantPims').value = '';
+    createEl.querySelector('#cr_cantVal').value  = '';
+
+    createBg.style.display='block';
+    createEl.style.display='block';
+  }
+
+  function hideCreateOverlay(){ if(createBg && createEl){ createBg.style.display='none'; createEl.style.display='none'; } }
+
+  function guardarDesdeCreateOverlay(){
+    const btn = createEl.querySelector('#cr_guardar');
+    btn.disabled = true;
+
+    try{
+      const equipoId   = Number(createEl.querySelector('#cr_equipoId')?.value || 0);
+      const materialId = Number(createEl.querySelector('#cr_materialId')?.value || 0);
+      const cantPimsV  = createEl.querySelector('#cr_cantPims')?.value;
+      const cantValV   = createEl.querySelector('#cr_cantVal')?.value;
+
+      const cantidadPims     = (cantPimsV==='') ? null : Number(cantPimsV);
+      const cantidadValidada = (cantValV==='')  ? null : Number(cantValV);
+
+      // fecha a enviar (del input date). Si está vacío, usa hoy.
+      const fechaISO = (inputFecha && inputFecha.value) ? inputFecha.value : hoyISO(); // 'YYYY-MM-DD'
+
+      if(!equipoId){ alert('Equipo es obligatorio.'); btn.disabled=false; return; }
+      if(cantidadValidada===null || Number.isNaN(cantidadValidada)){ alert('Cantidad validada es obligatoria.'); btn.disabled=false; return; }
+
+      // Payload: agrega _fechaReporte desde el input date
+      const payload = {
+        _equipoId:         equipoId,
+        _materialId:       materialId,
+        _cantidadPims:     (cantidadPims===null || !Number.isFinite(cantidadPims)) ? null : cantidadPims,
+        _cantidadValidada: Number.isFinite(cantidadValidada) ? cantidadValidada : null,
+        _fechaReporte:     fechaISO // <-- NUEVO: enviar fecha seleccionada (YYYY-MM-DD)
+      };
+
+      fetch(URL_CREATE_HUMEDAD,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      })
+      .then(r=>r.json())
+      .then(res=>{
+        if(res && res.success){
+          showAlert('Humedad registrada correctamente.');
+          hideCreateOverlay();
+          if(inputFecha){ inputFecha.dispatchEvent(new Event('change')); }
+        } else {
+          alert('No se pudo registrar: ' + (res?.message || 'Error desconocido'));
+        }
+      })
+      .catch(err=>{ console.error(err); alert('Error al registrar la humedad.'); })
+      .finally(()=>{ btn.disabled=false; });
+    }catch(e){
+      console.error(e); alert('Error inesperado.'); btn.disabled=false;
+    }
+  }
+
+  if(btnAgregar){ btnAgregar.addEventListener('click', e=>{ e.preventDefault(); showCreateOverlay(); }); }
+
+  // init
+  loadEquipos();
+});
+</script>
+
+
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+
+  // --- UI ---
+  const contenedorListado = document.getElementById('contenedorListado');
+  const inputFecha        = document.getElementById('fechaReporte'); // onchange="filtrarPorFecha()"
+  const selectEquipoList  = document.getElementById('selectEquipoList');
+  const selectMaterial    = document.getElementById('selectMaterial'); // Producción | Consumo
+
+  // --- Endpoints ---
+  const URL_GET_HUMEDAD = '@Url.Action("GetCapturasHumedad", "OperationDataToReport")';
+  const URL_EQUIPOS     = '@Url.Action("GetEquiposporPaislogguedUser", "Equipo")';
+
+  // --- Helpers ---
+  function option(el, value, text){ const o=document.createElement('option'); o.value=value; o.textContent=text; el.appendChild(o); }
+  function fillSelect(selectEl, list, valueKey, textKey, placeholder){
+    if(!selectEl) return;
+    selectEl.innerHTML=''; option(selectEl,'',placeholder);
+    (list||[]).forEach(x=>{
+      const v=x?.[valueKey], t=x?.[textKey];
+      if(v!==undefined && t!==undefined) option(selectEl,String(v),String(t));
+    });
+  }
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+  function showMsg(msg,type='info'){
+    contenedorListado.innerHTML = `<div class="alert alert-${type}" role="alert" style="margin-top:8px;">${escapeHtml(msg)}</div>`;
+  }
+  function fmtFechaHora(d){
+    if(!d) return '';
+    const m=/\/Date\((\d+)\)\//.exec(String(d));
+    let dt=null;
+    if(m){ const ms=parseInt(m[1],10); if(!Number.isNaN(ms)) dt=new Date(ms); }
+    else dt=new Date(d);
+    if(!dt || Number.isNaN(dt.getTime())) return '';
+    const yyyy=dt.getFullYear();
+    const mm=String(dt.getMonth()+1).padStart(2,'0');
+    const dd=String(dt.getDate()).padStart(2,'0');
+    const hh=String(dt.getHours()).padStart(2,'0');
+    const mi=String(dt.getMinutes()).padStart(2,'0');
+    return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+  }
+  function renderCheck(v){ return v?'<i class="bi bi-check-circle-fill text-success"></i>':'<i class="bi bi-x-circle-fill text-danger"></i>'; }
+
+  function buildTheadHtml(){
+    return `<thead><tr>
+      <th class="text-center">Fecha/Hora</th>
+      <th class="text-center">Equipo</th>
+      <th class="text-center">Cant PIMS</th>
+      <th class="text-center">Cant Validada</th>
+      <th class="text-center">Unidad</th>
+      <th class="text-center">Tipo Mov SAP</th>
+      <th class="text-center">Close</th>
+      <th class="text-center">Validate</th>
+      <th class="text-center">Acciones</th>
+    </tr></thead>`;
+  }
+
+  function renderTabla(rows){
+    const data = Array.isArray(rows) ? rows : [];
+    if(!data.length){ showMsg('No hay registros para los filtros aplicados','warning'); return; }
+
+    let tbody = '<tbody>';
+    data.forEach(r=>{
+      const pimsTxt = (r.CantidadPIMS ?? '') === '' ? '' : `${r.CantidadPIMS} %`;
+      const valTxt  = (r.CantidadValidada ?? '') === '' ? '' : `${r.CantidadValidada} %`;
+      tbody += `<tr>
+        <td class="text-center">${escapeHtml(fmtFechaHora(r.FechaReporte))}</td>
+        <td class="text-center">${escapeHtml(r.Equipo || '')}</td>
+        <td class="text-end">${pimsTxt}</td>
+        <td class="text-end">${valTxt}</td>
+        <td class="text-center">${escapeHtml(r.UnidadMedida || '')}</td>
+        <td class="text-center">${r.TipoMovimientoSAPID ?? ''}</td>
+        <td class="text-center">${renderCheck(!!r.StatusClose)}</td>
+        <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>
+        <td class="text-center">
+          <button class="btn btn-sm btn-primary btn-editar" data-id="${r.DataOperacionID}">Editar</button>
+        </td>
+      </tr>`;
+    });
+    tbody += '</tbody>';
+
+    contenedorListado.innerHTML = `
+      <div class="table-responsive w-100" style="max-height:420px; overflow-y:auto; background-color:#fff; padding:10px; border-radius:10px;">
+        <table class="table table-bordered table-sm table-striped mb-0" style="background-color:#fff;">
+          ${buildTheadHtml()}${tbody}
+        </table>
+      </div>`;
+  }
+
+  // --- Data ---
+  function cargarCapturas(params){
+    const { fechaISO, equipoId, tipoMaterial } = params;
+    showMsg('Cargando...','secondary');
+
+    let url = `${URL_GET_HUMEDAD}?_fecha=${encodeURIComponent(fechaISO)}`;
+    if(equipoId){ url += `&_equipoId=${encodeURIComponent(equipoId)}`; }
+    if(equipoId && tipoMaterial){ url += `&_tipoMaterial=${encodeURIComponent(tipoMaterial)}`; } // solo aplica si hay equipo
+
+    fetch(url, { headers:{'Accept':'application/json'} })
+      .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(arr=> renderTabla(arr))
+      .catch(err=>{ console.error(err); showMsg('No se pudo cargar la data de humedad','danger'); });
+  }
+
+  // --- Filtro por fecha helpers ---
+  function defaultAyerISO(){
+    const hoy = new Date();
+    const ayer = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 1);
+    return ayer.toISOString().split('T')[0];
+  }
+
+  // --- Cargar equipos al selectEquipoList ---
+  function loadEquiposList() {
+    if(!selectEquipoList) return;
+    selectEquipoList.disabled = true;
+    selectEquipoList.innerHTML = '<option value="">Cargando equipos...</option>';
+    fetch(URL_EQUIPOS, { headers:{'Accept':'application/json'} })
+      .then(r=>r.json())
+      .then(data=>{
+        if(data && data.success===false){
+          fillSelect(selectEquipoList, [], '', '', '(sesión no iniciada)');
+          return;
+        }
+        const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+        fillSelect(selectEquipoList, list, 'EquipoID', 'Descripcion', 'Todos los equipos');
+      })
+      .catch(err=>{
+        console.error('[Equipos List] ', err);
+        fillSelect(selectEquipoList, [], '', '', '(error al cargar equipos)');
+      })
+      .finally(()=>{ selectEquipoList.disabled=false; });
+  }
+
+  // --- Handlers de filtros ---
+  function getCurrentParams(){
+    const fechaISO  = (inputFecha && inputFecha.value) ? inputFecha.value : defaultAyerISO();
+    const equipoId  = selectEquipoList && selectEquipoList.value ? Number(selectEquipoList.value) : 0;
+    const tipoMateriaSel = (selectMaterial && selectMaterial.value) ? String(selectMaterial.value) : ''; // 'Producción' | 'Consumo'
+    return { fechaISO, equipoId, tipoMaterial: tipoMateriaSel };
+  }
+
+  // Expuesto para el onchange inline del input date
+  window.filtrarPorFecha = function(){
+    cargarCapturas(getCurrentParams());
+  };
+
+  if(inputFecha){
+    if(!inputFecha.value) inputFecha.value = defaultAyerISO();
+    inputFecha.addEventListener('change', window.filtrarPorFecha);
+  }
+  if(selectEquipoList){
+    selectEquipoList.addEventListener('change', ()=> cargarCapturas(getCurrentParams()));
+  }
+  if(selectMaterial){
+    selectMaterial.addEventListener('change', ()=> cargarCapturas(getCurrentParams()));
+  }
+
+  // --- Init ---
+  loadEquiposList();
+  cargarCapturas(getCurrentParams());
+});
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const inputFecha = document.getElementById("fechaReporte");
+
+        // Obtener la fecha de ayer
+        const hoy = new Date();
+        hoy.setDate(hoy.getDate() - 1); // resta un día
+
+        // Formatear a yyyy-mm-dd
+        const año = hoy.getFullYear();
+        const mes = String(hoy.getMonth() + 1).padStart(2, "0");
+        const dia = String(hoy.getDate()).padStart(2, "0");
+        const fechaFormateada = `${año}-${mes}-${dia}`;
+
+        // Asignar la fecha al input
+        inputFecha.value = fechaFormateada;
+
+        // Ejecutar fetch automáticamente al cargar con la fecha de ayer
+        filtrarPorFecha();
+    });
+
+    function filtrarPorFecha() {
+        const fecha = document.getElementById("fechaReporte").value;
+
+        fetch(`/TuControlador/GetCapturasHumedad?fecha=${encodeURIComponent(fecha)}`)
+            .then(response => {
+                if (!response.ok) throw new Error("Error al obtener datos");
+                return response.json();
+            })
+            .then(data => {
+                console.log("Datos recibidos:", data);
+                // aquí puedes llenar tu tabla o contenedor con los datos
+            })
+            .catch(error => {
+                console.error("Error en la solicitud:", error);
+            });
+    }
+</script>
+
+
+
+
+<script>
+
+    (function () {
+        function showLoading() {
+            var m = document.getElementById('loadingModal');
+            if (m) m.style.display = 'block';
+        }
+        function hideLoading() {
+            var m = document.getElementById('loadingModal');
+            if (m) m.style.display = 'none';
+        }
+        // expone helpers por si quieres usarlos en otros fetch
+        window.showLoading = showLoading;
+        window.hideLoading = hideLoading;
+
+        // muestra lo antes posible (cuando el DOM ya esta parseado)
+        document.addEventListener('readystatechange', function () {
+            if (document.readyState === 'interactive') showLoading();
+        });
+
+        // oculta cuando ya cargo todo (assets incluidos)
+        window.addEventListener('load', function () {
+            setTimeout(hideLoading, 200);
+        });
+
+        // muestra al navegar/recargar (cuando cambias de pagina)
+        window.addEventListener('beforeunload', function () {
+            showLoading();
+        });
+    })();
+
+</script>
+
+

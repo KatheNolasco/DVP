@@ -223,7 +223,9 @@
                                                 <option value="" selected disabled>Seleccione una clasificación</option>
                                                 @foreach (var evento in Model.GetClasificacionFalla())
                                                 {
-                                                    <option value="@evento.ClasificacionID">@evento.Descripcion</option>
+                                                    <option value="@evento.ClasificacionID">
+                                                        @evento.Descripcion (@(evento.TipoParo != null ? evento.TipoParo.Descripcion : "Sin Tipo Paro"))
+                                                    </option>
                                                 }
                                             </select>
                                             <br />
@@ -295,7 +297,9 @@
                                                 <option value="" selected disabled>Seleccione una clasificación</option>
                                                 @foreach (var evento in Model.GetClasificacionFalla())
                                                 {
-                                                    <option value="@evento.ClasificacionID">@evento.Descripcion</option>
+                                                    <option value="@evento.ClasificacionID">
+                                                        @evento.Descripcion (@(evento.TipoParo != null ? evento.TipoParo.Descripcion : "Sin Tipo Paro"))
+                                                    </option>
                                                 }
                                             </select>
                                             <br />
@@ -419,7 +423,9 @@
                                                 <option value="" selected disabled>Seleccione una clasificación</option>
                                                 @foreach (var evento in Model.GetClasificacionFalla())
                                                 {
-                                                    <option value="@evento.ClasificacionID">@evento.Descripcion</option>
+                                                    <option value="@evento.ClasificacionID">
+                                                        @evento.Descripcion (@(evento.TipoParo != null ? evento.TipoParo.Descripcion : "Sin Tipo Paro"))
+                                                    </option>
                                                 }
                                             </select>
                                             <br />
@@ -517,7 +523,9 @@
                                                     <option value="" selected disabled>Seleccione una clasificación</option>
                                                     @foreach (var evento in Model.GetClasificacionFalla())
                                                     {
-                                                        <option value="@evento.ClasificacionID">@evento.Descripcion</option>
+                                                        <option value="@evento.ClasificacionID">
+                                                            @evento.Descripcion (@(evento.TipoParo != null ? evento.TipoParo.Descripcion : "Sin Tipo Paro"))
+                                                        </option>
                                                     }
                                                 </select>
                                             </div>
@@ -1398,34 +1406,56 @@
         })
         .then(data => {
             const downtimeTbody = document.getElementById('downtimeTableBody');
-            downtimeTbody.innerHTML = ''; // Limpiar tabla de eventos activos
+            downtimeTbody.innerHTML = ''; // limpiar tabla
 
-            // Filtrar y ordenar eventos
-            const eventosValidos = data
+            // filtrar y ordenar
+            const eventosValidos = (data || [])
                 .filter(item => item._statusDelete !== true)
                 .sort((a, b) => {
-                    const aTicks = parseInt(a._fechaEvento.match(/\d+/)[0]);
-                    const bTicks = parseInt(b._fechaEvento.match(/\d+/)[0]);
+                    const aMatch = (a._fechaEvento || "").toString().match(/\d+/);
+                    const bMatch = (b._fechaEvento || "").toString().match(/\d+/);
+                    const aTicks = aMatch ? parseInt(aMatch[0]) : 0;
+                    const bTicks = bMatch ? parseInt(bMatch[0]) : 0;
                     return aTicks - bTicks;
                 });
 
-            // Mostrar eventos relacionados en tabla derecha
+            // helper para armar el display de clasificacion
+            const buildClasificacionDisplay = (item) => {
+                // prioridad: campo ya listo del backend
+                if (item._clasificacionDisplay && item._clasificacionDisplay.toString().trim().length > 0) {
+                    return item._clasificacionDisplay;
+                }
+                // fallback: armar con nombre de clasificacion y tipo paro si viene
+                const clas = (item._clasificacionName || "").toString().trim();
+                const tipoParo = (item._tipoParoDescripcion || "").toString().trim();
+                if (clas && tipoParo) return `${clas} (${tipoParo})`;
+                if (clas) return clas;
+                return ""; // vacio => se mostrara "Evento Activo"
+            };
+
+            // pintar filas
             eventosValidos.forEach(item => {
+                const clasDisplay = buildClasificacionDisplay(item);
+                const badgeClass = clasDisplay ? 'bg-success' : 'bg-warning';
+                const badgeText  = clasDisplay || 'Evento Activo';
+
                 const rowHtmlActivo = `
                 <tr data-equipo-id="${item._equipoId}">
                     <td class="text-center bg-white">
-                    <span class="d-inline-flex align-items-center gap-1">
-                        ${item._cerrado === true ? '<i class="bi bi-lock-fill text-warning fs-5" title="Paro cerrado"></i>' : '<i class="bi bi-unlock-fill text-warning fs-5" title="Paro cerrado"></i>'}
-                        ${item._statusValidate
-                        ? '<i class="fas fa-check-circle text-success fs-4" title="Validado"></i>'
-                        : '<i class="fas fa-times-circle text-danger fs-4" title="No validado"></i>'}
-                    </span>
+                        <span class="d-inline-flex align-items-center gap-1">
+                            ${item._cerrado === true
+                                ? '<i class="bi bi-lock-fill text-warning fs-5" title="Paro cerrado"></i>'
+                                : '<i class="bi bi-unlock-fill text-warning fs-5" title="Paro abierto"></i>'}
+                            ${item._statusValidate
+                                ? '<i class="fas fa-check-circle text-success fs-4" title="Validado"></i>'
+                                : '<i class="fas fa-times-circle text-danger fs-4" title="No validado"></i>'}
+                        </span>
                     </td>
-                    <td class="text-center bg-white"><strong>${item._tipoEventoName}</strong></td>
+                    <td class="text-center bg-white"><strong>${item._tipoEventoName || ''}</strong></td>
                     <td class="text-center bg-white">${formatearFecha(item._fechaEvento)}</td>
                     <td class="text-center bg-white">
-                        <span class="badge rounded-pill px-3 py-2 ${!item._clasificacionName?.trim() ? 'bg-warning' : 'bg-success'}">
-                            ${item._clasificacionName?.trim() || 'Evento Activo'}
+                        <span class="badge rounded-pill px-3 py-2 ${badgeClass}">
+                            ${badgeText}
                         </span>
                     </td>
                     <td class="text-center bg-white">
@@ -1450,25 +1480,27 @@
                 downtimeTbody.insertAdjacentHTML('beforeend', rowHtmlActivo);
             });
 
-            // Sombrear botón activo
+            // sombrear boton activo
             const botonesDowntime = document.querySelectorAll('.tipo-evento-btn');
-            botonesDowntime.forEach(btn => {
-                btn.className = 'btn btn-outline-dark m-1 tipo-evento-btn';
-            });
+            botonesDowntime.forEach(btn => { btn.className = 'btn btn-outline-dark m-1 tipo-evento-btn'; });
 
             const botonActivo = Array.from(botonesDowntime).find(b => b.getAttribute('data-paro-id') == paroId);
-            if (botonActivo) {
-                botonActivo.className = 'btn btn-dark m-1 tipo-evento-btn';
-            }
+            if (botonActivo) botonActivo.className = 'btn btn-dark m-1 tipo-evento-btn';
 
-            // Mostrar _diferenciaEnHoras en columna "Horas"
-            const eventoBase = data.find(item => item._paroId === paroId);
-            if (eventoBase && eventoBase._diferenciaEnHoras !== undefined) {
+            // mostrar diferencia en horas en la fila inactiva origen
+            const eventoBase = (data || []).find(item => item._paroId === paroId);
+            if (eventoBase && typeof eventoBase._diferenciaEnHoras !== 'undefined' && eventoBase._diferenciaEnHoras !== null) {
                 const filaInactiva = document.querySelector(`#downtimeTableBodyInactiveList tr[data-paro-id="${paroId}"]`);
                 if (filaInactiva) {
                     const celdaHoras = filaInactiva.querySelector('.horas-cell');
                     if (celdaHoras) {
-                        celdaHoras.textContent = eventoBase._diferenciaEnHoras.toFixed(2);
+                        try {
+                            celdaHoras.textContent = Number(eventoBase._diferenciaEnHoras / 60).toFixed(2);
+                        } catch (e) {
+                            // si viene en minutos y quieres mostrar minutos, usa:
+                            // celdaHoras.textContent = Number(eventoBase._diferenciaEnHoras).toFixed(2);
+                            celdaHoras.textContent = eventoBase._diferenciaEnHoras;
+                        }
                     }
                 }
             }
@@ -1477,10 +1509,11 @@
             console.error('Error al cargar eventos relacionados:', error);
         })
         .finally(() => {
-            // Ocultar el modal de carga
+            // ocultar modal de carga
             document.getElementById("loadingModal").style.display = "none";
         });
-   }
+}
+
 
 
 

@@ -8,7 +8,7 @@ using System.Web.Mvc;
 
 namespace DVP.Models
 {
-    public class EnergyViewModel
+    public class OperationDataToReportViewModel
     {
         DataAccess.DVPEntities _dvpEntities = new DataAccess.DVPEntities();
 
@@ -26,6 +26,7 @@ namespace DVP.Models
         public int? _tipoMovimientoSapId { get; set; }
         public string _tipoMovimientoDescripcion { get; set; }
         public DateTime _fechaReporte { get; set; }
+        public string _ordenProcesoSAP { get; set; }
 
     }
 }

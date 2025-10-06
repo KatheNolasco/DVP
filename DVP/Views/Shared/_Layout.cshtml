@@ -62,7 +62,7 @@
                         @if (rolusuarioId == "Desarrollador de Software" || rolusuarioId == "Administrador de la información")
                         {
                             <li class="sidebar-item">
-                                <a class="sidebar-link" href="@Url.Action("Index","Energy")" aria-expanded="false">
+                                <a class="sidebar-link" href="@Url.Action("Energy","OperationDataToReport")" aria-expanded="false">
                                     <span>
                                         <i class="ti ti-alert-circle"></i>
                                     </span>
@@ -70,7 +70,7 @@
                                 </a>
                             </li>
                             <li class="sidebar-item">
-                                <a class="sidebar-link" href="@Url.Action("Index","Operation")" aria-expanded="false">
+                                <a class="sidebar-link" href="@Url.Action("Operation","OperationDataToReport")" aria-expanded="false">
                                     <span>
                                         <i class="ti ti-cards"></i>
                                     </span>
@@ -139,6 +139,14 @@
                                         <i class="ti ti-binary-tree-2"></i>
                                     </span>
                                     <span class="hide-menu">Fault tree</span>
+                                </a>
+                            </li>
+                            <li class="sidebar-item">
+                                <a class="sidebar-link" href="@Url.Action("CapturaHumedad","OperationDataToReport")" aria-expanded="false">
+                                    <span>
+                                        <i class="ti ti-tags"></i>
+                                    </span>
+                                    <span class="hide-menu">Captura de Humedad</span>
                                 </a>
                             </li>
                             <li class="nav-small-cap">

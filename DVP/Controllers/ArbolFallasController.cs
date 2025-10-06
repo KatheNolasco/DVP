@@ -56,7 +56,8 @@ namespace DVP.Controllers
                 var nuevo = new SubEquipo
                 {
                     Descripcion = data._descripcion,
-                    EquipoID = data._equipoId
+                    EquipoID = data._equipoId,
+                    CodigoDet = data._codigoDet
                 };
 
                 _dvpEntities.SubEquipo.Add(nuevo);
@@ -85,7 +86,8 @@ namespace DVP.Controllers
                 var nuevo = new ComponenteEquipo
                 {
                     Descripcion = data._descripcion,
-                    SubEquipoID = data._subEquipoId
+                    SubEquipoID = data._subEquipoId,
+                    CodigoDet= data._codigoDet
                 };
 
                 _dvpEntities.ComponenteEquipo.Add(nuevo);
@@ -114,10 +116,39 @@ namespace DVP.Controllers
                 {
                     Descripcion = data._descripcion,
                     Ajeno = data._ajeno,
-                    AfectaTMEF = data._afectaTMEF
+                    AfectaTMEF = data._afectaTMEF,
+                    CodigoDet = data._codigoDet,
+                    TipoParoID = data._tipoParoId
                 };
 
                 _dvpEntities.Clasificacion.Add(nuevo);
+                _dvpEntities.SaveChanges();
+
+                return Json(new { success = true, message = "Clasificación creada exitosamente." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al crear la clasificación: " + ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public JsonResult CreateTipoParo(ArbolFallasViewModel.TipoParo data)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return Json(new { success = false, message = "Datos inválidos." });
+
+                if (string.IsNullOrWhiteSpace(data._descripcion))
+                    return Json(new { success = false, message = "Descripción es obligatoria." });
+
+                var nuevo = new TipoParo
+                {
+                    Descripcion = data._descripcion
+                };
+
+                _dvpEntities.TipoParo.Add(nuevo);
                 _dvpEntities.SaveChanges();
 
                 return Json(new { success = true, message = "Clasificación creada exitosamente." });
@@ -147,7 +178,8 @@ namespace DVP.Controllers
                 {
                     Descripcion = data._descripcion,
                     ClasificacionID = data._clasificacionId,
-                    ComponenteEquipoID = data._componenteEquipoId
+                    ComponenteEquipoID = data._componenteEquipoId,
+                    CodigoDet = data._codigoDet
                 };
 
                 _dvpEntities.TipoFalla.Add(nuevo);
@@ -162,41 +194,58 @@ namespace DVP.Controllers
         }
 
         [HttpPost]
-        public JsonResult UpdateSubEquipo(int SubEquipoID, string Descripcion)
+        public JsonResult UpdateSubEquipo(int SubEquipoID, string Descripcion, string CodigoDet)
         {
             var row = _dvpEntities.SubEquipo.FirstOrDefault(x => x.SubEquipoID == SubEquipoID);
             if (row == null) return Json(new { success = false, message = "No encontrado" });
             row.Descripcion = Descripcion;
+            row.CodigoDet = CodigoDet;
             _dvpEntities.SaveChanges();
             return Json(new { success = true });
         }
 
         [HttpPost]
-        public JsonResult UpdateComponente(int ComponenteEquipoID, string Descripcion)
+        public JsonResult UpdateComponente(int ComponenteEquipoID, string Descripcion, string CodigoDet)
         {
             var row = _dvpEntities.ComponenteEquipo.FirstOrDefault(x => x.ComponenteEquipoID == ComponenteEquipoID);
             if (row == null) return Json(new { success = false, message = "No encontrado" });
             row.Descripcion = Descripcion;
+            row.CodigoDet = CodigoDet;
             _dvpEntities.SaveChanges();
             return Json(new { success = true });
         }
 
         [HttpPost]
-        public JsonResult UpdateClasificacion(int ClasificacionID, string Descripcion)
+        public JsonResult UpdateClasificacion(int ClasificacionID, string Descripcion, bool Ajeno, bool AfectaMTF, string CodigoDet, int TipoParoID)
         {
             var row = _dvpEntities.Clasificacion.FirstOrDefault(x => x.ClasificacionID == ClasificacionID);
             if (row == null) return Json(new { success = false, message = "No encontrado" });
             row.Descripcion = Descripcion;
+            row.Ajeno = Ajeno;
+            row.AfectaTMEF = AfectaMTF;
+            row.CodigoDet = CodigoDet;
+            row.TipoParoID = TipoParoID;
             _dvpEntities.SaveChanges();
             return Json(new { success = true });
         }
 
         [HttpPost]
-        public JsonResult UpdateTipoFalla(int TipoFallaID, string Descripcion)
+        public JsonResult UpdateTipoParo(int TipoParoID, string Descripcion)
+        {
+            var row = _dvpEntities.TipoParo.FirstOrDefault(x => x.TipoParoID == TipoParoID);
+            if (row == null) return Json(new { success = false, message = "No encontrado" });
+            row.Descripcion = Descripcion;
+            _dvpEntities.SaveChanges();
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public JsonResult UpdateTipoFalla(int TipoFallaID, string Descripcion, string CodigoDet)
         {
             var row = _dvpEntities.TipoFalla.FirstOrDefault(x => x.TipoFallaID == TipoFallaID);
             if (row == null) return Json(new { success = false, message = "No encontrado" });
             row.Descripcion = Descripcion;
+            row.CodigoDet = CodigoDet;
             _dvpEntities.SaveChanges();
             return Json(new { success = true });
         }

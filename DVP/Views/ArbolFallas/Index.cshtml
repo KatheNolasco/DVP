@@ -131,10 +131,9 @@
                                     <option value="2">Componente</option>
                                     <option value="3">Clasificación</option>
                                     <option value="4">Tipo Falla</option>
+                                    <option value="5">Tipo Paro</option>
                                 </select>
-
                                 <div id="camposContainer" class="mt-3"></div>
-
                                 <button type="submit" id="btnGuardar" class="btn btn-primary mt-2">Guardar</button>
                             </form>
                         </div>
@@ -145,14 +144,13 @@
                             <option value="">Select a type</option>
                             <option value="SubEquipo">Sub Equipo</option>
                             <option value="Componente">Componente</option>
-                            <option value="Clasificacion">Clasificacion</option>
+                            <option value="Clasificacion">Clasificación</option>
                             <option value="TipoFalla">Tipo Falla</option>
+                            <option value="TipoParo">Tipo Paro</option>
                         </select>
                     </div>
-
                     <div id="filtrosListado" class="row g-3 mb-2"></div>
                     <div id="contenedorListado" class="mt-3"></div>
-
                 </div>
             </div>
         </div>
@@ -170,38 +168,41 @@
 
 </body>
 
+
+
+<!-- BLOQUE 1: Formulario de creacion -->
 <script>
-
-
     document.addEventListener("DOMContentLoaded", function () {
         const select = document.getElementById('_elememnto'); // si tu select real es _elemento, cambia este id
         const contenedor = document.getElementById('camposContainer');
         const form = document.getElementById('formElemento');
 
-        // alert success (usa el div con id="alertsuccesclose")
+        // alert success
         const alertSuccessEl = document.getElementById('alertsuccesclose');
         const showSuccess = (msg) => {
             if (!alertSuccessEl) return;
             alertSuccessEl.textContent = msg || 'Agregado correctamente!';
             alertSuccessEl.style.display = 'block';
             clearTimeout(showSuccess._t);
-            showSuccess._t = setTimeout(() => {
-                alertSuccessEl.style.display = 'none';
-            }, 4000);
+            showSuccess._t = setTimeout(() => { alertSuccessEl.style.display = 'none'; }, 4000);
         };
-        const hideSuccess = () => {
-            if (alertSuccessEl) alertSuccessEl.style.display = 'none';
-        };
+        const hideSuccess = () => { if (alertSuccessEl) alertSuccessEl.style.display = 'none'; };
 
-        // ==== endpoints por opcion ====
+        // endpoints por opcion
+        // 1: {_descripcion, _equipoId, _codigoDet}
+        // 2: {_descripcion, _subequipoId, _codigoDet}
+        // 3: {_descripcion, _ajeno, _afectaTMEF, _codigoDet, _tipoParoId}
+        // 4: {_descripcion, _clasificacionId, _componenteEquipoId, _codigoDet}
+        // 5: {_descripcion}  <-- TipoParo solo descripcion
         const endpoints = {
-            '1': '/ArbolFallas/CreateSubEquipo',        // data: { _descripcion, _equipoId }
-            '2': '/ArbolFallas/CreateComponenteEquipo', // data: { _descripcion, _subequipoId }
-            '3': '/ArbolFallas/CreateClasificacion',    // data: { _descripcion, _ajeno, _afectaTMEF }
-            '4': '/ArbolFallas/CreateTipoFalla'         // data: { _descripcion, _clasificacionId, _componenteEquipoId }
+            '1': '/ArbolFallas/CreateSubEquipo',
+            '2': '/ArbolFallas/CreateComponenteEquipo',
+            '3': '/ArbolFallas/CreateClasificacion',
+            '4': '/ArbolFallas/CreateTipoFalla',
+            '5': '/ArbolFallas/CreateTipoParo'
         };
 
-        // util: POST JSON con soporte a antiforgery
+        // POST JSON con antiforgery (acciones que esperan objeto "data")
         const postJson = async (url, payload) => {
             const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
             const headers = { 'Content-Type': 'application/json; charset=utf-8' };
@@ -210,8 +211,7 @@
             const res = await fetch(url, {
                 method: 'POST',
                 headers,
-                // IMPORTANTE: el param en MVC es "data", asi que envolvemos { data: payload }
-                body: JSON.stringify({ data: payload })
+                body: JSON.stringify({ data: payload }) // MVC: param se llama "data"
             });
 
             let json = null;
@@ -224,7 +224,7 @@
             return json || {};
         };
 
-        // Helper: cargar equipos por pais del usuario logueado
+        // helpers carga combos
         const loadEquipos = (selectId) => {
             const sel = document.getElementById(selectId);
             sel.disabled = true;
@@ -237,7 +237,6 @@
                         sel.innerHTML = '<option value="">Sin datos</option>';
                         return [];
                     }
-
                     sel.innerHTML = '<option value="">Seleccione un equipo</option>';
                     data.forEach(equipo => {
                         const opt = document.createElement('option');
@@ -245,7 +244,6 @@
                         opt.textContent = equipo.Descripcion;
                         sel.appendChild(opt);
                     });
-
                     return data;
                 })
                 .catch(err => {
@@ -253,18 +251,15 @@
                     sel.innerHTML = '<option value="">Error al cargar</option>';
                     return [];
                 })
-                .finally(() => {
-                    sel.disabled = false;
-                });
+                .finally(() => { sel.disabled = false; });
         };
 
-        // Helper: cargar subequipos dado un EquipoID
         const loadSubEquipos = (equipoId, selectId) => {
             const sel = document.getElementById(selectId);
 
             if (!equipoId || Number(equipoId) <= 0) {
                 sel.innerHTML = '<option value="">Seleccione un equipo primero</option>';
-                return Promise.resolve([]); // no lanzar error
+                return Promise.resolve([]);
             }
 
             sel.disabled = true;
@@ -281,7 +276,6 @@
                         sel.innerHTML = '<option value="">Sin datos</option>';
                         return [];
                     }
-
                     sel.innerHTML = '<option value="">Seleccione un subequipo</option>';
                     data.forEach(se => {
                         const opt = document.createElement('option');
@@ -296,26 +290,9 @@
                     sel.innerHTML = '<option value="">Error al cargar</option>';
                     return [];
                 })
-                .finally(() => {
-                    sel.disabled = false;
-                });
+                .finally(() => { sel.disabled = false; });
         };
 
-        // Hace que dos checkboxes sean mutuamente excluyentes (ambos pueden estar apagados)
-        function setMutualExclusive(idA, idB) {
-            const a = document.getElementById(idA);
-            const b = document.getElementById(idB);
-            if (!a || !b) return;
-
-            a.addEventListener('change', () => {
-                if (a.checked) b.checked = false;
-            });
-            b.addEventListener('change', () => {
-                if (b.checked) a.checked = false;
-            });
-        }
-
-        // Helper: cargar clasificaciones
         const loadClasificaciones = (selectId) => {
             const sel = document.getElementById(selectId);
             sel.disabled = true;
@@ -345,13 +322,12 @@
                 .finally(() => { sel.disabled = false; });
         };
 
-        // Helper: cargar componentes por subequipo
         const loadComponentes = (subequipoId, selectId) => {
             const sel = document.getElementById(selectId);
 
             if (!subequipoId || Number(subequipoId) <= 0) {
                 sel.innerHTML = '<option value="">Seleccione un subequipo primero</option>';
-                return Promise.resolve([]); // no lanzar error
+                return Promise.resolve([]);
             }
 
             sel.disabled = true;
@@ -368,7 +344,6 @@
                         sel.innerHTML = '<option value="">Sin datos</option>';
                         return [];
                     }
-
                     sel.innerHTML = '<option value="">Seleccione un componente</option>';
                     data.forEach(co => {
                         const opt = document.createElement('option');
@@ -386,45 +361,63 @@
                 .finally(() => { sel.disabled = false; });
         };
 
+        const loadTiposParo = () => fetch('/Downtime/GetTipoParo').then(r => r.json());
+
+        function setMutualExclusive(idA, idB) {
+            const a = document.getElementById(idA);
+            const b = document.getElementById(idB);
+            if (!a || !b) return;
+            a.addEventListener('change', () => { if (a.checked) b.checked = false; });
+            b.addEventListener('change', () => { if (b.checked) a.checked = false; });
+        }
+
         // Render segun opcion
         select.addEventListener('change', function () {
             const valor = this.value;
             contenedor.innerHTML = '';
 
             switch (valor) {
-                case '1':
+                case '1': // CreateSubEquipo (con CodigoDet)
                     contenedor.innerHTML = `
-            <div class="mb-3">
-                <label class="form-label">Descripcion</label>
-                <input type="text" class="form-control" id="_descripcion" required />
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Equipo</label>
-                <select class="form-control" id="_equipoId" required>
-                    <option value="">Cargando equipos...</option>
-                </select>
-            </div>`;
+<div class="mb-3">
+  <label class="form-label">Descripcion</label>
+  <input type="text" class="form-control" id="_descripcion" required />
+</div>
+<div class="mb-3">
+  <label class="form-label">Codigo Det.</label>
+  <input type="text" class="form-control" id="_codigoDet" maxlength="500" required />
+</div>
+<div class="mb-3">
+  <label class="form-label">Equipo</label>
+  <select class="form-control" id="_equipoId" required>
+    <option value="">Cargando equipos...</option>
+  </select>
+</div>`;
                     loadEquipos('_equipoId');
                     break;
 
-                case '2':
+                case '2': // CreateComponenteEquipo (con CodigoDet)
                     contenedor.innerHTML = `
-            <div class="mb-3">
-                <label class="form-label">Descripcion</label>
-                <input type="text" class="form-control" id="_descripcion" required />
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Equipo</label>
-                <select class="form-control" id="_equipoIdForSub" required>
-                    <option value="">Cargando...</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Subequipo</label>
-                <select class="form-control" id="_subequipoId" required>
-                    <option value="">Seleccione un equipo primero</option>
-                </select>
-            </div>`;
+<div class="mb-3">
+  <label class="form-label">Descripcion</label>
+  <input type="text" class="form-control" id="_descripcion" required />
+</div>
+<div class="mb-3">
+  <label class="form-label">Codigo Det.</label>
+  <input type="text" class="form-control" id="_codigoDet" maxlength="500" required />
+</div>
+<div class="mb-3">
+  <label class="form-label">Equipo</label>
+  <select class="form-control" id="_equipoIdForSub" required>
+    <option value="">Cargando...</option>
+  </select>
+</div>
+<div class="mb-3">
+  <label class="form-label">Subequipo</label>
+  <select class="form-control" id="_subequipoId" required>
+    <option value="">Seleccione un equipo primero</option>
+  </select>
+</div>`;
                     loadEquipos('_equipoIdForSub').then(() => {
                         const selEquipo = document.getElementById('_equipoIdForSub');
                         if (window.equipoSeleccionadoId) {
@@ -438,58 +431,83 @@
                     });
                     break;
 
-                case '3':
+                case '3': // CreateClasificacion (con CodigoDet + switches + TipoParo)
                     contenedor.innerHTML = `
-            <div class="mb-3">
-                <label class="form-label">Descripcion</label>
-                <input type="text" class="form-control" id="_descripcion" required />
-            </div>
-            <div class="form-check form-switch mb-3">
-                <input class="form-check-input" type="checkbox" id="_ajeno">
-                <label class="form-check-label" for="_ajeno">Ajeno</label>
-            </div>
-            <div class="form-check form-switch mb-3">
-                <input class="form-check-input" type="checkbox" id="_afectaTMEF">
-                <label class="form-check-label" for="_afectaTMEF">Afecta TMEF</label>
-            </div>`;
-                    // hacerlos mutuamente excluyentes
+<div class="mb-3">
+  <label class="form-label">Descripcion</label>
+  <input type="text" class="form-control" id="_descripcion" required />
+</div>
+<div class="mb-3">
+  <label class="form-label">Codigo Det.</label>
+  <input type="text" class="form-control" id="_codigoDet" maxlength="500" required />
+</div>
+<div class="form-check form-switch mb-3">
+  <input class="form-check-input" type="checkbox" id="_ajeno">
+  <label class="form-check-label" for="_ajeno">Ajeno</label>
+</div>
+<div class="form-check form-switch mb-3">
+  <input class="form-check-input" type="checkbox" id="_afectaTMEF">
+  <label class="form-check-label" for="_afectaTMEF">Afecta TMEF</label>
+</div>
+<div class="mb-3">
+  <label class="form-label">Tipo de paro</label>
+  <select class="form-select" id="_tipoParoId" required>
+    <option value="">Cargando tipos de paro...</option>
+  </select>
+</div>`;
                     setMutualExclusive('_ajeno', '_afectaTMEF');
+
+                    loadTiposParo()
+                        .then(list => {
+                            const sel = document.getElementById('_tipoParoId');
+                            sel.innerHTML = '<option value="">Seleccione un tipo de paro</option>';
+                            (list || []).forEach(tp => {
+                                const opt = document.createElement('option');
+                                opt.value = tp.TipoParoID;
+                                opt.textContent = tp.Descripcion;
+                                sel.appendChild(opt);
+                            });
+                        })
+                        .catch(() => {
+                            const sel = document.getElementById('_tipoParoId');
+                            sel.innerHTML = '<option value="">Error al cargar</option>';
+                        });
                     break;
 
-                case '4':
+                case '4': // CreateTipoFalla (con CodigoDet)
                     contenedor.innerHTML = `
-            <div class="mb-3">
-                <label class="form-label">Descripcion</label>
-                <input type="text" class="form-control" id="_descripcion" required />
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Equipo</label>
-                <select class="form-control" id="_equipoIdForTF" required>
-                    <option value="">Cargando...</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Subequipo</label>
-                <select class="form-control" id="_subequipoIdForTF" required>
-                    <option value="">Seleccione un equipo primero</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Componente</label>
-                <select class="form-control" id="_componenteId" required>
-                    <option value="">Seleccione un subequipo primero</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Clasificacion</label>
-                <select class="form-control" id="_clasificacionId" required>
-                    <option value="">Cargando...</option>
-                </select>
-            </div>`;
+<div class="mb-3">
+  <label class="form-label">Descripcion</label>
+  <input type="text" class="form-control" id="_descripcion" required />
+</div>
+<div class="mb-3">
+  <label class="form-label">Codigo Det.</label>
+  <input type="text" class="form-control" id="_codigoDet" maxlength="500" required />
+</div>
+<div class="mb-3">
+  <label class="form-label">Equipo</label>
+  <select class="form-control" id="_equipoIdForTF" required>
+    <option value="">Cargando...</option>
+  </select>
+</div>
+<div class="mb-3">
+  <label class="form-label">Subequipo</label>
+  <select class="form-control" id="_subequipoIdForTF" required>
+    <option value="">Seleccione un equipo primero</option>
+  </select>
+</div>
+<div class="mb-3">
+  <label class="form-label">Componente</label>
+  <select class="form-control" id="_componenteId" required>
+    <option value="">Seleccione un subequipo primero</option>
+  </select>
+</div>
+<div class="mb-3">
+  <label class="form-label">Clasificacion</label>
+  <select class="form-control" id="_clasificacionId" required>
+    <option value="">Cargando...</option>
+  </select>
+</div>`;
                     loadClasificaciones('_clasificacionId');
                     loadEquipos('_equipoIdForTF').then(() => {
                         const selEquipo = document.getElementById('_equipoIdForTF');
@@ -513,10 +531,18 @@
                         });
                     });
                     break;
+
+                case '5': // CreateTipoParo (solo descripcion)
+                    contenedor.innerHTML = `
+<div class="mb-3">
+  <label class="form-label">Descripcion</label>
+  <input type="text" class="form-control" id="_descripcion" required />
+</div>`;
+                    break;
             }
         });
 
-        // ==== submit al backend segun opcion seleccionada ====
+        // submit segun opcion
         form.addEventListener('submit', async function (e) {
             e.preventDefault();
             hideSuccess();
@@ -532,42 +558,56 @@
             try {
                 switch (opcion) {
                     case '1': {
-                        // CreateSubEquipo
                         const descripcion = document.getElementById('_descripcion')?.value.trim();
+                        const codigoDet = document.getElementById('_codigoDet')?.value.trim();
                         const equipoId = parseInt(document.getElementById('_equipoId')?.value || '0', 10) || null;
-                        payload = { _descripcion: descripcion, _equipoId: equipoId };
+                        payload = { _descripcion: descripcion, _equipoId: equipoId, _codigoDet: codigoDet };
                         break;
                     }
                     case '2': {
-                        // CreateComponenteEquipo
                         const descripcion = document.getElementById('_descripcion')?.value.trim();
+                        const codigoDet = document.getElementById('_codigoDet')?.value.trim();
                         const subequipoId = parseInt(document.getElementById('_subequipoId')?.value || '0', 10) || null;
-                        payload = { _descripcion: descripcion, _subequipoId: subequipoId };
+                        payload = { _descripcion: descripcion, _subequipoId: subequipoId, _codigoDet: codigoDet };
                         break;
                     }
                     case '3': {
-                        // CreateClasificacion
                         const descripcion = document.getElementById('_descripcion')?.value.trim();
+                        const codigoDet = document.getElementById('_codigoDet')?.value.trim();
                         const ajeno = !!document.getElementById('_ajeno')?.checked;
                         const afectaTMEF = !!document.getElementById('_afectaTMEF')?.checked;
-                        payload = { _descripcion: descripcion, _ajeno: ajeno, _afectaTMEF: afectaTMEF };
+                        const tipoParoId = parseInt(document.getElementById('_tipoParoId')?.value || '0', 10) || null;
+
+                        payload = {
+                            _descripcion: descripcion,
+                            _ajeno: ajeno,
+                            _afectaTMEF: afectaTMEF,
+                            _codigoDet: codigoDet,
+                            _tipoParoId: tipoParoId
+                        };
                         break;
                     }
                     case '4': {
-                        // CreateTipoFalla
                         const descripcion = document.getElementById('_descripcion')?.value.trim();
+                        const codigoDet = document.getElementById('_codigoDet')?.value.trim();
                         const clasificacionId = parseInt(document.getElementById('_clasificacionId')?.value || '0', 10) || null;
                         const componenteEquipoId = parseInt(document.getElementById('_componenteId')?.value || '0', 10) || null;
                         payload = {
                             _descripcion: descripcion,
                             _clasificacionId: clasificacionId,
-                            _componenteEquipoId: componenteEquipoId
+                            _componenteEquipoId: componenteEquipoId,
+                            _codigoDet: codigoDet
                         };
+                        break;
+                    }
+                    case '5': { // TipoParo solo descripcion
+                        const descripcion = document.getElementById('_descripcion')?.value.trim();
+                        payload = { _descripcion: descripcion };
                         break;
                     }
                 }
 
-                // validacion rapida
+                // validacion
                 if (!payload || Object.values(payload).some(v => v === null || v === '' || Number.isNaN(v))) {
                     alert('Complete los datos requeridos.');
                     return;
@@ -578,10 +618,7 @@
 
                 if (resp?.success) {
                     showSuccess(resp.message || 'Agregado correctamente!');
-                    // 🔁 Recargar la pagina tras mostrar el mensaje
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 700);
+                    setTimeout(() => { window.location.reload(); }, 700);
                 } else {
                     alert(resp?.message || 'No se pudo guardar.');
                 }
@@ -591,46 +628,52 @@
             }
         });
     });
+</script>
 
-
+<!-- BLOQUE 2: Listado y edicion inline -->
+<script>
     document.addEventListener('DOMContentLoaded', function () {
         const selectListado = document.getElementById('selectListado');
         const filtros = document.getElementById('filtrosListado');
         const contenedorListado = document.getElementById('contenedorListado');
 
-        // ------- helpers fetch -------
+        // helpers fetch
         const loadEquipos = () => fetch('/Equipo/GetEquiposporPaislogguedUser').then(r => r.json());
         const loadSubEquipos = (equipoId) => fetch(`/Downtime/GetSubEquipos?_equipoId=${encodeURIComponent(equipoId)}`).then(r => r.json());
-        const loadComponentesBySub = (subEquipoId) => fetch(`/Downtime/GetComponenteEquipo?_subEquipoId=${encodeURIComponent(subEquipoId)}`).then(r => r.json());
+        const loadComponentesBySub = (subequipoId) => fetch(`/Downtime/GetComponenteEquipo?_subEquipoId=${encodeURIComponent(subequipoId)}`).then(r => r.json());
         const loadClasificaciones = () => fetch('/Downtime/GetClasificacion').then(r => r.json());
         const loadTiposFalla = (clasificacionId, componenteId) =>
             fetch(`/Downtime/GetTiposFalla?_clasificacionId=${encodeURIComponent(clasificacionId)}&_componenteEquipoId=${encodeURIComponent(componenteId)}`).then(r => r.json());
+        const loadTiposParo = () => fetch('/Downtime/GetTipoParo').then(r => r.json());
 
-        // ------- bloqueo de palabras -------
+        // bloqueo de palabras
         const BLOCKED_PATTERNS = ['PI', 'EQUIPO COMPLETO', 'PARO DVM'];
         function isBlocked(desc) {
             const up = String(desc || '').toUpperCase();
             return BLOCKED_PATTERNS.some(p => up.includes(p));
         }
 
-        // ------- config por tipo (id, campo descripcion y endpoint update) -------
+        // config por tipo
         function getConfig(tipo) {
             const base = {
                 descField: 'Descripcion',
-                headers: {
-                    'Content-Type': 'application/json'
-                    // ,'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
-                }
+                headers: { 'Content-Type': 'application/json' }
             };
-            if (tipo === 'SubEquipo') return { ...base, tipo, idField: 'SubEquipoID', updateUrl: '/ArbolFallas/UpdateSubEquipo' };
-            if (tipo === 'Componente') return { ...base, tipo, idField: 'ComponenteEquipoID', updateUrl: '/ArbolFallas/UpdateComponente' };
-            if (tipo === 'Clasificacion') return { ...base, tipo, idField: 'ClasificacionID', updateUrl: '/ArbolFallas/UpdateClasificacion' };
-            if (tipo === 'TipoFalla') return { ...base, tipo, idField: 'TipoFallaID', updateUrl: '/ArbolFallas/UpdateTipoFalla' };
+            if (tipo === 'SubEquipo') return { ...base, tipo, idField: 'SubEquipoID', codeField: 'CodigoDet', updateUrl: '/ArbolFallas/UpdateSubEquipo' };
+            if (tipo === 'Componente') return { ...base, tipo, idField: 'ComponenteEquipoID', codeField: 'CodigoDet', updateUrl: '/ArbolFallas/UpdateComponente' };
+            if (tipo === 'Clasificacion') return { ...base, tipo, idField: 'ClasificacionID', codeField: 'CodigoDet', updateUrl: '/ArbolFallas/UpdateClasificacion' };
+            if (tipo === 'TipoFalla') return { ...base, tipo, idField: 'TipoFallaID', codeField: 'CodigoDet', updateUrl: '/ArbolFallas/UpdateTipoFalla' };
+            // TipoParo: sin CodigoDet y usa form-urlencoded (firma: UpdateTipoParo(int TipoParoID, string Descripcion))
+            if (tipo === 'TipoParo') return { ...base, tipo, idField: 'TipoParoID', codeField: null, updateUrl: '/ArbolFallas/UpdateTipoParo', asForm: true };
             return null;
         }
 
-        // ------- render editable con bloqueo -------
+        // render generico (Descripcion + opcional CodigoDet)
         function renderEditableTable(data, config) {
+            // limpiar cualquier delegacion previa (de clasificacion)
+            contenedorListado.onclick = null;
+            contenedorListado.onchange = null;
+
             if (data?.error) {
                 contenedorListado.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
                 return;
@@ -640,57 +683,70 @@
                 return;
             }
 
+            const hasCode = !!config.codeField;
+
             const rowsHtml = data.map((item, idx) => {
                 const id = item[config.idField];
                 const desc = item[config.descField] ?? item.Nombre ?? item.nombre ?? '';
+                const cod = hasCode ? (item[config.codeField] ?? '') : '';
                 const bloqueado = isBlocked(desc);
 
                 return `
-        <tr data-row-id="${id}">
-            <td class="text-center">${idx + 1}</td>
-            <td>
-                <span class="cell-text">${escapeHtml(desc)}</span>
-                <input class="form-control form-control-sm cell-input" type="text" value="${escapeAttr(desc)}" style="display:none;">
-            </td>
-            <td class="text-nowrap text-center">
-                ${bloqueado
+<tr data-row-id="${escapeAttr(id)}">
+  <td class="text-center">${idx + 1}</td>
+
+  <td>
+    <span class="cell-text-desc">${escapeHtml(desc)}</span>
+    <input class="form-control form-control-sm cell-input-desc" type="text" value="${escapeAttr(desc)}" style="display:none;">
+  </td>
+
+  ${hasCode ? `
+  <td>
+    <span class="cell-text-cod">${escapeHtml(cod)}</span>
+    <input class="form-control form-control-sm cell-input-cod" type="text" value="${escapeAttr(cod)}" style="display:none;" maxlength="500">
+  </td>` : ''}
+
+  <td class="text-nowrap text-center">
+    ${bloqueado
                         ? `<span class="badge bg-secondary">No editable</span>`
                         : `
-                        <button type="button" class="btn btn-sm btn-outline-primary btn-edit">Editar</button>
-                        <button type="button" class="btn btn-sm btn-success btn-save" style="display:none;">Guardar</button>
-                        <button type="button" class="btn btn-sm btn-secondary btn-cancel" style="display:none;">Cancelar</button>
-                      `
-                    }
-            </td>
-        </tr>`;
+      <button type="button" class="btn btn-sm btn-outline-primary btn-edit">Editar</button>
+      <button type="button" class="btn btn-sm btn-success btn-save" style="display:none;">Guardar</button>
+      <button type="button" class="btn btn-sm btn-secondary btn-cancel" style="display:none;">Cancelar</button>
+    `}
+  </td>
+</tr>`;
             }).join('');
 
             contenedorListado.innerHTML = `
-    <table class="table table-bordered table-sm table-striped align-middle">
-        <thead>
-            <tr>
-                <th style="width:60px;">#</th>
-                <th>Descripcion</th>
-                <th style="width:210px;">Acciones</th>
-            </tr>
-        </thead>
-        <tbody>${rowsHtml}</tbody>
-    </table>`;
+<table class="table table-bordered table-sm table-striped align-middle">
+  <thead>
+    <tr>
+      <th style="width:60px;">#</th>
+      <th>Descripción</th>
+      ${hasCode ? `<th>Código Det.</th>` : ``}
+      <th style="width:210px;">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>${rowsHtml}</tbody>
+</table>`;
 
-            // wire events SOLO para filas no bloqueadas (porque las bloqueadas no tienen botones)
+            // listeners por fila (solo para tablas genericas)
             contenedorListado.querySelectorAll('.btn-edit').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const tr = btn.closest('tr');
-                    setEditMode(tr, true);
-                });
+                btn.addEventListener('click', () => setEditModeRow(btn.closest('tr'), true, /*hasCode*/hasCode));
             });
             contenedorListado.querySelectorAll('.btn-cancel').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const tr = btn.closest('tr');
-                    const span = tr.querySelector('.cell-text');
-                    const input = tr.querySelector('.cell-input');
-                    input.value = span.textContent || '';
-                    setEditMode(tr, false);
+                    const spanDesc = tr.querySelector('.cell-text-desc');
+                    const inputDesc = tr.querySelector('.cell-input-desc');
+                    inputDesc.value = spanDesc.textContent || '';
+                    if (hasCode) {
+                        const spanCod = tr.querySelector('.cell-text-cod');
+                        const inputCod = tr.querySelector('.cell-input-cod');
+                        inputCod.value = spanCod?.textContent || '';
+                    }
+                    setEditModeRow(tr, false, hasCode);
                 });
             });
             contenedorListado.querySelectorAll('.btn-save').forEach(btn => {
@@ -701,24 +757,232 @@
             });
         }
 
-        function setEditMode(tr, editing) {
-            const span = tr.querySelector('.cell-text');
-            const input = tr.querySelector('.cell-input');
+        // render ESPECIAL: Clasificacion (con CodigoDet + switches + TipoParo)
+        async function handleClasificacion() {
+            clearUI();
+            const [data, tiposParo] = await Promise.all([
+                loadClasificaciones().catch(() => []),
+                loadTiposParo().catch(() => [])
+            ]);
+            renderClasificacionTable(data, tiposParo);
+        }
+
+        function renderClasificacionTable(data, tiposParo = []) {
+            if (data?.error) {
+                contenedorListado.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
+            if (!Array.isArray(data) || data.length === 0) {
+                contenedorListado.innerHTML = '<div class="alert alert-warning">No hay registros de clasificación.</div>';
+                return;
+            }
+
+            const rowsHtml = data.map((item, idx) => {
+                const id = item.ClasificacionID;
+                const desc = item.Descripcion ?? '';
+                const cod = item.CodigoDet ?? '';
+                const ajeno = !!item.Ajeno;
+                const afecta = !!item.AfectaMTF; // GetClasificacion lo expone como AfectaMTF
+                const tipoParoId = item.TipoParoID ?? '';
+                const tipoParoDesc = item.TipoParoDescripcion ?? '';
+                const bloqueado = isBlocked(desc);
+
+                const idAjeno = `sw-ajeno-${id}`;
+                const idAfecta = `sw-afecta-${id}`;
+
+                const tpOptions = (tiposParo || []).map(tp => {
+                    const sel = String(tp.TipoParoID) === String(tipoParoId) ? 'selected' : '';
+                    return `<option value="${escapeAttr(tp.TipoParoID)}" ${sel}>${escapeHtml(tp.Descripcion)}</option>`;
+                }).join('');
+
+                return `
+<tr data-row-id="${escapeAttr(id)}">
+  <td class="text-center">${idx + 1}</td>
+
+  <td>
+    <span class="cell-text-desc">${escapeHtml(desc)}</span>
+    <input class="form-control form-control-sm cell-input-desc" type="text" value="${escapeAttr(desc)}" style="display:none;">
+  </td>
+
+  <td>
+    <span class="cell-text-cod">${escapeHtml(cod)}</span>
+    <input class="form-control form-control-sm cell-input-cod" type="text" value="${escapeAttr(cod)}" style="display:none;" maxlength="500">
+  </td>
+
+  <td class="text-center">
+    <div class="form-check form-switch d-inline-flex align-items-center mb-0">
+      <input class="form-check-input chk-ajeno" type="checkbox" id="${idAjeno}" ${ajeno ? 'checked' : ''} disabled>
+      <label class="form-check-label ms-2" for="${idAjeno}">Ajeno</label>
+    </div>
+  </td>
+
+  <td class="text-center">
+    <div class="form-check form-switch d-inline-flex align-items-center mb-0">
+      <input class="form-check-input chk-afecta" type="checkbox" id="${idAfecta}" ${afecta ? 'checked' : ''} disabled>
+      <label class="form-check-label ms-2" for="${idAfecta}">Afecta TMEF</label>
+    </div>
+  </td>
+
+  <td>
+    <span class="cell-text-tp">${escapeHtml(tipoParoDesc)}</span>
+    <select class="form-select form-select-sm cell-input-tp" style="display:none;">
+      <option value="">Seleccione un tipo de paro</option>
+      ${tpOptions}
+    </select>
+  </td>
+
+  <td class="text-nowrap text-center">
+    ${bloqueado
+                        ? `<span class="badge bg-secondary">No editable</span>`
+                        : `
+      <button type="button" class="btn btn-sm btn-outline-primary btn-edit">Editar</button>
+      <button type="button" class="btn btn-sm btn-success btn-save" style="display:none;">Guardar</button>
+      <button type="button" class="btn btn-sm btn-secondary btn-cancel" style="display:none;">Cancelar</button>
+    `}
+  </td>
+</tr>`;
+            }).join('');
+
+            contenedorListado.innerHTML = `
+<table class="table table-bordered table-sm table-striped align-middle">
+  <thead>
+    <tr>
+      <th style="width:60px;">#</th>
+      <th>Descripción</th>
+      <th>Código Det.</th>
+      <th class="text-center" style="width:120px;">Ajeno</th>
+      <th class="text-center" style="width:150px;">Afecta TMEF</th>
+      <th style="width:220px;">Tipo de paro</th>
+      <th style="width:210px;">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>${rowsHtml}</tbody>
+</table>`;
+
+            // Delegacion de eventos SOLO para la tabla de Clasificacion
+            contenedorListado.onclick = async (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const tr = btn.closest('tr');
+                if (!tr) return;
+
+                if (btn.classList.contains('btn-edit')) {
+                    setEditModeClasificacion(tr, true);
+                } else if (btn.classList.contains('btn-cancel')) {
+                    setEditModeClasificacion(tr, false, /*restore=*/true);
+                } else if (btn.classList.contains('btn-save')) {
+                    await saveRowClasificacion(tr);
+                }
+            };
+
+            // NUEVO: Delegacion de cambios para switches AJENO / AFECTA (mutuamente excluyentes en edicion)
+            contenedorListado.onchange = (e) => {
+                const input = e.target.closest('input');
+                if (!input) return;
+                if (!input.classList.contains('chk-ajeno') && !input.classList.contains('chk-afecta')) return;
+                if (input.disabled) return; // solo en modo edición
+
+                const tr = input.closest('tr');
+                if (!tr) return;
+                const aj = tr.querySelector('.chk-ajeno');
+                const af = tr.querySelector('.chk-afecta');
+                if (!aj || !af) return;
+
+                if (input.classList.contains('chk-ajeno') && aj.checked) {
+                    af.checked = false;
+                } else if (input.classList.contains('chk-afecta') && af.checked) {
+                    aj.checked = false;
+                }
+            };
+        }
+
+        // helpers de edicion
+        function setEditModeRow(tr, editing, hasCode = true) {
+            const spanDesc = tr.querySelector('.cell-text-desc');
+            const inputDesc = tr.querySelector('.cell-input-desc');
+            const spanCod = hasCode ? tr.querySelector('.cell-text-cod') : null;
+            const inputCod = hasCode ? tr.querySelector('.cell-input-cod') : null;
             const btnEdit = tr.querySelector('.btn-edit');
             const btnSave = tr.querySelector('.btn-save');
             const btnCancel = tr.querySelector('.btn-cancel');
 
             if (editing) {
-                span.style.display = 'none';
-                input.style.display = '';
+                spanDesc.style.display = 'none';
+                inputDesc.style.display = '';
+                if (hasCode && spanCod && inputCod) { spanCod.style.display = 'none'; inputCod.style.display = ''; }
                 if (btnEdit) btnEdit.style.display = 'none';
                 if (btnSave) btnSave.style.display = '';
                 if (btnCancel) btnCancel.style.display = '';
-                input.focus();
-                input.select();
+                inputDesc.focus(); inputDesc.select();
             } else {
-                span.style.display = '';
-                input.style.display = 'none';
+                spanDesc.style.display = '';
+                inputDesc.style.display = 'none';
+                if (hasCode && spanCod && inputCod) { spanCod.style.display = ''; inputCod.style.display = 'none'; }
+                if (btnEdit) btnEdit.style.display = '';
+                if (btnSave) btnSave.style.display = 'none';
+                if (btnCancel) btnCancel.style.display = 'none';
+            }
+        }
+
+        // Clasificacion: modo edicion robusto
+        function setEditModeClasificacion(tr, editing, restore = false) {
+            const spanDesc = tr.querySelector('.cell-text-desc');
+            const inputDesc = tr.querySelector('.cell-input-desc');
+            const spanCod = tr.querySelector('.cell-text-cod');
+            const inputCod = tr.querySelector('.cell-input-cod');
+            const spanTP = tr.querySelector('.cell-text-tp');
+            const selTP = tr.querySelector('.cell-input-tp');
+
+            const chkAjeno = tr.querySelector('.chk-ajeno');
+            const chkAfecta = tr.querySelector('.chk-afecta');
+
+            const btnEdit = tr.querySelector('.btn-edit');
+            const btnSave = tr.querySelector('.btn-save');
+            const btnCancel = tr.querySelector('.btn-cancel');
+
+            if (!restore) {
+                if (chkAjeno && !chkAjeno.hasAttribute('data-original'))
+                    chkAjeno.setAttribute('data-original', String(chkAjeno.checked));
+                if (chkAfecta && !chkAfecta.hasAttribute('data-original'))
+                    chkAfecta.setAttribute('data-original', String(chkAfecta.checked));
+            } else {
+                if (chkAjeno && chkAjeno.hasAttribute('data-original'))
+                    chkAjeno.checked = chkAjeno.getAttribute('data-original') === 'true';
+                if (chkAfecta && chkAfecta.hasAttribute('data-original'))
+                    chkAfecta.checked = chkAfecta.getAttribute('data-original') === 'true';
+
+                if (inputDesc && spanDesc) inputDesc.value = spanDesc.textContent || '';
+                if (inputCod && spanCod) inputCod.value = spanCod.textContent || '';
+                if (selTP && spanTP) {
+                    const wanted = (spanTP.textContent || '').trim();
+                    let matched = false;
+                    for (const opt of selTP.options) {
+                        if (opt.text.trim() === wanted) { opt.selected = true; matched = true; break; }
+                    }
+                    if (!matched) selTP.value = '';
+                }
+            }
+
+            const hasCod = !!(spanCod && inputCod);
+            const hasTP = !!(spanTP && selTP);
+
+            if (editing) {
+                if (spanDesc && inputDesc) { spanDesc.style.display = 'none'; inputDesc.style.display = ''; inputDesc.focus(); inputDesc.select(); }
+                if (hasCod) { spanCod.style.display = 'none'; inputCod.style.display = ''; }
+                if (hasTP) { spanTP.style.display = 'none'; selTP.style.display = ''; }
+                if (chkAjeno) chkAjeno.disabled = false;
+                if (chkAfecta) chkAfecta.disabled = false;
+
+                if (btnEdit) btnEdit.style.display = 'none';
+                if (btnSave) btnSave.style.display = '';
+                if (btnCancel) btnCancel.style.display = '';
+            } else {
+                if (spanDesc && inputDesc) { spanDesc.style.display = ''; inputDesc.style.display = 'none'; }
+                if (hasCod) { spanCod.style.display = ''; inputCod.style.display = 'none'; }
+                if (hasTP) { spanTP.style.display = ''; selTP.style.display = 'none'; }
+                if (chkAjeno) chkAjeno.disabled = true;
+                if (chkAfecta) chkAfecta.disabled = true;
+
                 if (btnEdit) btnEdit.style.display = '';
                 if (btnSave) btnSave.style.display = 'none';
                 if (btnCancel) btnCancel.style.display = 'none';
@@ -727,28 +991,95 @@
 
         async function saveRow(tr, config) {
             const id = tr.getAttribute('data-row-id');
-            const span = tr.querySelector('.cell-text');
-            const input = tr.querySelector('.cell-input');
-            const descripcionNueva = (input.value || '').trim();
+            const spanDesc = tr.querySelector('.cell-text-desc');
+            const inputDesc = tr.querySelector('.cell-input-desc');
 
-            // Salvaguarda adicional: bloquear si la fila actual es de las restringidas
-            if (isBlocked(span.textContent)) {
-                alert('Este registro no es editable.');
-                return;
+            const descripcionNueva = (inputDesc.value || '').trim();
+
+            if (isBlocked(spanDesc.textContent)) { alert('Este registro no es editable.'); return; }
+            if (!descripcionNueva) { alert('La descripción no puede estar vacía.'); return; }
+
+            let fetchOptions;
+            if (config.asForm && config.tipo === 'TipoParo') {
+                // TipoParo: solo ID + Descripcion
+                const urlParams = new URLSearchParams();
+                urlParams.set(config.idField, isNaN(Number(id)) ? String(id) : Number(id));
+                urlParams.set('Descripcion', descripcionNueva);
+                fetchOptions = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: urlParams.toString()
+                };
+            } else {
+                // JSON (incluye CodigoDet si aplica)
+                const payload = { Descripcion: descripcionNueva };
+                if (config.codeField) payload.CodigoDet = (tr.querySelector('.cell-input-cod')?.value || '').trim();
+                payload[config.idField] = isNaN(Number(id)) ? id : Number(id);
+                fetchOptions = {
+                    method: 'POST',
+                    headers: config.headers,
+                    body: JSON.stringify(payload)
+                };
             }
-
-            if (!descripcionNueva) {
-                alert('La descripcion no puede estar vacia.');
-                return;
-            }
-
-            const payload = { Descripcion: descripcionNueva };
-            payload[config.idField] = isNaN(Number(id)) ? id : Number(id);
 
             try {
-                const resp = await fetch(config.updateUrl, {
-                    method: 'POST', // cambia a PUT si tu accion lo requiere
-                    headers: config.headers,
+                const resp = await fetch(config.updateUrl, fetchOptions);
+                if (!resp.ok) throw new Error('Error de red/servidor');
+                const result = await resp.json().catch(() => ({}));
+
+                if (result?.success === false) {
+                    alert(result?.message || 'No se pudo guardar.');
+                    return;
+                }
+
+                // actualizar UI
+                const hasCode = !!config.codeField;
+                spanDesc.textContent = descripcionNueva;
+                if (hasCode) {
+                    const spanCod = tr.querySelector('.cell-text-cod');
+                    const inputCod = tr.querySelector('.cell-input-cod');
+                    spanCod.textContent = (inputCod.value || '').trim();
+                }
+                setEditModeRow(tr, false, hasCode);
+            } catch (err) {
+                console.error(err);
+                alert('Error guardando el registro.');
+            }
+        }
+
+        async function saveRowClasificacion(tr) {
+            const id = Number(tr.getAttribute('data-row-id'));
+            const spanDesc = tr.querySelector('.cell-text-desc');
+            const inputDesc = tr.querySelector('.cell-input-desc');
+            const spanCod = tr.querySelector('.cell-text-cod');
+            const inputCod = tr.querySelector('.cell-input-cod');
+            const spanTP = tr.querySelector('.cell-text-tp');
+            const selTP = tr.querySelector('.cell-input-tp');
+            const chkAjeno = tr.querySelector('.chk-ajeno');
+            const chkAfecta = tr.querySelector('.chk-afecta');
+
+            const nuevaDesc = (inputDesc.value || '').trim();
+            const nuevoCod = (inputCod.value || '').trim();
+            const tipoParoId = selTP ? parseInt(selTP.value || '0', 10) : 0;
+            const tipoParoText = selTP ? (selTP.selectedOptions[0]?.text || '') : '';
+
+            if (isBlocked(spanDesc.textContent)) { alert('Este registro no es editable.'); return; }
+            if (!nuevaDesc) { alert('La descripción no puede estar vacía.'); return; }
+            if (!tipoParoId) { alert('Seleccione un tipo de paro.'); return; }
+
+            const payload = {
+                ClasificacionID: id,
+                Descripcion: nuevaDesc,
+                Ajeno: !!(chkAjeno && chkAjeno.checked),
+                AfectaMTF: !!(chkAfecta && chkAfecta.checked), // UpdateClasificacion usa AfectaMTF
+                CodigoDet: nuevoCod,
+                TipoParoID: tipoParoId
+            };
+
+            try {
+                const resp = await fetch('/ArbolFallas/UpdateClasificacion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 if (!resp.ok) throw new Error('Error de red/servidor');
@@ -759,28 +1090,33 @@
                     return;
                 }
 
-                span.textContent = descripcionNueva;
-                setEditMode(tr, false);
+                // aplicar cambios
+                spanDesc.textContent = nuevaDesc;
+                spanCod.textContent = nuevoCod;
+                if (spanTP) spanTP.textContent = tipoParoText;
+                if (chkAjeno) chkAjeno.setAttribute('data-original', String(chkAjeno.checked));
+                if (chkAfecta) chkAfecta.setAttribute('data-original', String(chkAfecta.checked));
+                setEditModeClasificacion(tr, false);
             } catch (err) {
                 console.error(err);
-                alert('Error guardando el registro.');
+                alert('Error guardando la clasificación.');
             }
         }
 
-        // helpers de html safe
+        // helpers html safe
         function escapeHtml(s) {
-            return String(s)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
         function escapeAttr(s) {
-            return String(s).replace(/"/g, '&quot;');
+            return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
 
         function clearUI() {
             filtros.innerHTML = '';
             contenedorListado.innerHTML = '';
+            // quitar delegaciones previas
+            contenedorListado.onclick = null;
+            contenedorListado.onchange = null;
         }
 
         // select simple
@@ -788,12 +1124,12 @@
             const colDiv = document.createElement('div');
             colDiv.className = col;
             colDiv.innerHTML = `
-      <div class="mb-2">
-        <label class="form-label">${label}</label>
-        <select id="${id}" class="form-select">
-          <option value="">${placeholder}</option>
-        </select>
-      </div>`;
+  <div class="mb-2">
+    <label class="form-label">${label}</label>
+    <select id="${id}" class="form-select">
+      <option value="">${placeholder}</option>
+    </select>
+  </div>`;
             return colDiv;
         }
 
@@ -807,7 +1143,7 @@
             });
         }
 
-        // ------- handlers por tipo (usan renderEditableTable) -------
+        // handlers por tipo
         async function handleSubEquipo() {
             clearUI();
             const config = getConfig('SubEquipo');
@@ -818,11 +1154,7 @@
 
             const equipos = await loadEquipos().catch(() => []);
             if (Array.isArray(equipos)) {
-                fillSelect(
-                    selEquipo,
-                    equipos.map(e => ({ value: e.EquipoID, text: e.Descripcion })),
-                    'Seleccione un equipo'
-                );
+                fillSelect(selEquipo, equipos.map(e => ({ value: e.EquipoID, text: e.Descripcion })), 'Seleccione un equipo');
                 if (window.equipoSeleccionadoId) selEquipo.value = String(window.equipoSeleccionadoId);
             } else {
                 selEquipo.innerHTML = `<option value="">${equipos?.message || 'Sin datos'}</option>`;
@@ -853,11 +1185,7 @@
 
             const equipos = await loadEquipos().catch(() => []);
             if (Array.isArray(equipos)) {
-                fillSelect(
-                    selEquipo,
-                    equipos.map(e => ({ value: e.EquipoID, text: e.Descripcion })),
-                    'Seleccione un equipo'
-                );
+                fillSelect(selEquipo, equipos.map(e => ({ value: e.EquipoID, text: e.Descripcion })), 'Seleccione un equipo');
                 if (window.equipoSeleccionadoId) selEquipo.value = String(window.equipoSeleccionadoId);
             }
 
@@ -869,11 +1197,7 @@
 
                 const subs = await loadSubEquipos(eqId).catch(() => []);
                 if (Array.isArray(subs)) {
-                    fillSelect(
-                        selSub,
-                        subs.map(s => ({ value: s.SubEquipoID, text: s.Descripcion })),
-                        'Seleccione un subequipo'
-                    );
+                    fillSelect(selSub, subs.map(s => ({ value: s.SubEquipoID, text: s.Descripcion })), 'Seleccione un subequipo');
                 } else {
                     selSub.innerHTML = '<option value="">Sin datos</option>';
                 }
@@ -891,13 +1215,6 @@
             if (selEquipo.value) selEquipo.dispatchEvent(new Event('change'));
         }
 
-        async function handleClasificacion() {
-            clearUI();
-            const config = getConfig('Clasificacion');
-            const data = await loadClasificaciones().catch(() => []);
-            renderEditableTable(data, config);
-        }
-
         async function handleTipoFalla() {
             clearUI();
             const config = getConfig('TipoFalla');
@@ -905,7 +1222,7 @@
             const selEquipoWrap = createSelect({ id: 'filtroEquipoTF', label: 'Equipo', placeholder: 'Seleccione un equipo' });
             const selSubWrap = createSelect({ id: 'filtroSubTF', label: 'Subequipo', placeholder: 'Seleccione un subequipo' });
             const selCompWrap = createSelect({ id: 'filtroCompTF', label: 'Componente', placeholder: 'Seleccione un componente' });
-            const selClasWrap = createSelect({ id: 'filtroClasTF', label: 'Clasificacion', placeholder: 'Seleccione una clasificacion' });
+            const selClasWrap = createSelect({ id: 'filtroClasTF', label: 'Clasificación', placeholder: 'Seleccione una clasificación' });
             filtros.appendChild(selEquipoWrap);
             filtros.appendChild(selSubWrap);
             filtros.appendChild(selCompWrap);
@@ -922,23 +1239,14 @@
             ]);
 
             if (Array.isArray(equipos)) {
-                fillSelect(
-                    selEquipo,
-                    equipos.map(e => ({ value: e.EquipoID, text: e.Descripcion })),
-                    'Seleccione un equipo'
-                );
+                fillSelect(selEquipo, equipos.map(e => ({ value: e.EquipoID, text: e.Descripcion })), 'Seleccione un equipo');
                 if (window.equipoSeleccionadoId) selEquipo.value = String(window.equipoSeleccionadoId);
             }
             if (Array.isArray(clasificaciones)) {
-                fillSelect(
-                    selClas,
-                    clasificaciones.map(c => ({ value: c.ClasificacionID, text: c.Descripcion })),
-                    'Seleccione una clasificacion'
-                );
+                fillSelect(selClas, clasificaciones.map(c => ({ value: c.ClasificacionID, text: c.Descripcion })), 'Seleccione una clasificación');
                 if (window.clasificacionId) selClas.value = String(window.clasificacionId);
             }
 
-            // Cascadas
             selEquipo.addEventListener('change', async function () {
                 contenedorListado.innerHTML = '';
                 selSub.innerHTML = '<option value="">Cargando...</option>';
@@ -948,11 +1256,7 @@
 
                 const subs = await loadSubEquipos(eqId).catch(() => []);
                 if (Array.isArray(subs)) {
-                    fillSelect(
-                        selSub,
-                        subs.map(s => ({ value: s.SubEquipoID, text: s.Descripcion })),
-                        'Seleccione un subequipo'
-                    );
+                    fillSelect(selSub, subs.map(s => ({ value: s.SubEquipoID, text: s.Descripcion })), 'Seleccione un subequipo');
                     if (window.subEquipoId) { selSub.value = String(window.subEquipoId); selSub.dispatchEvent(new Event('change')); }
                 } else {
                     selSub.innerHTML = '<option value="">Sin datos</option>';
@@ -967,11 +1271,7 @@
 
                 const comps = await loadComponentesBySub(subId).catch(() => []);
                 if (Array.isArray(comps)) {
-                    fillSelect(
-                        selComp,
-                        comps.map(c => ({ value: c.ComponenteEquipoID, text: c.Descripcion })),
-                        'Seleccione un componente'
-                    );
+                    fillSelect(selComp, comps.map(c => ({ value: c.ComponenteEquipoID, text: c.Descripcion })), 'Seleccione un componente');
                     if (window.componenteEquipoId) selComp.value = String(window.componenteEquipoId);
                 } else {
                     selComp.innerHTML = '<option value="">Sin datos</option>';
@@ -994,21 +1294,34 @@
             if (selEquipo.value) selEquipo.dispatchEvent(new Event('change'));
         }
 
+        async function handleTipoParo() {
+            clearUI();
+            const config = getConfig('TipoParo');
+            const data = await loadTiposParo().catch(() => []);
+            renderEditableTable(data, config); // sin columna CodigoDet
+        }
+
         // evento principal
         selectListado.addEventListener('change', function () {
             const tipo = this.value;
-            if (!tipo) {
-                clearUI();
-                return;
-            }
+            if (!tipo) { clearUI(); return; }
+
             if (tipo === 'SubEquipo') return handleSubEquipo();
             if (tipo === 'Componente') return handleComponente();
             if (tipo === 'Clasificacion') return handleClasificacion();
             if (tipo === 'TipoFalla') return handleTipoFalla();
+            if (tipo === 'TipoParo') return handleTipoParo();
         });
     });
+</script>
 
 
+
+
+
+
+
+<script>
 
     (function () {
         function showLoading() {
@@ -1038,8 +1351,6 @@
             showLoading();
         });
     })();
-
-
 
 </script>
 
