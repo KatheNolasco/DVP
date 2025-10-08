@@ -27,6 +27,9 @@ namespace DVP.Models
         public string _tipoMovimientoDescripcion { get; set; }
         public DateTime _fechaReporte { get; set; }
         public string _ordenProcesoSAP { get; set; }
+        public List<int> _equipoIds { get; set; }
+        public List<int> _materialIds { get; set; }
+
 
     }
 }

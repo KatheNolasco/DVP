@@ -107,9 +107,7 @@
 
 
 <body>
-
     <div class="container-fluid" style="padding-left: 200px;">
-        <br /><br /><br />
         <div class="card">
             <div class="container-fluid">
                 <div class="container-fluid">
@@ -118,13 +116,15 @@
                             <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
                                 Agregado correctamente!
                             </div>
-                            <h5 class="card-title fw-semibold mb-4">Configuration humidity of materials</h5>
+
                             <div class="card-body" style="text-align: right;">
                                 <input type="date" id="fechaReporte" style="text-align: right;" onchange="filtrarPorFecha()">
                             </div>
                         </div>
+                        <h5 class="card-title fw-semibold mb-4">Configuration humidity of materials</h5>
+                        <br />
                         <div class="mb-3">
-                            <label class="form-label">Agregar por Equipo y Material de Consumo ó Producción</label>
+                            <label class="form-label">Agregar </label>
                             <div class="d-flex">
                                 <select class="form-select" id="selectEquipo"></select>
                                 <select class="form-select" id="selectConsumo"></select>
@@ -132,7 +132,13 @@
                                 <button id="agregar" class="btn btn-sm btn-primary ms-2">Agregar</button>
                             </div>
                             <br />
-                            <label class="form-label">Listar por Equipo y Material de Consumo ó Producción</label>
+                            <div class="d-flex">
+                                <select class="form-select" id="selectMaterialProduccion"></select>
+                                <select class="form-select" id="selectMaterialConsumo"></select>
+                                <button id="agregarmaterial" class="btn btn-sm btn-primary ms-2">Agregar</button>
+                            </div>
+                            <br />
+                            <label class="form-label">Listar</label>
                             <div class="d-flex">
                                 <select class="form-select" id="selectEquipoList"></select>
                                 <select class="form-select" id="selectMaterial">
@@ -161,433 +167,989 @@
 
 </body>
 
+@*Create por equipo*@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  'use strict';
+    'use strict';
 
-  const btnAgregar       = document.getElementById('agregar');
-  const selectEquipo     = document.getElementById('selectEquipo');
-  const selectConsumo    = document.getElementById('selectConsumo');
-  const selectProduccion = document.getElementById('selectProduccion');
-  const inputFecha       = document.getElementById('fechaReporte'); // se enviará en el payload
+    const btnAgregar = document.getElementById('agregar');
+    const selectEquipo = document.getElementById('selectEquipo');
+    const selectConsumo = document.getElementById('selectConsumo');
+    const selectProduccion = document.getElementById('selectProduccion');
+    const inputFecha = document.getElementById('fechaReporte');
 
-  const URL_EQUIPOS          = '@Url.Action("GetEquiposporPaislogguedUser", "Equipo")';
-  const URL_BOMS_CONSUMO     = '@Url.Action("GetBOMsConsumoByEquipo", "BillOfMaterial")';
-  const URL_BOMS_PRODUCCION  = '@Url.Action("GetBOMsProduccionByEquipo", "BillOfMaterial")';
-  const URL_CREATE_HUMEDAD   = '@Url.Action("CrearCapturaHumedad", "OperationDataToReport")';
+    const URL_EQUIPOS = '@Url.Action("GetEquiposporPaislogguedUser", "Equipo")';
+    const URL_BOMS_CONSUMO = '@Url.Action("GetBOMsConsumoByEquipo", "BillOfMaterial")';
+    const URL_BOMS_PRODUCCION = '@Url.Action("GetBOMsProduccionByEquipo", "BillOfMaterial")';
+    const URL_CREATE_HUMEDAD = '@Url.Action("CrearCapturaHumedadByBOM", "OperationDataToReport")';
 
-  function option(el, value, text){ const o=document.createElement('option'); o.value=value; o.textContent=text; el.appendChild(o); }
-  function fillSelect(selectEl, list, valueKey, textKey, placeholder){
-    if(!selectEl) return;
-    selectEl.innerHTML=''; option(selectEl,'',placeholder);
-    (list||[]).forEach(x=>{
-      const v=x?.[valueKey], t=x?.[textKey];
-      if(v!==undefined && t!==undefined) option(selectEl,String(v),String(t));
+    function option(el, value, text){
+        const o=document.createElement('option');
+        o.value=value;
+        o.textContent=text;
+        el.appendChild(o);
+    }
+
+    function fillSelect(selectEl, list, valueKey, textKey, placeholder){
+        if(!selectEl) return;
+        selectEl.innerHTML='';
+        option(selectEl,'',placeholder);
+        (list||[]).forEach(x=>{
+            const v=x?.[valueKey], t=x?.[textKey];
+            if(v!==undefined && t!==undefined) option(selectEl,String(v),String(t));
+        });
+    }
+
+    function showAlert(msg){
+        const el=document.getElementById('alertsuccesclose');
+        if(el){
+            el.textContent=msg;
+            el.style.display='block';
+            setTimeout(()=>el.style.display='none',2500);
+        } else alert(msg);
+    }
+
+    function hoyISO(){ return new Date().toISOString().split('T')[0]; }
+
+    function loadEquipos(){
+        selectEquipo.disabled=true;
+        selectEquipo.innerHTML='<option value="">Cargando equipos...</option>';
+        fetch(URL_EQUIPOS,{headers:{'Accept':'application/json'}})
+        .then(r=>r.json())
+        .then(data=>{
+            if(data && data.success===false){
+                fillSelect(selectEquipo,[], '', '', '(sesion no iniciada)');
+                return;
+            }
+            const list = Array.isArray(data)?data:(Array.isArray(data?.data)?data.data:[]);
+            fillSelect(selectEquipo,list,'EquipoID','Descripcion','Seleccione equipo');
+        })
+        .catch(e=>{
+            console.error('[Equipos]',e);
+            fillSelect(selectEquipo,[], '', '', '(error al cargar equipos)');
+        })
+        .finally(()=>{ selectEquipo.disabled=false; });
+    }
+
+    function loadBOMConsumo(equipoId){
+        selectConsumo.disabled=true;
+        selectConsumo.innerHTML='<option value="">Cargando consumo...</option>';
+        if(!equipoId){
+            fillSelect(selectConsumo,[], '', '', 'Seleccione material consumo');
+            selectConsumo.disabled=false;
+            return;
+        }
+        fetch(`${URL_BOMS_CONSUMO}?equipoId=${encodeURIComponent(equipoId)}`,{headers:{'Accept':'application/json'}})
+        .then(r=>r.json())
+        .then(res=>{
+            const arr=(res && res.success && Array.isArray(res.data))?res.data:[];
+            const items=[];
+            const seen=new Set();
+            arr.forEach(x=>{
+                const id=x?._materialConsumoID, txt=x?._materialConsumoDescripcion;
+                if(id && txt && !seen.has(id)){
+                    seen.add(id);
+                    items.push({id,txt});
+                }
+            });
+            fillSelect(selectConsumo,items,'id','txt','Seleccione material consumo');
+        })
+        .catch(e=>{
+            console.error('[Consumo]',e);
+            fillSelect(selectConsumo,[], '', '', '(error al cargar consumo)');
+        })
+        .finally(()=>{ selectConsumo.disabled=false; });
+    }
+
+    function loadBOMProduccion(equipoId){
+        selectProduccion.disabled=true;
+        selectProduccion.innerHTML='<option value="">Cargando produccion...</option>';
+        if(!equipoId){
+            fillSelect(selectProduccion,[], '', '', 'Seleccione material produccion');
+            selectProduccion.disabled=false;
+            return;
+        }
+        fetch(`${URL_BOMS_PRODUCCION}?equipoId=${encodeURIComponent(equipoId)}`,{headers:{'Accept':'application/json'}})
+        .then(r=>r.json())
+        .then(res=>{
+            const arr=(res && res.success && Array.isArray(res.data))?res.data:[];
+            const items=[];
+            const seen=new Set();
+            arr.forEach(x=>{
+                const id=x?._materialProduccionID, txt=x?._materialProduccionDescripcion;
+                if(id && txt && !seen.has(id)){
+                    seen.add(id);
+                    items.push({id,txt});
+                }
+            });
+            fillSelect(selectProduccion,items,'id','txt','Seleccione material produccion');
+        })
+        .catch(e=>{
+            console.error('[Produccion]',e);
+            fillSelect(selectProduccion,[], '', '', '(error al cargar produccion)');
+        })
+        .finally(()=>{ selectProduccion.disabled=false; });
+    }
+
+    // Bloqueo cruzado
+    selectConsumo.addEventListener('change', ()=>{
+        if(selectConsumo.value){
+            selectProduccion.value='';
+            selectProduccion.disabled=true;
+        } else {
+            selectProduccion.disabled=false;
+        }
     });
-  }
-  function showAlert(msg){
-    const el=document.getElementById('alertsuccesclose');
-    if(el){ el.textContent=msg; el.style.display='block'; setTimeout(()=>el.style.display='none',2500); }
-    else alert(msg);
-  }
-  function hoyISO(){ return new Date().toISOString().split('T')[0]; }
 
-  function loadEquipos(){
-    selectEquipo.disabled=true;
-    selectEquipo.innerHTML='<option value="">Cargando equipos...</option>';
-    fetch(URL_EQUIPOS,{headers:{'Accept':'application/json'}})
-      .then(r=>r.json())
-      .then(data=>{
-        if(data && data.success===false){ fillSelect(selectEquipo,[], '', '', '(sesión no iniciada)'); return; }
-        const list = Array.isArray(data)?data:(Array.isArray(data?.data)?data.data:[]);
-        fillSelect(selectEquipo,list,'EquipoID','Descripcion','Seleccione equipo');
-      })
-      .catch(e=>{ console.error('[Equipos]',e); fillSelect(selectEquipo,[], '', '', '(error al cargar equipos)'); })
-      .finally(()=>{ selectEquipo.disabled=false; });
-  }
-  function loadBOMConsumo(equipoId){
-    selectConsumo.disabled=true;
-    selectConsumo.innerHTML='<option value="">Cargando consumo...</option>';
-    if(!equipoId){ fillSelect(selectConsumo,[], '', '', 'Seleccione material consumo'); selectConsumo.disabled=false; return; }
-    fetch(`${URL_BOMS_CONSUMO}?equipoId=${encodeURIComponent(equipoId)}`,{headers:{'Accept':'application/json'}})
-      .then(r=>r.json())
-      .then(res=>{
-        const arr=(res && res.success && Array.isArray(res.data))?res.data:[];
-        const items=[]; const seen=new Set();
-        arr.forEach(x=>{ const id=x?._materialConsumoID, txt=x?._materialConsumoDescripcion; if(id && txt && !seen.has(id)){ seen.add(id); items.push({id,txt}); } });
-        fillSelect(selectConsumo,items,'id','txt','Seleccione material consumo');
-      })
-      .catch(e=>{ console.error('[Consumo]',e); fillSelect(selectConsumo,[], '', '', '(error al cargar consumo)'); })
-      .finally(()=>{ selectConsumo.disabled=false; });
-  }
-  function loadBOMProduccion(equipoId){
-    selectProduccion.disabled=true;
-    selectProduccion.innerHTML='<option value="">Cargando producción...</option>';
-    if(!equipoId){ fillSelect(selectProduccion,[], '', '', 'Seleccione material producción'); selectProduccion.disabled=false; return; }
-    fetch(`${URL_BOMS_PRODUCCION}?equipoId=${encodeURIComponent(equipoId)}`,{headers:{'Accept':'application/json'}})
-      .then(r=>r.json())
-      .then(res=>{
-        const arr=(res && res.success && Array.isArray(res.data))?res.data:[];
-        const items=[]; const seen=new Set();
-        arr.forEach(x=>{ const id=x?._materialProduccionID, txt=x?._materialProduccionDescripcion; if(id && txt && !seen.has(id)){ seen.add(id); items.push({id,txt}); } });
-        fillSelect(selectProduccion,items,'id','txt','Seleccione material producción');
-      })
-      .catch(e=>{ console.error('[Producción]',e); fillSelect(selectProduccion,[], '', '', '(error al cargar producción)'); })
-      .finally(()=>{ selectProduccion.disabled=false; });
-  }
+    selectProduccion.addEventListener('change', ()=>{
+        if(selectProduccion.value){
+            selectConsumo.value='';
+            selectConsumo.disabled=true;
+        } else {
+            selectConsumo.disabled=false;
+        }
+    });
 
-  // Bloqueo cruzado
-  selectConsumo.addEventListener('change', ()=>{ if(selectConsumo.value){ selectProduccion.value=''; selectProduccion.disabled=true; } else { selectProduccion.disabled=false; } });
-  selectProduccion.addEventListener('change', ()=>{ if(selectProduccion.value){ selectConsumo.value=''; selectConsumo.disabled=true; } else { selectConsumo.disabled=false; } });
+    selectEquipo.addEventListener('change', function(){
+        const eqId = this.value ? Number(this.value) : 0;
+        selectConsumo.disabled=false;
+        selectConsumo.value='';
+        selectProduccion.disabled=false;
+        selectProduccion.value='';
+        loadBOMConsumo(eqId);
+        loadBOMProduccion(eqId);
+    });
 
-  selectEquipo.addEventListener('change', function(){
-    const eqId = this.value ? Number(this.value) : 0;
-    selectConsumo.disabled=false; selectConsumo.value='';
-    selectProduccion.disabled=false; selectProduccion.value='';
-    loadBOMConsumo(eqId);
-    loadBOMProduccion(eqId);
-  });
+    // ---------- MODAL CREATE ----------
+    let createBg=null, createEl=null;
 
-  // ---------- MODAL CREATE ----------
-  let createBg=null, createEl=null;
+    function ensureCreateOverlay(){
+        if(createBg && createEl) return;
 
-  function ensureCreateOverlay(){
-    if(createBg && createEl) return;
+        createBg=document.createElement('div');
+        createBg.id='overlayCrear_bg';
+        createBg.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:2050;display:none;';
+        createEl=document.createElement('div');
+        createEl.id='overlayCrear';
+        createEl.style.cssText='position:fixed;left:50%;top:8vh;transform:translateX(-50%);z-index:2051;display:none;max-width:760px;width:calc(100% - 32px);background:#fff;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.2);';
 
-    createBg=document.createElement('div');
-    createBg.id='overlayCrear_bg';
-    createBg.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:2050;display:none;';
+        createEl.innerHTML=`
+        <div style="padding:.75rem 1rem;border-bottom:1px solid #e9ecef;" class="d-flex align-items-center justify-content-between">
+            <strong>Nueva Captura de Humedad</strong>
+            <button type="button" id="cr_close_top" class="btn btn-sm btn-outline-secondary">Cerrar</button>
+        </div>
+        <div style="padding:1rem;">
+            <div class="row g-2">
+                <!-- ocultos para ids -->
+                <input id="cr_equipoId" type="hidden">
+                <input id="cr_materialId" type="hidden">
 
-    createEl=document.createElement('div');
-    createEl.id='overlayCrear';
-    createEl.style.cssText='position:fixed;left:50%;top:8vh;transform:translateX(-50%);z-index:2051;display:none;max-width:760px;width:calc(100% - 32px);background:#fff;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.2);';
+                <div class="col-md-6">
+                    <label class="form-label">Equipo</label>
+                    <input id="cr_equipoDesc" class="form-control" disabled>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Material</label>
+                    <input id="cr_materialDesc" class="form-control" disabled>
+                </div>
 
-    createEl.innerHTML=`
-      <div style="padding:.75rem 1rem;border-bottom:1px solid #e9ecef;" class="d-flex align-items-center justify-content-between">
-        <strong>Nueva Captura de Humedad</strong>
-        <button type="button" id="cr_close_top" class="btn btn-sm btn-outline-secondary">Cerrar</button>
-      </div>
-      <div style="padding:1rem;">
-        <div class="row g-2">
+                <div class="col-md-6">
+                    <label class="form-label">Cant PIMS</label>
+                    <div class="input-group">
+                        <!-- campo deshabilitado -->
+                        <input id="cr_cantPims" type="number" step="0.000001" class="form-control text-end" disabled>
+                        <span class="input-group-text" style="min-width:56px;">%</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Cant Validada</label>
+                    <div class="input-group">
+                        <input id="cr_cantVal" type="number" step="0.000001" class="form-control text-end">
+                        <span class="input-group-text" style="min-width:56px;">%</span>
+                    </div>
+                </div>
 
-          <!-- ocultos para ids -->
-          <input id="cr_equipoId" type="hidden">
-          <input id="cr_materialId" type="hidden">
-
-          <div class="col-md-6">
-            <label class="form-label">Equipo</label>
-            <input id="cr_equipoDesc" class="form-control" disabled>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Material</label>
-            <input id="cr_materialDesc" class="form-control" disabled>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label">Cant PIMS (opcional)</label>
-            <div class="input-group">
-              <input id="cr_cantPims" type="number" step="0.000001" class="form-control text-end">
-              <span class="input-group-text" style="min-width:56px;">%</span>
+                <div class="col-12">
+                    <div class="alert alert-info py-2 mb-0">
+                        Esta accion quedara registrada con la fecha/hora del servidor.
+                    </div>
+                </div>
             </div>
-          </div>
+        </div>
+        <div style="padding:.75rem 1rem;border-top:1px solid #e9ecef;" class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary" id="cr_cancel">Cancelar</button>
+            <button type="button" class="btn btn-success" id="cr_guardar">Guardar</button>
+        </div>`;
 
-          <div class="col-md-6">
-            <label class="form-label">Cant Validada</label>
-            <div class="input-group">
-              <input id="cr_cantVal" type="number" step="0.000001" class="form-control text-end">
-              <span class="input-group-text" style="min-width:56px;">%</span>
+        document.body.appendChild(createBg);
+        document.body.appendChild(createEl);
+        createBg.addEventListener('click', hideCreateOverlay);
+        createEl.querySelector('#cr_close_top').addEventListener('click', hideCreateOverlay);
+        createEl.querySelector('#cr_cancel').addEventListener('click', hideCreateOverlay);
+        createEl.querySelector('#cr_guardar').addEventListener('click', guardarDesdeCreateOverlay);
+    }
+
+    function showCreateOverlay(){
+        const eqId = Number(selectEquipo.value || 0);
+        const eqDesc = selectEquipo.options[selectEquipo.selectedIndex]?.text || '';
+        const matConsId = Number(selectConsumo.value || 0);
+        const matConsDesc = matConsId ? (selectConsumo.options[selectConsumo.selectedIndex]?.text || '') : '';
+        const matProdId = Number(selectProduccion.value || 0);
+        const matProdDesc = matProdId ? (selectProduccion.options[selectProduccion.selectedIndex]?.text || '') : '';
+
+        if(!eqId){ alert('Debe seleccionar un equipo.'); return; }
+        if(!matConsId && !matProdId){ alert('Seleccione un material de consumo o uno de produccion.'); return; }
+
+        ensureCreateOverlay();
+        createEl.querySelector('#cr_equipoId').value = eqId;
+        createEl.querySelector('#cr_materialId').value = matConsId || matProdId;
+        createEl.querySelector('#cr_equipoDesc').value = eqDesc;
+        createEl.querySelector('#cr_materialDesc').value = matConsDesc || matProdDesc;
+
+        // limpiar cantidades
+        const cantPimsInput = createEl.querySelector('#cr_cantPims');
+        if(cantPimsInput){ cantPimsInput.value = ''; cantPimsInput.disabled = true; }
+        createEl.querySelector('#cr_cantVal').value = '';
+
+        createBg.style.display='block';
+        createEl.style.display='block';
+    }
+
+    function hideCreateOverlay(){
+        if(createBg && createEl){
+            createBg.style.display='none';
+            createEl.style.display='none';
+        }
+    }
+
+    function guardarDesdeCreateOverlay(){
+        const btn = createEl.querySelector('#cr_guardar');
+        btn.disabled = true;
+        try{
+            const equipoId = Number(createEl.querySelector('#cr_equipoId')?.value || 0);
+            const materialId = Number(createEl.querySelector('#cr_materialId')?.value || 0);
+            const cantValV = createEl.querySelector('#cr_cantVal')?.value;
+            const cantidadValidada = (cantValV==='') ? null : Number(cantValV);
+
+            const fechaISO = (inputFecha && inputFecha.value) ? inputFecha.value : hoyISO();
+
+            if(!equipoId){ alert('Equipo es obligatorio.'); btn.disabled=false; return; }
+            if(cantidadValidada===null || Number.isNaN(cantidadValidada)){ alert('Cantidad validada es obligatoria.'); btn.disabled=false; return; }
+
+            // IMPORTANTE: no enviamos _cantidadPims
+            const payload = {
+                _equipoId: equipoId,
+                _materialId: materialId,
+                _cantidadValidada: Number.isFinite(cantidadValidada) ? cantidadValidada : null,
+                _fechaReporte: fechaISO
+            };
+
+            fetch(URL_CREATE_HUMEDAD,{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify(payload)
+            })
+            .then(r=>r.json())
+            .then(res=>{
+                if(res && res.success){
+                    showAlert('Humedad registrada correctamente.');
+                    hideCreateOverlay();
+                    if(inputFecha){ inputFecha.dispatchEvent(new Event('change')); }
+                } else {
+                    alert('No se pudo registrar: ' + (res?.message || 'Error desconocido'));
+                }
+            })
+            .catch(err=>{
+                console.error(err);
+                alert('Error al registrar la humedad.');
+            })
+            .finally(()=>{ btn.disabled=false; });
+        }catch(e){
+            console.error(e);
+            alert('Error inesperado.');
+            btn.disabled=false;
+        }
+    }
+
+    if(btnAgregar){
+        btnAgregar.addEventListener('click', e=>{
+            e.preventDefault();
+            showCreateOverlay();
+        });
+    }
+
+    // init
+    loadEquipos();
+});
+</script>
+
+
+
+@*Create por material*@
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        'use strict';
+
+        const selProd = document.getElementById('selectMaterialProduccion');
+        const selCons = document.getElementById('selectMaterialConsumo');
+        const btnAgregar = document.getElementById('agregarmaterial');
+        const inputFecha = document.getElementById('fechaReporte'); // opcional, si no existe se usa hoy
+
+        // Endpoints
+        const URL_MAT_PROD = '/Material/GetMaterialProducido';
+        const URL_MAT_CONS = '/Material/GetMaterialConsumido';
+        const URL_CREAR_PROD = '/OperationDataToReport/CrearCapturaHumedadByMaterialProduccion';
+        const URL_CREAR_CONS = '/OperationDataToReport/CrearCapturaHumedadByMaterialConsumo';
+
+        // helpers
+        function option(el, value, text) { const o = document.createElement('option'); o.value = value; o.textContent = text; el.appendChild(o); }
+        function clearSelect(el) { el.innerHTML = ''; }
+        function showAlert(msg) {
+            const el = document.getElementById('alertsuccesclose');
+            if (el) { el.textContent = msg; el.style.display = 'block'; setTimeout(() => el.style.display = 'none', 2500); }
+            else alert(msg);
+        }
+        function todayISO() { return new Date().toISOString().split('T')[0]; }
+
+        async function loadMateriales() {
+            clearSelect(selProd); clearSelect(selCons);
+            option(selProd, '', 'Cargando produccion...');
+            option(selCons, '', 'Cargando consumo...');
+
+            try {
+                const [rProd, rCons] = await Promise.all([
+                    fetch(URL_MAT_PROD, { headers: { 'Accept': 'application/json' } }),
+                    fetch(URL_MAT_CONS, { headers: { 'Accept': 'application/json' } })
+                ]);
+                const [dataProd, dataCons] = await Promise.all([rProd.json(), rCons.json()]);
+
+                clearSelect(selProd);
+                option(selProd, '', 'Seleccione material de produccion...');
+                (Array.isArray(dataProd) ? dataProd : []).forEach(m => {
+                    if (m?.MaterialID != null && m?.Descripcion != null) option(selProd, m.MaterialID, m.Descripcion);
+                });
+
+                clearSelect(selCons);
+                option(selCons, '', 'Seleccione material de consumo...');
+                (Array.isArray(dataCons) ? dataCons : []).forEach(m => {
+                    if (m?.MaterialID != null && m?.Descripcion != null) option(selCons, m.MaterialID, m.Descripcion);
+                });
+
+            } catch (e) {
+                console.error('[Materiales]', e);
+                clearSelect(selProd); clearSelect(selCons);
+                option(selProd, '', '(error cargando produccion)');
+                option(selCons, '', '(error cargando consumo)');
+            }
+        }
+
+        // bloqueo cruzado
+        function syncDisable() {
+            const prodVal = selProd.value;
+            const consVal = selCons.value;
+            selCons.disabled = !!prodVal;
+            selProd.disabled = !!consVal;
+        }
+        selProd.addEventListener('change', syncDisable);
+        selCons.addEventListener('change', syncDisable);
+
+        // ---------- MODAL ----------
+        let createBg = null, createEl = null;
+
+        function ensureCreateOverlay() {
+            if (createBg && createEl) return;
+
+            createBg = document.createElement('div');
+            createBg.id = 'overlayCrear_bg';
+            createBg.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:2050;display:none;';
+            createEl = document.createElement('div');
+            createEl.id = 'overlayCrear';
+            createEl.style.cssText = 'position:fixed;left:50%;top:8vh;transform:translateX(-50%);z-index:2051;display:none;max-width:760px;width:calc(100% - 32px);background:#fff;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.2);';
+
+            createEl.innerHTML = `
+        <div style="padding:.75rem 1rem;border-bottom:1px solid #e9ecef;" class="d-flex align-items-center justify-content-between">
+            <strong>Nueva Captura de Humedad</strong>
+            <button type="button" id="cr_close_top" class="btn btn-sm btn-outline-secondary">Cerrar</button>
+        </div>
+        <div style="padding:1rem;">
+            <div class="row g-2">
+                <input id="cr_materialId" type="hidden">
+                <input id="cr_tipoMaterial" type="hidden"> <!-- PROD o CONS -->
+
+                <div class="col-md-6">
+                    <label class="form-label">Material</label>
+                    <input id="cr_materialDesc" class="form-control" disabled>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Fecha reporte</label>
+                    <input id="cr_fecha" class="form-control" disabled>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Cant PIMS</label>
+                    <div class="input-group">
+                        <!-- DESHABILITADO Y SOLO VISUAL -->
+                        <input id="cr_cantPims" type="number" step="0.000001" class="form-control text-end" disabled>
+                        <span class="input-group-text" style="min-width:56px;">%</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Cant Validada</label>
+                    <div class="input-group">
+                        <input id="cr_cantVal" type="number" step="0.000001" class="form-control text-end">
+                        <span class="input-group-text" style="min-width:56px;">%</span>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="alert alert-info py-2 mb-0">
+                        Se registrara para todos los equipos asociados a este material (segun BOM). La unidad es %.
+                    </div>
+                </div>
             </div>
-          </div>
+        </div>
+        <div style="padding:.75rem 1rem;border-top:1px solid #e9ecef;" class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary" id="cr_cancel">Cancelar</button>
+            <button type="button" class="btn btn-success" id="cr_guardar">Guardar</button>
+        </div>`;
 
-          <div class="col-12">
-            <div class="alert alert-info py-2 mb-0">
-              Esta acción quedará registrada con la fecha/hora del servidor.
+            document.body.appendChild(createBg);
+            document.body.appendChild(createEl);
+            createBg.addEventListener('click', hideCreateOverlay);
+            createEl.querySelector('#cr_close_top').addEventListener('click', hideCreateOverlay);
+            createEl.querySelector('#cr_cancel').addEventListener('click', hideCreateOverlay);
+            createEl.querySelector('#cr_guardar').addEventListener('click', guardarDesdeCreateOverlay);
+        }
+
+        function showCreateOverlay() {
+            const matProdId = selProd.value ? Number(selProd.value) : 0;
+            const matConsId = selCons.value ? Number(selCons.value) : 0;
+
+            if (!matProdId && !matConsId) { alert('Seleccione un material de produccion o de consumo.'); return; }
+            if (matProdId && matConsId) { alert('Solo puede seleccionar uno a la vez.'); return; }
+
+            ensureCreateOverlay();
+
+            const tipo = matProdId ? 'PROD' : 'CONS';
+            const matId = matProdId || matConsId;
+            const matDesc = (matProdId
+                ? selProd.options[selProd.selectedIndex]?.text
+                : selCons.options[selCons.selectedIndex]?.text) || '';
+
+            const fechaStr = (inputFecha && inputFecha.value) ? inputFecha.value : todayISO();
+
+            createEl.querySelector('#cr_tipoMaterial').value = tipo;
+            createEl.querySelector('#cr_materialId').value = matId;
+            createEl.querySelector('#cr_materialDesc').value = matDesc;
+            createEl.querySelector('#cr_fecha').value = fechaStr;
+
+            // limpiar y asegurar PIMS deshabilitado
+            const pimsInput = createEl.querySelector('#cr_cantPims');
+            if (pimsInput) { pimsInput.value = ''; pimsInput.disabled = true; }
+
+            createEl.querySelector('#cr_cantVal').value = '';
+
+            createBg.style.display = 'block';
+            createEl.style.display = 'block';
+        }
+
+        function hideCreateOverlay() {
+            if (createBg && createEl) {
+                createBg.style.display = 'none';
+                createEl.style.display = 'none';
+            }
+        }
+
+        function guardarDesdeCreateOverlay() {
+            const btn = createEl.querySelector('#cr_guardar');
+            btn.disabled = true;
+            try {
+                const tipo = createEl.querySelector('#cr_tipoMaterial').value; // PROD o CONS
+                const materialId = Number(createEl.querySelector('#cr_materialId').value || 0);
+                const cantValV = createEl.querySelector('#cr_cantVal').value;
+                const cantidadVal = (cantValV === '') ? null : Number(cantValV);
+
+                const fechaStr = (inputFecha && inputFecha.value) ? inputFecha.value : todayISO();
+                const fechaISO = new Date(fechaStr + 'T00:00:00').toISOString();
+
+                if (!materialId) { alert('Material es obligatorio.'); btn.disabled = false; return; }
+                if (cantidadVal === null || Number.isNaN(cantidadVal)) { alert('Cantidad validada es obligatoria.'); btn.disabled = false; return; }
+
+                // >>> No enviamos _cantidadPims <<<
+                const payload = {
+                    _materialId: materialId,
+                    _cantidadValidada: Number.isFinite(cantidadVal) ? cantidadVal : null,
+                    _equipoId: 0,
+                    _fechaReporte: fechaISO
+                };
+
+                const url = (tipo === 'PROD') ? URL_CREAR_PROD : URL_CREAR_CONS;
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                    body: JSON.stringify(payload)
+                })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res && res.success) {
+                            if (res.summary) {
+                                const { inserted, skipped, total } = res.summary;
+                                showAlert(`Humedad registrada: ${inserted} insertados, ${skipped} omitidos, total ${total}.`);
+                            } else {
+                                showAlert(res.message || 'Humedad registrada correctamente.');
+                            }
+                            hideCreateOverlay();
+                            selProd.value = ''; selCons.value = '';
+                            syncDisable();
+                            if (inputFecha) { inputFecha.dispatchEvent(new Event('change')); }
+                        } else {
+                            alert(res?.message || 'No se pudo registrar.');
+                        }
+                    })
+                    .catch(err => { console.error(err); alert('Error al registrar la humedad.'); })
+                    .finally(() => { btn.disabled = false; });
+            } catch (e) {
+                console.error(e);
+                alert('Error inesperado.');
+                btn.disabled = false;
+            }
+        }
+
+        if (btnAgregar) {
+            btnAgregar.addEventListener('click', function (e) {
+                e.preventDefault();
+                showCreateOverlay();
+            });
+        }
+
+        // init
+        loadMateriales().then(syncDisable);
+    });
+</script>
+
+
+
+
+
+
+
+@*List*@
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    'use strict';
+
+    const contenedorListado = document.getElementById('contenedorListado');
+    const inputFecha        = document.getElementById('fechaReporte');
+    const selectEquipoList  = document.getElementById('selectEquipoList');
+    const selectMaterial    = document.getElementById('selectMaterial');
+
+    const URL_GET_HUMEDAD = '@Url.Action("GetCapturasHumedad", "OperationDataToReport")';
+    const URL_EQUIPOS     = '@Url.Action("GetEquiposporPaislogguedUser", "Equipo")';
+
+    function option(el, value, text){ const o=document.createElement('option'); o.value=value; o.textContent=text; el.appendChild(o); }
+    function fillSelect(selectEl, list, valueKey, textKey, placeholder){
+      if(!selectEl) return;
+      selectEl.innerHTML=''; option(selectEl,'',placeholder);
+      (list||[]).forEach(x=>{
+        const v=x?.[valueKey], t=x?.[textKey];
+        if(v!==undefined && t!==undefined) option(selectEl,String(v),String(t));
+      });
+    }
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+    function showMsg(msg,type='info'){
+      contenedorListado.innerHTML = `<div class="alert alert-${type}" role="alert" style="margin-top:8px;">${escapeHtml(msg)}</div>`;
+    }
+    function fmtFechaHora(d){
+      if(!d) return '';
+      const m=/\/Date\((\d+)\)\//.exec(String(d));
+      let dt=null;
+      if(m){ const ms=parseInt(m[1],10); if(!Number.isNaN(ms)) dt=new Date(ms); }
+      else dt=new Date(d);
+      if(!dt || Number.isNaN(dt.getTime())) return '';
+      const yyyy=dt.getFullYear();
+      const mm=String(dt.getMonth()+1).padStart(2,'0');
+      const dd=String(dt.getDate()).padStart(2,'0');
+      const hh=String(dt.getHours()).padStart(2,'0');
+      const mi=String(dt.getMinutes()).padStart(2,'0');
+      return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+    }
+    function renderCheck(v){ return v?'<i class="bi bi-check-circle-fill text-success"></i>':'<i class="bi bi-x-circle-fill text-danger"></i>'; }
+    function getPimsRaw(r){
+      if (r.hasOwnProperty('CantidadPIMS')) return r.CantidadPIMS;
+      if (r.hasOwnProperty('CantidadPims')) return r.CantidadPims;
+      return null;
+    }
+    function parseNumber(text){
+      if(text == null) return null;
+      const t = String(text).trim().replace(/%/g,'').replace(/\s+/g,'');
+      const formatted = t.includes(',') ? t.replace(',', '.') : t;
+      if(formatted === '') return null;
+      const n = Number(formatted);
+      return Number.isFinite(n) ? n : null;
+    }
+    function toISODateOnly(dateStr){
+      const base = dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
+                   ? dateStr
+                   : (new Date()).toISOString().split('T')[0];
+      return new Date(base + 'T00:00:00').toISOString();
+    }
+    function defaultAyerISO(){
+      const hoy = new Date();
+      const ayer = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 1);
+      return ayer.toISOString().split('T')[0];
+    }
+
+    window.getCurrentParams = function(){
+      const fechaISO  = (inputFecha && inputFecha.value) ? inputFecha.value : defaultAyerISO();
+      const equipoId  = selectEquipoList && selectEquipoList.value ? Number(selectEquipoList.value) : 0;
+      const tipoMateriaSel = (selectMaterial && selectMaterial.value) ? String(selectMaterial.value) : '';
+      return { fechaISO, equipoId, tipoMaterial: tipoMateriaSel };
+    };
+
+    function buildTheadHtml(){
+      return `<thead><tr>
+        <th class="text-center">Fecha/Hora</th><th class="text-center">Equipo</th>
+        <th class="text-center">Material</th><th class="text-center">Cant PIMS</th>
+        <th class="text-center">Cant Validada</th><th class="text-center">Unidad</th>
+        <th class="text-center">Tipo Mov SAP</th><th class="text-center">Close</th>
+        <th class="text-center">Validate</th><th class="text-center">Acciones</th>
+      </tr></thead>`;
+    }
+
+    function renderTabla(rows){
+      const data = Array.isArray(rows) ? rows : [];
+      if(!data.length){ showMsg('No hay registros para los filtros aplicados','warning'); return; }
+
+      let tbody = '<tbody>';
+      data.forEach(r=>{
+        const pimsRaw = getPimsRaw(r);
+        const valRaw  = (r.CantidadValidada !== undefined) ? r.CantidadValidada : null;
+
+        const pimsTxt = (pimsRaw === null || pimsRaw === undefined) ? '—' : `${pimsRaw} %`;
+        const valTxt  = (valRaw  === null || valRaw  === undefined) ? '—' : `${valRaw} %`;
+
+        const materialDesc = r.Material ?? r.MaterialDescripcion ?? r.MaterialConsumo ?? r.MaterialProduccion ?? '';
+        const sapMovDesc = (r.TipoMovimientoSAP && String(r.TipoMovimientoSAP).trim())
+                           || (r.TipoMovimientoSAPDescripcion && String(r.TipoMovimientoSAPDescripcion).trim())
+                           || '';
+        const sapMovShown = sapMovDesc || (r.TipoMovimientoSAPID ?? '');
+
+        let fechaData = '';
+        if (r.FechaReporte){
+          const m=/\/Date\((\d+)\)\//.exec(String(r.FechaReporte));
+          const dt = m ? new Date(parseInt(m[1],10)) : new Date(r.FechaReporte);
+          if(!Number.isNaN(dt?.getTime?.())){
+            const yyyy=dt.getFullYear();
+            const mm=String(dt.getMonth()+1).padStart(2,'0');
+            const dd=String(dt.getDate()).padStart(2,'0');
+            fechaData = `${yyyy}-${mm}-${dd}`;
+          }
+        }
+
+        tbody += `<tr>
+          <td class="text-center" data-col="fecha" data-value="${escapeHtml(fechaData)}">${escapeHtml(fmtFechaHora(r.FechaReporte))}</td>
+          <td class="text-center">${escapeHtml(r.Equipo || '')}</td>
+          <td class="text-center">${escapeHtml(materialDesc || '')}</td>
+          <td class="text-end" data-col="pims" data-value="${pimsRaw ?? ''}">${pimsTxt}</td>
+          <td class="text-end" data-col="validada" data-value="${valRaw ?? ''}">${valTxt}</td>
+          <td class="text-center">${escapeHtml(r.UnidadMedida || '')}</td>
+          <td class="text-center">${escapeHtml(String(sapMovShown))}</td>
+          <td class="text-center">${renderCheck(!!r.StatusClose)}</td>
+          <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-primary btn-editar"
+                    data-id="${r.DataOperacionID}"
+                    data-pims="${pimsRaw ?? ''}"
+                    data-validada="${valRaw ?? ''}"
+                    data-fecha="${escapeHtml(fechaData)}">
+              Editar
+            </button>
+          </td>
+        </tr>`;
+      });
+      tbody += '</tbody>';
+
+      contenedorListado.innerHTML = `
+        <div class="table-responsive w-100" style="max-height:420px; overflow-y:auto; background-color:#fff; padding:10px; border-radius:10px;">
+          <table class="table table-bordered table-sm table-striped mb-0" style="background-color:#fff;">
+            ${buildTheadHtml()}${tbody}
+          </table>
+        </div>`;
+    }
+
+    function cargarCapturas(params){
+      const { fechaISO, equipoId, tipoMaterial } = params;
+      showMsg('Cargando...','secondary');
+
+      let url = `${URL_GET_HUMEDAD}?_fecha=${encodeURIComponent(fechaISO)}`;
+      if(equipoId){ url += `&_equipoId=${encodeURIComponent(equipoId)}`; }
+      if(tipoMaterial){ url += `&_tipoMaterial=${encodeURIComponent(tipoMaterial)}`; }
+
+      fetch(url, { headers:{'Accept':'application/json'} })
+        .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+        .then(arr=> renderTabla(arr))
+        .catch(err=>{ console.error(err); showMsg('No se pudo cargar la data de humedad','danger'); });
+    }
+
+    function loadEquiposList() {
+      if(!selectEquipoList) return;
+      selectEquipoList.disabled = true;
+      selectEquipoList.innerHTML = '<option value="">Cargando equipos...</option>';
+      fetch(URL_EQUIPOS, { headers:{'Accept':'application/json'} })
+        .then(r=>r.json())
+        .then(data=>{
+          if(data && data.success===false){
+            fillSelect(selectEquipoList, [], '', '', '(sesion no iniciada)');
+            return;
+          }
+          const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+          fillSelect(selectEquipoList, list, 'EquipoID', 'Descripcion', 'Todos los equipos');
+        })
+        .catch(err=>{
+          console.error('[Equipos List] ', err);
+          fillSelect(selectEquipoList, [], '', '', '(error al cargar equipos)');
+        })
+        .finally(()=>{ selectEquipoList.disabled=false; });
+    }
+
+    window.filtrarPorFecha = function(){
+      cargarCapturas(window.getCurrentParams());
+    };
+
+    if(inputFecha){
+      if(!inputFecha.value) inputFecha.value = defaultAyerISO();
+      inputFecha.addEventListener('change', window.filtrarPorFecha);
+    }
+    if(selectEquipoList){
+      selectEquipoList.addEventListener('change', window.filtrarPorFecha);
+    }
+    if(selectMaterial){
+      selectMaterial.addEventListener('change', window.filtrarPorFecha);
+    }
+
+    loadEquiposList();
+    window.filtrarPorFecha();
+});
+</script>
+
+
+
+
+
+@*Edit*@
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    'use strict';
+
+    const contenedorListado = document.getElementById('contenedorListado');
+    const URL_UPDATE_HUMEDAD = '@Url.Action("UpdateCapturaHumedad", "OperationDataToReport")';
+
+    function parseNumber(text){
+      if(text == null) return null;
+      const t = String(text).trim().replace(/%/g,'').replace(/\s+/g,'');
+      const formatted = t.includes(',') ? t.replace(',', '.') : t;
+      if(formatted === '') return null;
+      const n = Number(formatted);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function toISODateOnly(dateStr){
+      const base = dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
+                   ? dateStr
+                   : (new Date()).toISOString().split('T')[0];
+      return new Date(base + 'T00:00:00').toISOString();
+    }
+
+
+    let editBg=null, editEl=null;
+
+    function ensureEditOverlay(){
+      if(editBg && editEl) return;
+
+      editBg = document.createElement('div');
+      editBg.id = 'overlayEdit_bg';
+      editBg.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:3060;display:none;';
+
+      editEl = document.createElement('div');
+      editEl.id = 'overlayEdit';
+      editEl.style.cssText = 'position:fixed;left:50%;top:10vh;transform:translateX(-50%);z-index:3061;display:none;max-width:560px;width:calc(100% - 32px);background:#fff;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.2);';
+
+      editEl.innerHTML = `
+        <div class="d-flex align-items-center justify-content-between" style="padding:.75rem 1rem;border-bottom:1px solid #e9ecef;">
+          <strong>Editar Captura de Humedad</strong>
+          <button type="button" id="ed_close_top" class="btn btn-sm btn-outline-secondary">Cerrar</button>
+        </div>
+        <div style="padding:1rem;">
+          <input type="hidden" id="ed_row_id">
+          <input type="hidden" id="ed_fecha_iso_original">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Cant PIMS (opcional)</label>
+              <div class="input-group">
+                <input id="ed_cantPims" type="text" inputmode="decimal" class="form-control text-end" disabled>
+                <span class="input-group-text" style="min-width:56px;">%</span>
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Cant Validada <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <input id="ed_cantVal" type="text" inputmode="decimal" class="form-control text-end" required>
+                <span class="input-group-text" style="min-width:56px;">%</span>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="alert alert-info py-2 mb-0">
+                Solo se actualizarán las cantidades.
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div style="padding:.75rem 1rem;border-top:1px solid #e9ecef;" class="d-flex justify-content-end gap-2">
-        <button type="button" class="btn btn-secondary" id="cr_cancel">Cancelar</button>
-        <button type="button" class="btn btn-success" id="cr_guardar">Guardar</button>
-      </div>
-    `;
+        <div class="d-flex justify-content-end gap-2" style="padding:.75rem 1rem;border-top:1px solid #e9ecef;">
+          <button type="button" class="btn btn-secondary" id="ed_cancel">Cancelar</button>
+          <button type="button" class="btn btn-success" id="ed_guardar">Guardar cambios</button>
+        </div>
+      `;
 
-    document.body.appendChild(createBg);
-    document.body.appendChild(createEl);
+      document.body.appendChild(editBg);
+      document.body.appendChild(editEl);
 
-    createBg.addEventListener('click', hideCreateOverlay);
-    createEl.querySelector('#cr_close_top').addEventListener('click', hideCreateOverlay);
-    createEl.querySelector('#cr_cancel').addEventListener('click', hideCreateOverlay);
-    createEl.querySelector('#cr_guardar').addEventListener('click', guardarDesdeCreateOverlay);
-  }
-
-  function showCreateOverlay(){
-    const eqId = Number(selectEquipo.value || 0);
-    const eqDesc = selectEquipo.options[selectEquipo.selectedIndex]?.text || '';
-    const matConsId   = Number(selectConsumo.value || 0);
-    const matConsDesc = matConsId ? (selectConsumo.options[selectConsumo.selectedIndex]?.text || '') : '';
-    const matProdId   = Number(selectProduccion.value || 0);
-    const matProdDesc = matProdId ? (selectProduccion.options[selectProduccion.selectedIndex]?.text || '') : '';
-
-    if(!eqId){ alert('Debe seleccionar un equipo.'); return; }
-    if(!matConsId && !matProdId){ alert('Seleccione un material de consumo o uno de producción.'); return; }
-
-    ensureCreateOverlay();
-
-    createEl.querySelector('#cr_equipoId').value      = eqId;
-    createEl.querySelector('#cr_materialId').value    = matConsId || matProdId;
-    createEl.querySelector('#cr_equipoDesc').value    = eqDesc;
-    createEl.querySelector('#cr_materialDesc').value  = matConsDesc || matProdDesc;
-
-    // limpiar cantidades
-    createEl.querySelector('#cr_cantPims').value = '';
-    createEl.querySelector('#cr_cantVal').value  = '';
-
-    createBg.style.display='block';
-    createEl.style.display='block';
-  }
-
-  function hideCreateOverlay(){ if(createBg && createEl){ createBg.style.display='none'; createEl.style.display='none'; } }
-
-  function guardarDesdeCreateOverlay(){
-    const btn = createEl.querySelector('#cr_guardar');
-    btn.disabled = true;
-
-    try{
-      const equipoId   = Number(createEl.querySelector('#cr_equipoId')?.value || 0);
-      const materialId = Number(createEl.querySelector('#cr_materialId')?.value || 0);
-      const cantPimsV  = createEl.querySelector('#cr_cantPims')?.value;
-      const cantValV   = createEl.querySelector('#cr_cantVal')?.value;
-
-      const cantidadPims     = (cantPimsV==='') ? null : Number(cantPimsV);
-      const cantidadValidada = (cantValV==='')  ? null : Number(cantValV);
-
-      // fecha a enviar (del input date). Si está vacío, usa hoy.
-      const fechaISO = (inputFecha && inputFecha.value) ? inputFecha.value : hoyISO(); // 'YYYY-MM-DD'
-
-      if(!equipoId){ alert('Equipo es obligatorio.'); btn.disabled=false; return; }
-      if(cantidadValidada===null || Number.isNaN(cantidadValidada)){ alert('Cantidad validada es obligatoria.'); btn.disabled=false; return; }
-
-      // Payload: agrega _fechaReporte desde el input date
-      const payload = {
-        _equipoId:         equipoId,
-        _materialId:       materialId,
-        _cantidadPims:     (cantidadPims===null || !Number.isFinite(cantidadPims)) ? null : cantidadPims,
-        _cantidadValidada: Number.isFinite(cantidadValidada) ? cantidadValidada : null,
-        _fechaReporte:     fechaISO // <-- NUEVO: enviar fecha seleccionada (YYYY-MM-DD)
-      };
-
-      fetch(URL_CREATE_HUMEDAD,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(payload)
-      })
-      .then(r=>r.json())
-      .then(res=>{
-        if(res && res.success){
-          showAlert('Humedad registrada correctamente.');
-          hideCreateOverlay();
-          if(inputFecha){ inputFecha.dispatchEvent(new Event('change')); }
-        } else {
-          alert('No se pudo registrar: ' + (res?.message || 'Error desconocido'));
-        }
-      })
-      .catch(err=>{ console.error(err); alert('Error al registrar la humedad.'); })
-      .finally(()=>{ btn.disabled=false; });
-    }catch(e){
-      console.error(e); alert('Error inesperado.'); btn.disabled=false;
+      editBg.addEventListener('click', hideEditOverlay);
+      editEl.querySelector('#ed_close_top').addEventListener('click', hideEditOverlay);
+      editEl.querySelector('#ed_cancel').addEventListener('click', hideEditOverlay);
+      editEl.querySelector('#ed_guardar').addEventListener('click', guardarEdicionOverlay);
     }
-  }
 
-  if(btnAgregar){ btnAgregar.addEventListener('click', e=>{ e.preventDefault(); showCreateOverlay(); }); }
+    function showEditOverlay({ id, pims, validada, fechaISO }){
+        ensureEditOverlay();
+        editEl.querySelector('#ed_row_id').value  = id || '';
+        editEl.querySelector('#ed_fecha_iso_original').value = fechaISO || '';
 
-  // init
-  loadEquipos();
-});
-</script>
+        // Muestra el valor con punto
+        editEl.querySelector('#ed_cantPims').value = (pims === null || pims === undefined) ? '' : String(pims);
+        editEl.querySelector('#ed_cantVal').value  = (validada === null || validada === undefined) ? '' : String(validada);
 
+        editBg.style.display = 'block';
+        editEl.style.display = 'block';
+    }
 
+    function hideEditOverlay(){
+        if(!editBg || !editEl) return;
+        editBg.style.display = 'none';
+        editEl.style.display = 'none';
+    }
 
+    function guardarEdicionOverlay(){
+      const btn = editEl.querySelector('#ed_guardar');
+      btn.disabled = true;
 
+      try{
+        const idStr = editEl.querySelector('#ed_row_id')?.value || '';
+        const id    = Number(idStr);
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  'use strict';
+        // Aunque el campo está deshabilitado, leeremos su valor por si acaso,
+        // pero principalmente nos centraremos en Cant Validada
+        // NOTA: Si el campo está 'disabled', su valor NO se envía en un formulario normal.
+        // Dado que usamos JS/fetch, el valor está disponible.
+        const pimsValue = editEl.querySelector('#ed_cantPims')?.value;
+        const pimsN = parseNumber(pimsValue);
+        const valN  = parseNumber(editEl.querySelector('#ed_cantVal')?.value);
 
-  // --- UI ---
-  const contenedorListado = document.getElementById('contenedorListado');
-  const inputFecha        = document.getElementById('fechaReporte'); // onchange="filtrarPorFecha()"
-  const selectEquipoList  = document.getElementById('selectEquipoList');
-  const selectMaterial    = document.getElementById('selectMaterial'); // Producción | Consumo
+        if(!id){ alert('No se pudo identificar el registro.'); btn.disabled=false; return; }
+        if(valN === null){ alert('Cantidad validada es obligatoria.'); btn.disabled=false; return; }
 
-  // --- Endpoints ---
-  const URL_GET_HUMEDAD = '@Url.Action("GetCapturasHumedad", "OperationDataToReport")';
-  const URL_EQUIPOS     = '@Url.Action("GetEquiposporPaislogguedUser", "Equipo")';
+        const fechaOriginalStr = editEl.querySelector('#ed_fecha_iso_original')?.value || '';
+        const fechaBackendISO = toISODateOnly(fechaOriginalStr);
 
-  // --- Helpers ---
-  function option(el, value, text){ const o=document.createElement('option'); o.value=value; o.textContent=text; el.appendChild(o); }
-  function fillSelect(selectEl, list, valueKey, textKey, placeholder){
-    if(!selectEl) return;
-    selectEl.innerHTML=''; option(selectEl,'',placeholder);
-    (list||[]).forEach(x=>{
-      const v=x?.[valueKey], t=x?.[textKey];
-      if(v!==undefined && t!==undefined) option(selectEl,String(v),String(t));
-    });
-  }
-  function escapeHtml(str){
-    return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  }
-  function showMsg(msg,type='info'){
-    contenedorListado.innerHTML = `<div class="alert alert-${type}" role="alert" style="margin-top:8px;">${escapeHtml(msg)}</div>`;
-  }
-  function fmtFechaHora(d){
-    if(!d) return '';
-    const m=/\/Date\((\d+)\)\//.exec(String(d));
-    let dt=null;
-    if(m){ const ms=parseInt(m[1],10); if(!Number.isNaN(ms)) dt=new Date(ms); }
-    else dt=new Date(d);
-    if(!dt || Number.isNaN(dt.getTime())) return '';
-    const yyyy=dt.getFullYear();
-    const mm=String(dt.getMonth()+1).padStart(2,'0');
-    const dd=String(dt.getDate()).padStart(2,'0');
-    const hh=String(dt.getHours()).padStart(2,'0');
-    const mi=String(dt.getMinutes()).padStart(2,'0');
-    return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
-  }
-  function renderCheck(v){ return v?'<i class="bi bi-check-circle-fill text-success"></i>':'<i class="bi bi-x-circle-fill text-danger"></i>'; }
+        const currentParams = (typeof window.getCurrentParams === 'function') ? window.getCurrentParams() : {};
+        const equipoId = currentParams.equipoId || 0;
+        const tipoMaterialSel = currentParams.tipoMaterial || '';
 
-  function buildTheadHtml(){
-    return `<thead><tr>
-      <th class="text-center">Fecha/Hora</th>
-      <th class="text-center">Equipo</th>
-      <th class="text-center">Cant PIMS</th>
-      <th class="text-center">Cant Validada</th>
-      <th class="text-center">Unidad</th>
-      <th class="text-center">Tipo Mov SAP</th>
-      <th class="text-center">Close</th>
-      <th class="text-center">Validate</th>
-      <th class="text-center">Acciones</th>
-    </tr></thead>`;
-  }
+        const payload = {
+          _dataOperacionId:    id,
+          _cantidadPims:       pimsN,
+          _cantidadValidada:   valN,
+          _fechaReporte:       fechaBackendISO,
+          _equipoId:           equipoId,
+          _tipoMaterial:       tipoMaterialSel
+        };
 
-  function renderTabla(rows){
-    const data = Array.isArray(rows) ? rows : [];
-    if(!data.length){ showMsg('No hay registros para los filtros aplicados','warning'); return; }
+        fetch(URL_UPDATE_HUMEDAD, {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(res => {
+          if(res && res.success){
+            if(typeof window.filtrarPorFecha === 'function') { window.filtrarPorFecha(); }
 
-    let tbody = '<tbody>';
-    data.forEach(r=>{
-      const pimsTxt = (r.CantidadPIMS ?? '') === '' ? '' : `${r.CantidadPIMS} %`;
-      const valTxt  = (r.CantidadValidada ?? '') === '' ? '' : `${r.CantidadValidada} %`;
-      tbody += `<tr>
-        <td class="text-center">${escapeHtml(fmtFechaHora(r.FechaReporte))}</td>
-        <td class="text-center">${escapeHtml(r.Equipo || '')}</td>
-        <td class="text-end">${pimsTxt}</td>
-        <td class="text-end">${valTxt}</td>
-        <td class="text-center">${escapeHtml(r.UnidadMedida || '')}</td>
-        <td class="text-center">${r.TipoMovimientoSAPID ?? ''}</td>
-        <td class="text-center">${renderCheck(!!r.StatusClose)}</td>
-        <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>
-        <td class="text-center">
-          <button class="btn btn-sm btn-primary btn-editar" data-id="${r.DataOperacionID}">Editar</button>
-        </td>
-      </tr>`;
-    });
-    tbody += '</tbody>';
+            hideEditOverlay();
 
-    contenedorListado.innerHTML = `
-      <div class="table-responsive w-100" style="max-height:420px; overflow-y:auto; background-color:#fff; padding:10px; border-radius:10px;">
-        <table class="table table-bordered table-sm table-striped mb-0" style="background-color:#fff;">
-          ${buildTheadHtml()}${tbody}
-        </table>
-      </div>`;
-  }
+            const ok = document.getElementById('alertsuccesclose');
+            if(ok){ ok.textContent='Humedad actualizada correctamente.'; ok.style.display='block'; setTimeout(()=>ok.style.display='none',2500); }
+            else alert('Humedad actualizada correctamente.');
+          } else {
+            alert('No se pudo actualizar: ' + (res?.message || 'Error desconocido'));
+          }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Error al actualizar la humedad: Asegúrate de que los valores numéricos no contienen caracteres inválidos.');
+        })
+        .finally(() => { btn.disabled=false; });
+      } catch(e){
+        console.error(e); alert('Error inesperado.'); btn.disabled=false;
+      }
+    }
 
-  // --- Data ---
-  function cargarCapturas(params){
-    const { fechaISO, equipoId, tipoMaterial } = params;
-    showMsg('Cargando...','secondary');
+    contenedorListado.addEventListener('click', function(ev){
+        const btn = ev.target.closest('.btn-editar');
+        if(!btn) return;
 
-    let url = `${URL_GET_HUMEDAD}?_fecha=${encodeURIComponent(fechaISO)}`;
-    if(equipoId){ url += `&_equipoId=${encodeURIComponent(equipoId)}`; }
-    if(equipoId && tipoMaterial){ url += `&_tipoMaterial=${encodeURIComponent(tipoMaterial)}`; } // solo aplica si hay equipo
+        const id = Number(btn.dataset.id || 0);
+        if(!id){ alert('No se pudo identificar el registro.'); return; }
 
-    fetch(url, { headers:{'Accept':'application/json'} })
-      .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-      .then(arr=> renderTabla(arr))
-      .catch(err=>{ console.error(err); showMsg('No se pudo cargar la data de humedad','danger'); });
-  }
+        const tr = btn.closest('tr');
+        let pims     = parseNumber(btn.dataset.pims);
+        let validada = parseNumber(btn.dataset.validada);
+        let fechaStr = btn.dataset.fecha || '';
 
-  // --- Filtro por fecha helpers ---
-  function defaultAyerISO(){
-    const hoy = new Date();
-    const ayer = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 1);
-    return ayer.toISOString().split('T')[0];
-  }
+        if((pims === null || validada === null || !fechaStr) && tr){
+          const tdPims = tr.querySelector('td[data-col="pims"]');
+          const tdVal  = tr.querySelector('td[data-col="validada"]');
+          const tdFecha = tr.querySelector('td[data-col="fecha"]');
 
-  // --- Cargar equipos al selectEquipoList ---
-  function loadEquiposList() {
-    if(!selectEquipoList) return;
-    selectEquipoList.disabled = true;
-    selectEquipoList.innerHTML = '<option value="">Cargando equipos...</option>';
-    fetch(URL_EQUIPOS, { headers:{'Accept':'application/json'} })
-      .then(r=>r.json())
-      .then(data=>{
-        if(data && data.success===false){
-          fillSelect(selectEquipoList, [], '', '', '(sesión no iniciada)');
-          return;
+          if(pims === null && tdPims){
+            const raw = tdPims.getAttribute('data-value') ?? tdPims.textContent;
+            pims = parseNumber(raw);
+          }
+          if(validada === null && tdVal){
+            const raw = tdVal.getAttribute('data-value') ?? tdVal.textContent;
+            validada = parseNumber(raw);
+          }
+          if(!fechaStr && tdFecha){
+             fechaStr = tdFecha.getAttribute('data-value') || tdFecha.textContent.trim().split(' ')[0];
+          }
         }
-        const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
-        fillSelect(selectEquipoList, list, 'EquipoID', 'Descripcion', 'Todos los equipos');
-      })
-      .catch(err=>{
-        console.error('[Equipos List] ', err);
-        fillSelect(selectEquipoList, [], '', '', '(error al cargar equipos)');
-      })
-      .finally(()=>{ selectEquipoList.disabled=false; });
-  }
 
-  // --- Handlers de filtros ---
-  function getCurrentParams(){
-    const fechaISO  = (inputFecha && inputFecha.value) ? inputFecha.value : defaultAyerISO();
-    const equipoId  = selectEquipoList && selectEquipoList.value ? Number(selectEquipoList.value) : 0;
-    const tipoMateriaSel = (selectMaterial && selectMaterial.value) ? String(selectMaterial.value) : ''; // 'Producción' | 'Consumo'
-    return { fechaISO, equipoId, tipoMaterial: tipoMateriaSel };
-  }
+        const finalFecha = /^\d{4}-\d{2}-\d{2}$/.test(fechaStr) ? fechaStr : (new Date().toISOString().split('T')[0]);
 
-  // Expuesto para el onchange inline del input date
-  window.filtrarPorFecha = function(){
-    cargarCapturas(getCurrentParams());
-  };
-
-  if(inputFecha){
-    if(!inputFecha.value) inputFecha.value = defaultAyerISO();
-    inputFecha.addEventListener('change', window.filtrarPorFecha);
-  }
-  if(selectEquipoList){
-    selectEquipoList.addEventListener('change', ()=> cargarCapturas(getCurrentParams()));
-  }
-  if(selectMaterial){
-    selectMaterial.addEventListener('change', ()=> cargarCapturas(getCurrentParams()));
-  }
-
-  // --- Init ---
-  loadEquiposList();
-  cargarCapturas(getCurrentParams());
+        showEditOverlay({ id, pims, validada, fechaISO: finalFecha });
+    });
 });
 </script>
 
 
 
-
-
-
-
-
-
-
-
-
+@*Fecha*@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -629,7 +1191,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 
-
+@*Loading*@
 
 <script>
 
