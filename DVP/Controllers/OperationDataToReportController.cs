@@ -8,6 +8,7 @@ using System.Web;
 using System.Web.Mvc;
 
 
+
 namespace DVP.Controllers
 {
     public class OperationDataToReportController : Controller
@@ -728,69 +729,83 @@ namespace DVP.Controllers
 
 
         [HttpGet]
-        public JsonResult GetOperation(DateTime? _fecha, int? _equipoId = null)
+        public JsonResult GetOperation(DateTime? _fecha, int? _equipoId = null, int? _tipoOperacionId = null)
         {
             // Obtener la fecha de inicio del día
             var day = (_fecha ?? DateTime.Today).Date;
 
-            // 1. Obtener TODOS los equipos que el usuario logueado puede ver
-            var todosLosEquipos = _dvpEntities.Equipo
-                .Where(e => e.PlantaID == 1) // Asume que tienes este filtro de seguridad
-                .Select(e => new { EquipoID = e.EquipoID, Descripcion = e.Descripcion })
-                .ToList();
+            // 1. Obtener la lista filtrada de equipos
+            var queryEquipos = _dvpEntities.Equipo
+                .Where(e => e.PlantaID == 1);
 
-            // 2. Obtener la data de operación para el día SIN FILTRO DE KWH
-            var datos = _dvpEntities.DataOperacion
-                .Where(d => DbFunctions.TruncateTime(d.FechaReporte) == day)
-                .ToList();
-
-            // 3. Aplicar el filtro de equipo si fue seleccionado
             if (_equipoId.HasValue && _equipoId.Value > 0)
             {
-                int eqId = _equipoId.Value;
-                todosLosEquipos = todosLosEquipos.Where(e => e.EquipoID == eqId).ToList();
-                // Opcional: Filtra la data también si solo quieres ver la del equipo seleccionado
-                datos = datos.Where(d => d.EquipoID == eqId).ToList();
+                queryEquipos = queryEquipos.Where(e => e.EquipoID == _equipoId.Value);
             }
 
-            // 4. Transformar los datos: Unir equipos con TODA su data de operación
-            var resultados = todosLosEquipos
-                .GroupJoin(
-                    datos,
-                    equipo => equipo.EquipoID,
-                    data => data.EquipoID,
-                    (equipo, dataGroup) => new
+            var todosLosEquipos = queryEquipos.Select(e => new { e.EquipoID, EquipoDescripcion = e.Descripcion }).ToList();
+
+            // 2. Obtener la lista filtrada de Tipos de Operación (usaremos la descripción directamente del objeto)
+            var queryTiposOperacion = _dvpEntities.TipoOperacion.AsQueryable();
+
+            if (_tipoOperacionId.HasValue && _tipoOperacionId.Value > 0)
+            {
+                queryTiposOperacion = queryTiposOperacion.Where(t => t.TipoOperacionID == _tipoOperacionId.Value);
+            }
+
+            // Materializar esta lista para el producto cartesiano en memoria
+            var todosLosTiposOperacion = queryTiposOperacion.ToList();
+
+            // 3. Generar el Producto Cartesiano (Equipo x TipoOperacion) en memoria
+            var combinacionesRequeridas = todosLosEquipos
+                .SelectMany(equipo => todosLosTiposOperacion,
+                    (equipo, tipoOp) => new
                     {
                         EquipoID = equipo.EquipoID,
-                        Equipo = equipo.Descripcion,
-                        // **Aquí cambiamos:** ahora dataGroup es una colección de registros (puede ser vacía)
-                        DataOperacion = dataGroup
-                    }
-                )
-                // **Nueva Estrategia:** Usar SelectMany para aplanar la lista.
-                // Por cada equipo y por cada registro de DataOperacion asociado (o un registro NULL si no hay data)
-                .SelectMany(
-                    x => x.DataOperacion.DefaultIfEmpty(), // Si DataOperacion está vacío, genera un elemento NULL
-                    (equipoData, data) => new
-                    {
-                        Data = data, // El registro de DataOperacion completo o NULL
-                        EquipoID = equipoData.EquipoID,
-                        Equipo = equipoData.Equipo
-                    }
-                )
-                .OrderBy(x => x.Equipo)
+                        EquipoDescripcion = equipo.EquipoDescripcion,
+                        TipoOperacionID = tipoOp.TipoOperacionID,
+                        TipoOperacionDescripcion = tipoOp.Descripcion // Usamos la descripción del TipoOperacion
+                    })
+                .ToList();
+
+            // 4. Obtener la data de operación real para el día con Carga Anticipada (Eager Loading)
+            // Es crucial filtrar SOLO los registros de la fecha
+            var datosOperacionReales = _dvpEntities.DataOperacion
+                .Include("Material")
+                .Include("UnidadMedida")
+                // No necesitamos incluir TipoOperacion porque la descripción se obtiene de la lista
+                .Where(d => DbFunctions.TruncateTime(d.FechaReporte) == day)
+                .ToList(); // Materializar la lista de datos reales
+
+            // 5. Simular el LEFT JOIN: Iterar la combinación y buscar el dato real (SIN GroupJoin)
+            var resultados = combinacionesRequeridas
+                .Select(comb => new
+                {
+                    // Buscar el registro de DataOperacion que coincida con la combinación (Equipo y TipoOp)
+                    Data = datosOperacionReales.FirstOrDefault(d =>
+                           d.EquipoID == comb.EquipoID &&
+                           d.TipoOperacionID == comb.TipoOperacionID),
+
+                    Combinacion = comb
+                })
+                .OrderBy(x => x.Combinacion.EquipoDescripcion)
+                .ThenBy(x => x.Combinacion.TipoOperacionDescripcion)
                 .Select(x => new
                 {
+                    // Campos de DataOperacion (NULL o 0 si no existe)
                     DataOperacionID = x.Data?.DataOperacionID,
-                    EquipoID = x.EquipoID,
-                    Equipo = x.Equipo,
 
-                    // Si hay Data, toma el Material. Si no, usa un valor predeterminado, ej: "SIN REGISTRO"
+                    // Campos de la Combinación (siempre llenos)
+                    EquipoID = x.Combinacion.EquipoID,
+                    Equipo = x.Combinacion.EquipoDescripcion,
+                    TipoOperacionID = x.Combinacion.TipoOperacionID,
+                    TipoOperacionDescripcion = x.Combinacion.TipoOperacionDescripcion,
+
+                    // Campos detallados (NULL o valor por defecto si no existe data)
                     Material = x.Data?.Material?.Descripcion ?? "SIN REGISTRO",
 
-                    // Si hay Data, toma la Cantidad. Si no, pon 0.0
                     CantidadPIMS = x.Data?.CantidadPIMS ?? 0.0m,
-                    CantidadPims = x.Data?.CantidadPIMS ?? 0.0m, // Duplicado en original, mantenido por consistencia
+                    CantidadPims = x.Data?.CantidadPIMS ?? 0.0m,
                     CantidadValidada = x.Data?.CantidadValidada ?? 0.0m,
 
                     UnidadMedidaID = x.Data?.UnidadMedidaID,
@@ -798,7 +813,7 @@ namespace DVP.Controllers
                     TipoMovimientoSAPID = x.Data?.TipoMovimientoSAPID,
                     TipoMovimientoSAP = x.Data?.TipoMovimientoSAP?.Descripcion,
 
-                    // La fecha de reporte será la fecha filtrada (day) si no hay data, o la fecha real si existe
+                    // Usamos la fecha del filtro si no hay data real
                     FechaReporte = x.Data?.FechaReporte ?? day,
                     StatusClose = x.Data?.StatusClose ?? false,
                     StatusValidate = x.Data?.StatusValidate ?? false,
