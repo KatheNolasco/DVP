@@ -29,6 +29,8 @@ namespace DVP.Models
         public string _ordenProcesoSAP { get; set; }
         public List<int> _equipoIds { get; set; }
         public List<int> _materialIds { get; set; }
+        public bool _statusClose { get; set; }
+        public bool _statusValidate { get; set; }
 
 
     }

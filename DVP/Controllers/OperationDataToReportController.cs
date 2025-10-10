@@ -14,9 +14,6 @@ namespace DVP.Controllers
     {
         DataAccess.DVPEntities _dvpEntities = new DataAccess.DVPEntities();
 
-        
-
-
 
         public ActionResult Index()
         {
@@ -506,9 +503,7 @@ namespace DVP.Controllers
                     }
                 }
 
-                row.CantidadPIMS = data._cantidadPims;
                 row.CantidadValidada = cantidadHumedad;
-
                 _dvpEntities.SaveChanges();
 
                 return Json(new
@@ -529,56 +524,147 @@ namespace DVP.Controllers
         }
 
 
+        [HttpGet]
+        public JsonResult GetEnergy(DateTime? _fecha, int? _equipoId = null)
+        {
+            // Obtener la fecha de inicio del día
+            var day = (_fecha ?? DateTime.Today).Date;
+
+            // 1. Obtener TODOS los equipos que el usuario logueado puede ver
+            var todosLosEquipos = _dvpEntities.Equipo
+                .Where(e => e.PaisID == 1) // Asume que tienes este filtro de seguridad
+                .Select(e => new { EquipoID = e.EquipoID, Descripcion = e.Descripcion })
+                .ToList();
+
+            // 2. Obtener la data de energía (KWH) para el día
+            var dataEnergia = _dvpEntities.DataOperacion
+                .Where(d => d.TipoOperacionID == KWH_OPERATION
+                         && DbFunctions.TruncateTime(d.FechaReporte) == day)
+                .ToList();
+
+            // 3. Aplicar el filtro de equipo si fue seleccionado
+            if (_equipoId.HasValue && _equipoId.Value > 0)
+            {
+                int eqId = _equipoId.Value;
+                todosLosEquipos = todosLosEquipos.Where(e => e.EquipoID == eqId).ToList();
+            }
+
+            // 4. Hacer el LEFT JOIN (Entity Framework LINQ Query)
+            var capturas = todosLosEquipos
+                .GroupJoin(
+                    dataEnergia,
+                    equipo => equipo.EquipoID,
+                    data => data.EquipoID,
+                    (equipo, dataGroup) => new
+                    {
+                        EquipoID = equipo.EquipoID,
+                        Equipo = equipo.Descripcion,
+                        // Si hay datos, toma el primero. Si no, usa NULL o el valor predeterminado (0).
+                        Data = dataGroup.FirstOrDefault()
+                    }
+                )
+                .OrderBy(x => x.Equipo)
+                .Select(x => new
+                {
+                    DataOperacionID = x.Data?.DataOperacionID,
+                    EquipoID = x.EquipoID,
+                    Equipo = x.Equipo,
+
+                    // Si hay Data, toma el material, si no, pon "KWH" (o busca el material ID de KWH)
+                    Material = x.Data?.Material?.Descripcion ?? "KWH",
+
+                    // Si hay Data, toma la Cantidad. Si no, pon 0.0
+                    CantidadPIMS = x.Data?.CantidadPIMS ?? 0.0m,
+                    CantidadPims = x.Data?.CantidadPIMS ?? 0.0m,
+                    CantidadValidada = x.Data?.CantidadValidada ?? 0.0m,
+
+                    UnidadMedidaID = x.Data?.UnidadMedidaID,
+                    UnidadMedida = x.Data?.UnidadMedida?.Descripcion ?? "KWH",
+                    TipoMovimientoSAPID = x.Data?.TipoMovimientoSAPID,
+                    TipoMovimientoSAP = x.Data?.TipoMovimientoSAP?.Descripcion,
+
+                    // La fecha de reporte será la fecha filtrada (day), o la fecha real si existe
+                    FechaReporte = x.Data?.FechaReporte ?? day,
+                    StatusClose = x.Data?.StatusClose ?? false,
+                    StatusValidate = x.Data?.StatusValidate ?? false,
+                    OrdenProcesoSAP = x.Data?.OrdenProcesoSAP
+                })
+                .ToList();
+
+            return Json(capturas, JsonRequestBehavior.AllowGet);
+        }
+
         [HttpPost]
-        public JsonResult AddEnergy(OperationDataToReportViewModel data)
+        public JsonResult UpdateEnergy(OperationDataToReportViewModel data)
         {
             try
             {
-                if (data == null)
-                    return Json(new { success = false, message = "Payload vacio." });
+                if (data._statusClose == true)
+                    return Json(new { success = false, message = "No se pueden modificar campos ya cerrados." });
 
-                if (!ModelState.IsValid)
-                    return Json(new { success = false, message = "Datos invalidos." });
+                if (data._fechaReporte.Date <= DateTime.Now.AddDays(-2))
+                    return Json(new { success = false, message = "No se puede registrar 2 dias anteriores o mas del dia actual." });
 
+                if (data._fechaReporte.Date >= DateTime.Now.Date)
+                    return Json(new { success = false, message = "No se puede registrar en día mayor o igual del dia actual." });
 
-                if (data._fechaReporte.Date <= DateTime.Now.AddDays(-3))
-                    return Json(new { success = false, message = "No se puede registrar 2 días anteriores o más del día actual." });
-
-                if (data._equipoId <= 0)
-                    return Json(new { success = false, message = "Equipo es obligatorio." });
-
-                decimal? cantidadEnergia = data._cantidadValidada;
-                if (cantidadEnergia == null)
+                // 1. Validaciones Iniciales
+                if (data == null || !data._cantidadValidada.HasValue)
                     return Json(new { success = false, message = "Cantidad es obligatoria." });
 
-                DateTime fechaReporte = data._fechaReporte;
+                // Determinar el MaterialID para KWH
+                var materialIdKwh = _dvpEntities.Material
+                                                 .Where(m => m.Descripcion.Contains("KWH"))
+                                                 .Select(m => m.MaterialID)
+                                                 .FirstOrDefault();
 
-                var materialId = _dvpEntities.Material
-                                             .Where(m => m.Descripcion.Contains("KWH"))
-                                             .Select(m => m.MaterialID)
-                                             .FirstOrDefault();
-
-
-                var existe = _dvpEntities.DataOperacion.Any(x =>
-                    x.MaterialID == materialId &&
-                    x.TipoOperacionID == HUMEDAD &&
-                    DbFunctions.TruncateTime(x.FechaReporte) == fechaReporte
-                );
+                if (materialIdKwh <= 0)
+                    return Json(new { success = false, message = "Error: No se pudo determinar el Material ID para KWH." });
 
 
-                if (existe)
-                    return Json(new { success = false, message = "Ya existe un registro de energía para este equipo en esta fecha." });
+                // ----------------------------------------------------------------------------------
+                // === LÓGICA DE ACTUALIZACIÓN (Si DataOperacionID > 0) ===
+                // ----------------------------------------------------------------------------------
+                if (data._dataOperacionId > 0)
+                {
+                    var registroAActualizar = _dvpEntities.DataOperacion
+                                                           .FirstOrDefault(d => d.DataOperacionID == data._dataOperacionId);
 
+                    if (registroAActualizar == null)
+                    {
+                        return Json(new { success = false, message = "Registro de energía no encontrado para actualizar." });
+                    }
+
+                    // Validaciones y Actualización
+                    if (registroAActualizar.FechaReporte.Value.Date <= DateTime.Now.Date.AddDays(-3))
+                        return Json(new { success = false, message = "No se puede modificar un registro antiguo." });
+
+                    if (registroAActualizar.MaterialID != materialIdKwh)
+                        return Json(new { success = false, message = "El registro no corresponde a KWH." });
+
+                    registroAActualizar.CantidadValidada = data._cantidadValidada.Value;
+                    _dvpEntities.SaveChanges();
+
+                    return Json(new { success = true, id = registroAActualizar.DataOperacionID, message = "Energía (KWH) actualizada." });
+                }
+
+
+                // ----------------------------------------------------------------------------------
+                // === LÓGICA DE CREACIÓN (Si DataOperacionID es 0 o nulo) ===
+                // ----------------------------------------------------------------------------------
+
+
+                // Caso 2b: No existe, se crea
                 var nuevo = new DataOperacion
                 {
                     EquipoID = data._equipoId,
-                    TipoOperacionID = HUMEDAD,
-                    MaterialID = data._materialId,
+                    TipoOperacionID = KWH_OPERATION,
+                    MaterialID = materialIdKwh,
                     CantidadPIMS = data._cantidadPims,
-                    CantidadValidada = cantidadEnergia,
+                    CantidadValidada = data._cantidadValidada,
                     UnidadMedidaID = UNIDAD_MEDIDA_KWH,
-                    TipoMovimientoSAPID = TIPO_MOV_SAP_NA,
-                    FechaReporte = fechaReporte,
+                    TipoMovimientoSAPID = PROD_MOV_SAP_ID,
+                    FechaReporte = data._fechaReporte,
                     StatusClose = false,
                     StatusValidate = true
                 };
@@ -586,29 +672,67 @@ namespace DVP.Controllers
                 _dvpEntities.DataOperacion.Add(nuevo);
                 _dvpEntities.SaveChanges();
 
-                return Json(new
-                {
-                    success = true,
-                    id = nuevo.DataOperacionID,
-                    message = "Humedad registrada correctamente."
-                });
+                return Json(new { success = true, id = nuevo.DataOperacionID, message = "Nuevo registro de Energía (KWH) creado." });
             }
             catch (Exception ex)
             {
-                return Json(new
-                {
-                    success = false,
-                    message = "Error al registrar la humedad: " + ex.Message
-                });
+                return Json(new { success = false, message = "Error en la operación de Upsert de energía: " + ex.Message });
             }
         }
 
 
+        [HttpPost]
+        public JsonResult CerrarReporteEnergia(OperationDataToReportViewModel data)
+        {
+            try
+            {
+                // 1. Validar la fecha
+                // Asumiendo que data._fechaReporte es un DateTime o similar y que default significa nulo/no válido.
+                if (data._fechaReporte == default)
+                {
+                    return Json(new { success = false, message = "Debe proporcionar una fecha de reporte válida." });
+                }
+
+                var query = _dvpEntities.DataOperacion
+                    .Where(e => e.FechaReporte == data._fechaReporte && e.StatusClose == false && e.TipoOperacionID == KWH_OPERATION);
+
+                if (data._equipoId > 0)
+                {
+                    query = query.Where(e => e.EquipoID == data._equipoId);
+                }
+
+                var energylist = query.ToList();
+
+                if (!energylist.Any())
+                {
+                    return Json(new { success = false, message = "No se encontraron reportes de energía abiertos para cerrar con los filtros proporcionados." });
+                }
+
+                foreach (var energy in energylist)
+                {
+                    energy.StatusClose = true;
+                }
+
+                _dvpEntities.SaveChanges();
+
+                return Json(new { success = true, message = $"Se cerraron exitosamente {energylist.Count} reportes." });
+
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error en la operación de cierre de reporte: " + ex.Message });
+            }
+        }
 
         public const int HUMEDAD = 11;
+        public const int KWH_OPERATION = 4;
         public const int TIPO_MOV_SAP_NA = 3;
         public const int UNIDAD_MEDIDA_HUMEDAD = 7;
         public const int UNIDAD_MEDIDA_KWH = 2;
+        public const int PROD_MOV_SAP_ID = 1;
+        public const int CONS_MOV_SAP_ID = 2;
+
+
 
 
 

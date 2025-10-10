@@ -168,180 +168,187 @@
 </body>
 
 @*Create por equipo*@
-
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    'use strict';
+    document.addEventListener('DOMContentLoaded', function () {
+        'use strict';
 
-    const btnAgregar = document.getElementById('agregar');
-    const selectEquipo = document.getElementById('selectEquipo');
-    const selectConsumo = document.getElementById('selectConsumo');
-    const selectProduccion = document.getElementById('selectProduccion');
-    const inputFecha = document.getElementById('fechaReporte');
+        const selectEquipo = document.getElementById('selectEquipo');
+        const selectConsumo = document.getElementById('selectConsumo');
+        const selectProduccion = document.getElementById('selectProduccion');
+        const btnAgregar = document.getElementById('agregar'); // O el ID del botón que abre el modal
+        const inputFecha = document.getElementById('fechaReporte');
 
-    const URL_EQUIPOS = '@Url.Action("GetEquiposporPaislogguedUser", "Equipo")';
-    const URL_BOMS_CONSUMO = '@Url.Action("GetBOMsConsumoByEquipo", "BillOfMaterial")';
-    const URL_BOMS_PRODUCCION = '@Url.Action("GetBOMsProduccionByEquipo", "BillOfMaterial")';
-    const URL_CREATE_HUMEDAD = '@Url.Action("CrearCapturaHumedadByBOM", "OperationDataToReport")';
+        // Endpoints (Asegúrate de que estos sean correctos para tu lógica de Equipo/BOM)
+        const URL_EQUIPOS = '@Url.Action("GetEquiposporPaislogguedUser", "Equipo")';
+        const URL_BOMS_CONSUMO = '@Url.Action("GetBOMsConsumoByEquipo", "BillOfMaterial")';
+        const URL_BOMS_PRODUCCION = '@Url.Action("GetBOMsProduccionByEquipo", "BillOfMaterial")';
+        const URL_CREATE_HUMEDAD = '@Url.Action("CrearCapturaHumedadByBOM", "OperationDataToReport")';
 
-    function option(el, value, text){
-        const o=document.createElement('option');
-        o.value=value;
-        o.textContent=text;
-        el.appendChild(o);
-    }
+        // helpers
+        function option(el, value, text) { const o = document.createElement('option'); o.value = value; o.textContent = text; el.appendChild(o); }
+        function clearSelect(el) { el.innerHTML = ''; }
+        function showAlert(msg) {
+            const el = document.getElementById('alertsuccesclose');
+            if (el) { el.textContent = msg; el.style.display = 'block'; setTimeout(() => el.style.display = 'none', 2500); }
+            else alert(msg);
+        }
+        function hoyISO() { return new Date().toISOString().split('T')[0]; }
 
-    function fillSelect(selectEl, list, valueKey, textKey, placeholder){
-        if(!selectEl) return;
-        selectEl.innerHTML='';
-        option(selectEl,'',placeholder);
-        (list||[]).forEach(x=>{
-            const v=x?.[valueKey], t=x?.[textKey];
-            if(v!==undefined && t!==undefined) option(selectEl,String(v),String(t));
-        });
-    }
+        async function loadEquipos() {
+            if (!selectEquipo) return;
+            selectEquipo.disabled = true;
+            clearSelect(selectEquipo);
+            option(selectEquipo, '', 'Cargando equipos...');
 
-    function showAlert(msg){
-        const el=document.getElementById('alertsuccesclose');
-        if(el){
-            el.textContent=msg;
-            el.style.display='block';
-            setTimeout(()=>el.style.display='none',2500);
-        } else alert(msg);
-    }
+            try {
+                const r = await fetch(URL_EQUIPOS, { headers: { 'Accept': 'application/json' } });
+                const data = await r.json();
 
-    function hoyISO(){ return new Date().toISOString().split('T')[0]; }
+                const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
 
-    function loadEquipos(){
-        selectEquipo.disabled=true;
-        selectEquipo.innerHTML='<option value="">Cargando equipos...</option>';
-        fetch(URL_EQUIPOS,{headers:{'Accept':'application/json'}})
-        .then(r=>r.json())
-        .then(data=>{
-            if(data && data.success===false){
-                fillSelect(selectEquipo,[], '', '', '(sesion no iniciada)');
+                clearSelect(selectEquipo);
+                option(selectEquipo, '', 'Seleccione equipo');
+                list.forEach(x => {
+                    const v = x?.EquipoID, t = x?.Descripcion;
+                    if (v !== undefined && t !== undefined) option(selectEquipo, String(v), String(t));
+                });
+
+            } catch (e) {
+                console.error('[Equipos]', e);
+                clearSelect(selectEquipo);
+                option(selectEquipo, '', '(error al cargar equipos)');
+            } finally {
+                selectEquipo.disabled = false;
+            }
+        }
+
+        function loadBOMConsumo(equipoId) {
+            selectConsumo.disabled=true;
+            clearSelect(selectConsumo);
+            option(selectConsumo,'','Cargando consumo...');
+
+            if(!equipoId){
+                clearSelect(selectConsumo);
+                option(selectConsumo, '', 'Seleccione material consumo...'); // <- CORRECCIÓN
+                selectConsumo.disabled=false;
                 return;
             }
-            const list = Array.isArray(data)?data:(Array.isArray(data?.data)?data.data:[]);
-            fillSelect(selectEquipo,list,'EquipoID','Descripcion','Seleccione equipo');
-        })
-        .catch(e=>{
-            console.error('[Equipos]',e);
-            fillSelect(selectEquipo,[], '', '', '(error al cargar equipos)');
-        })
-        .finally(()=>{ selectEquipo.disabled=false; });
-    }
 
-    function loadBOMConsumo(equipoId){
-        selectConsumo.disabled=true;
-        selectConsumo.innerHTML='<option value="">Cargando consumo...</option>';
-        if(!equipoId){
-            fillSelect(selectConsumo,[], '', '', 'Seleccione material consumo');
-            selectConsumo.disabled=false;
-            return;
+            fetch(`${URL_BOMS_CONSUMO}?equipoId=${encodeURIComponent(equipoId)}`,{headers:{'Accept':'application/json'}})
+            .then(r=>r.json())
+            .then(res=>{
+                const arr=(res && res.success && Array.isArray(res.data))?res.data:[];
+                const items=[];
+                const seen=new Set();
+                arr.forEach(x=>{
+                    const id=x?._materialConsumoID, txt=x?._materialConsumoDescripcion;
+                    if(id && txt && !seen.has(id)){
+                        seen.add(id);
+                        items.push({id,txt});
+                    }
+                });
+
+                clearSelect(selectConsumo);
+                option(selectConsumo, '', 'Seleccione material consumo...'); // <- CORRECCIÓN
+                items.forEach(x => option(selectConsumo, x.id, x.txt));
+            })
+            .catch(e=>{
+                console.error('[Consumo]',e);
+                clearSelect(selectConsumo);
+                option(selectConsumo, '', '(error al cargar consumo)');
+            })
+            .finally(()=>{ selectConsumo.disabled=false; });
         }
-        fetch(`${URL_BOMS_CONSUMO}?equipoId=${encodeURIComponent(equipoId)}`,{headers:{'Accept':'application/json'}})
-        .then(r=>r.json())
-        .then(res=>{
-            const arr=(res && res.success && Array.isArray(res.data))?res.data:[];
-            const items=[];
-            const seen=new Set();
-            arr.forEach(x=>{
-                const id=x?._materialConsumoID, txt=x?._materialConsumoDescripcion;
-                if(id && txt && !seen.has(id)){
-                    seen.add(id);
-                    items.push({id,txt});
-                }
-            });
-            fillSelect(selectConsumo,items,'id','txt','Seleccione material consumo');
-        })
-        .catch(e=>{
-            console.error('[Consumo]',e);
-            fillSelect(selectConsumo,[], '', '', '(error al cargar consumo)');
-        })
-        .finally(()=>{ selectConsumo.disabled=false; });
-    }
 
-    function loadBOMProduccion(equipoId){
-        selectProduccion.disabled=true;
-        selectProduccion.innerHTML='<option value="">Cargando produccion...</option>';
-        if(!equipoId){
-            fillSelect(selectProduccion,[], '', '', 'Seleccione material produccion');
-            selectProduccion.disabled=false;
-            return;
-        }
-        fetch(`${URL_BOMS_PRODUCCION}?equipoId=${encodeURIComponent(equipoId)}`,{headers:{'Accept':'application/json'}})
-        .then(r=>r.json())
-        .then(res=>{
-            const arr=(res && res.success && Array.isArray(res.data))?res.data:[];
-            const items=[];
-            const seen=new Set();
-            arr.forEach(x=>{
-                const id=x?._materialProduccionID, txt=x?._materialProduccionDescripcion;
-                if(id && txt && !seen.has(id)){
-                    seen.add(id);
-                    items.push({id,txt});
-                }
-            });
-            fillSelect(selectProduccion,items,'id','txt','Seleccione material produccion');
-        })
-        .catch(e=>{
-            console.error('[Produccion]',e);
-            fillSelect(selectProduccion,[], '', '', '(error al cargar produccion)');
-        })
-        .finally(()=>{ selectProduccion.disabled=false; });
-    }
-
-    // Bloqueo cruzado
-    selectConsumo.addEventListener('change', ()=>{
-        if(selectConsumo.value){
-            selectProduccion.value='';
+        function loadBOMProduccion(equipoId) {
             selectProduccion.disabled=true;
-        } else {
-            selectProduccion.disabled=false;
-        }
-    });
+            clearSelect(selectProduccion);
+            option(selectProduccion,'','Cargando produccion...');
 
-    selectProduccion.addEventListener('change', ()=>{
-        if(selectProduccion.value){
-            selectConsumo.value='';
-            selectConsumo.disabled=true;
-        } else {
+            if(!equipoId){
+                clearSelect(selectProduccion);
+                option(selectProduccion, '', 'Seleccione material produccion...'); // <- CORRECCIÓN
+                selectProduccion.disabled=false;
+                return;
+            }
+
+            fetch(`${URL_BOMS_PRODUCCION}?equipoId=${encodeURIComponent(equipoId)}`,{headers:{'Accept':'application/json'}})
+            .then(r=>r.json())
+            .then(res=>{
+                const arr=(res && res.success && Array.isArray(res.data))?res.data:[];
+                const items=[];
+                const seen=new Set();
+                arr.forEach(x=>{
+                    const id=x?._materialProduccionID, txt=x?._materialProduccionDescripcion;
+                    if(id && txt && !seen.has(id)){
+                        seen.add(id);
+                        items.push({id,txt});
+                    }
+                });
+
+                clearSelect(selectProduccion);
+                option(selectProduccion, '', 'Seleccione material produccion...'); // <- CORRECCIÓN
+                items.forEach(x => option(selectProduccion, x.id, x.txt));
+            })
+            .catch(e=>{
+                console.error('[Produccion]',e);
+                clearSelect(selectProduccion);
+                option(selectProduccion, '', '(error al cargar produccion)');
+            })
+            .finally(()=>{ selectProduccion.disabled=false; });
+        }
+
+        // Eventos de selección para cargar BOMs y hacer bloqueo cruzado
+        selectEquipo.addEventListener('change', function(){
+            const eqId = this.value ? Number(this.value) : 0;
             selectConsumo.disabled=false;
-        }
-    });
+            selectConsumo.value='';
+            selectProduccion.disabled=false;
+            selectProduccion.value='';
+            loadBOMConsumo(eqId);
+            loadBOMProduccion(eqId);
+        });
 
-    selectEquipo.addEventListener('change', function(){
-        const eqId = this.value ? Number(this.value) : 0;
-        selectConsumo.disabled=false;
-        selectConsumo.value='';
-        selectProduccion.disabled=false;
-        selectProduccion.value='';
-        loadBOMConsumo(eqId);
-        loadBOMProduccion(eqId);
-    });
+        // Bloqueo cruzado
+        selectConsumo.addEventListener('change', ()=>{
+            if(selectConsumo.value){
+                selectProduccion.value='';
+                selectProduccion.disabled=true;
+            } else {
+                selectProduccion.disabled=false;
+            }
+        });
 
-    // ---------- MODAL CREATE ----------
-    let createBg=null, createEl=null;
+        selectProduccion.addEventListener('change', ()=>{
+            if(selectProduccion.value){
+                selectConsumo.value='';
+                selectConsumo.disabled=true;
+            } else {
+                selectConsumo.disabled=false;
+            }
+        });
 
-    function ensureCreateOverlay(){
-        if(createBg && createEl) return;
+        // ---------- MODAL ----------
+        let createBg = null, createEl = null;
 
-        createBg=document.createElement('div');
-        createBg.id='overlayCrear_bg';
-        createBg.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:2050;display:none;';
-        createEl=document.createElement('div');
-        createEl.id='overlayCrear';
-        createEl.style.cssText='position:fixed;left:50%;top:8vh;transform:translateX(-50%);z-index:2051;display:none;max-width:760px;width:calc(100% - 32px);background:#fff;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.2);';
+        function ensureCreateOverlay() {
+            if (createBg && createEl) return;
 
-        createEl.innerHTML=`
+            createBg = document.createElement('div');
+            createBg.id = 'overlayCrear_bg';
+            createBg.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:2050;display:none;';
+            createEl = document.createElement('div');
+            createEl.id = 'overlayCrear';
+            createEl.style.cssText = 'position:fixed;left:50%;top:8vh;transform:translateX(-50%);z-index:2051;display:none;max-width:760px;width:calc(100% - 32px);background:#fff;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.2);';
+
+            // Estructura del modal
+            createEl.innerHTML = `
         <div style="padding:.75rem 1rem;border-bottom:1px solid #e9ecef;" class="d-flex align-items-center justify-content-between">
             <strong>Nueva Captura de Humedad</strong>
             <button type="button" id="cr_close_top" class="btn btn-sm btn-outline-secondary">Cerrar</button>
         </div>
         <div style="padding:1rem;">
             <div class="row g-2">
-                <!-- ocultos para ids -->
                 <input id="cr_equipoId" type="hidden">
                 <input id="cr_materialId" type="hidden">
 
@@ -357,17 +364,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="col-md-6">
                     <label class="form-label">Cant PIMS</label>
                     <div class="input-group">
-                        <!-- campo deshabilitado -->
                         <input id="cr_cantPims" type="number" step="0.000001" class="form-control text-end" disabled>
                         <span class="input-group-text" style="min-width:56px;">%</span>
                     </div>
                 </div>
+
                 <div class="col-md-6">
                     <label class="form-label">Cant Validada</label>
                     <div class="input-group">
-                        <input id="cr_cantVal" type="number" step="0.000001" class="form-control text-end">
+                        <input id="cr_cantVal" type="text" class="form-control text-end">
                         <span class="input-group-text" style="min-width:56px;">%</span>
                     </div>
+                    <div id="cr_cantVal_error" class="text-danger small mt-1" style="display:none;"></div>
                 </div>
 
                 <div class="col-12">
@@ -382,106 +390,181 @@ document.addEventListener('DOMContentLoaded', function () {
             <button type="button" class="btn btn-success" id="cr_guardar">Guardar</button>
         </div>`;
 
-        document.body.appendChild(createBg);
-        document.body.appendChild(createEl);
-        createBg.addEventListener('click', hideCreateOverlay);
-        createEl.querySelector('#cr_close_top').addEventListener('click', hideCreateOverlay);
-        createEl.querySelector('#cr_cancel').addEventListener('click', hideCreateOverlay);
-        createEl.querySelector('#cr_guardar').addEventListener('click', guardarDesdeCreateOverlay);
-    }
+            document.body.appendChild(createBg);
+            document.body.appendChild(createEl);
+            createBg.addEventListener('click', hideCreateOverlay);
+            createEl.querySelector('#cr_close_top').addEventListener('click', hideCreateOverlay);
+            createEl.querySelector('#cr_cancel').addEventListener('click', hideCreateOverlay);
+            createEl.querySelector('#cr_guardar').addEventListener('click', guardarDesdeCreateOverlay);
 
-    function showCreateOverlay(){
-        const eqId = Number(selectEquipo.value || 0);
-        const eqDesc = selectEquipo.options[selectEquipo.selectedIndex]?.text || '';
-        const matConsId = Number(selectConsumo.value || 0);
-        const matConsDesc = matConsId ? (selectConsumo.options[selectConsumo.selectedIndex]?.text || '') : '';
-        const matProdId = Number(selectProduccion.value || 0);
-        const matProdDesc = matProdId ? (selectProduccion.options[selectProduccion.selectedIndex]?.text || '') : '';
-
-        if(!eqId){ alert('Debe seleccionar un equipo.'); return; }
-        if(!matConsId && !matProdId){ alert('Seleccione un material de consumo o uno de produccion.'); return; }
-
-        ensureCreateOverlay();
-        createEl.querySelector('#cr_equipoId').value = eqId;
-        createEl.querySelector('#cr_materialId').value = matConsId || matProdId;
-        createEl.querySelector('#cr_equipoDesc').value = eqDesc;
-        createEl.querySelector('#cr_materialDesc').value = matConsDesc || matProdDesc;
-
-        // limpiar cantidades
-        const cantPimsInput = createEl.querySelector('#cr_cantPims');
-        if(cantPimsInput){ cantPimsInput.value = ''; cantPimsInput.disabled = true; }
-        createEl.querySelector('#cr_cantVal').value = '';
-
-        createBg.style.display='block';
-        createEl.style.display='block';
-    }
-
-    function hideCreateOverlay(){
-        if(createBg && createEl){
-            createBg.style.display='none';
-            createEl.style.display='none';
+            // Listener para la validación en tiempo real
+            createEl.querySelector('#cr_cantVal').addEventListener('input', validateCantidadValidada);
+            createEl.querySelector('#cr_cantVal').addEventListener('blur', validateCantidadValidada);
         }
-    }
 
-    function guardarDesdeCreateOverlay(){
-        const btn = createEl.querySelector('#cr_guardar');
-        btn.disabled = true;
-        try{
-            const equipoId = Number(createEl.querySelector('#cr_equipoId')?.value || 0);
-            const materialId = Number(createEl.querySelector('#cr_materialId')?.value || 0);
-            const cantValV = createEl.querySelector('#cr_cantVal')?.value;
-            const cantidadValidada = (cantValV==='') ? null : Number(cantValV);
+        function validateCantidadValidada(){
+            if(!createEl) return false;
+            const input = createEl.querySelector('#cr_cantVal');
+            const errorEl = createEl.querySelector('#cr_cantVal_error');
+            const guardarBtn = createEl.querySelector('#cr_guardar');
+            let value = input.value.trim();
+            let errorMessage = '';
 
-            const fechaISO = (inputFecha && inputFecha.value) ? inputFecha.value : hoyISO();
+            input.classList.remove('is-invalid');
+            errorEl.style.display = 'none';
+            errorEl.textContent = '';
+            guardarBtn.disabled = false;
 
-            if(!equipoId){ alert('Equipo es obligatorio.'); btn.disabled=false; return; }
-            if(cantidadValidada===null || Number.isNaN(cantidadValidada)){ alert('Cantidad validada es obligatoria.'); btn.disabled=false; return; }
-
-            // IMPORTANTE: no enviamos _cantidadPims
-            const payload = {
-                _equipoId: equipoId,
-                _materialId: materialId,
-                _cantidadValidada: Number.isFinite(cantidadValidada) ? cantidadValidada : null,
-                _fechaReporte: fechaISO
-            };
-
-            fetch(URL_CREATE_HUMEDAD,{
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body: JSON.stringify(payload)
-            })
-            .then(r=>r.json())
-            .then(res=>{
-                if(res && res.success){
-                    showAlert('Humedad registrada correctamente.');
-                    hideCreateOverlay();
-                    if(inputFecha){ inputFecha.dispatchEvent(new Event('change')); }
-                } else {
-                    alert('No se pudo registrar: ' + (res?.message || 'Error desconocido'));
+            if (value === '') {
+                errorMessage = 'La cantidad es obligatoria.';
+            } else if (value.includes(',')) {
+                errorMessage = 'No se permiten comas, use un punto (.) como separador decimal.';
+            } else {
+                const regex = /^\d+(\.\d{1,3})?$/;
+                if (!regex.test(value)) {
+                    const parts = value.split('.');
+                    if (parts.length > 1 && parts[1].length > 3) {
+                        errorMessage = 'Solo se permiten hasta 3 decimales.';
+                    } else if (Number.isNaN(Number(value))) {
+                        errorMessage = 'Formato numérico inválido.';
+                    }
                 }
-            })
-            .catch(err=>{
-                console.error(err);
-                alert('Error al registrar la humedad.');
-            })
-            .finally(()=>{ btn.disabled=false; });
-        }catch(e){
-            console.error(e);
-            alert('Error inesperado.');
-            btn.disabled=false;
+
+                const numValue = Number(value);
+                if (Number.isFinite(numValue) && numValue > 100) {
+                    errorMessage = 'La cantidad no puede ser mayor a 100.';
+                }
+            }
+
+            if (errorMessage) {
+                input.classList.add('is-invalid');
+                errorEl.textContent = errorMessage;
+                errorEl.style.display = 'block';
+                guardarBtn.disabled = true;
+                return false;
+            }
+
+            guardarBtn.disabled = false;
+            return true;
         }
-    }
 
-    if(btnAgregar){
-        btnAgregar.addEventListener('click', e=>{
-            e.preventDefault();
-            showCreateOverlay();
-        });
-    }
 
-    // init
-    loadEquipos();
-});
+        function showCreateOverlay() {
+            const eqId = Number(selectEquipo.value || 0);
+            const eqDesc = selectEquipo.options[selectEquipo.selectedIndex]?.text || '';
+            const matConsId = Number(selectConsumo.value || 0);
+            const matConsDesc = matConsId ? (selectConsumo.options[selectConsumo.selectedIndex]?.text || '') : '';
+            const matProdId = Number(selectProduccion.value || 0);
+            const matProdDesc = matProdId ? (selectProduccion.options[selectProduccion.selectedIndex]?.text || '') : '';
+
+
+            if (!eqId) { alert('Debe seleccionar un equipo.'); return; }
+            if (!matConsId && !matProdId) { alert('Seleccione un material de consumo o uno de produccion.'); return; }
+
+            ensureCreateOverlay();
+
+            const matId = matConsId || matProdId;
+            const matDesc = matConsDesc || matProdDesc;
+
+            const fechaStr = (inputFecha && inputFecha.value) ? inputFecha.value : hoyISO();
+
+            createEl.querySelector('#cr_equipoId').value = eqId;
+            createEl.querySelector('#cr_materialId').value = matId;
+            createEl.querySelector('#cr_equipoDesc').value = eqDesc;
+            createEl.querySelector('#cr_materialDesc').value = matDesc;
+
+            const pimsInput = createEl.querySelector('#cr_cantPims');
+            if (pimsInput) { pimsInput.value = ''; pimsInput.disabled = true; }
+
+            createEl.querySelector('#cr_cantVal').value = '';
+
+            validateCantidadValidada();
+
+            createBg.style.display = 'block';
+            createEl.style.display = 'block';
+        }
+
+        function hideCreateOverlay() {
+            if (createBg && createEl) {
+                createBg.style.display = 'none';
+                createEl.style.display = 'none';
+            }
+        }
+
+        function guardarDesdeCreateOverlay() {
+            const cantValInput = createEl.querySelector('#cr_cantVal');
+
+            if (!validateCantidadValidada()) {
+                alert('Corrija la cantidad validada antes de guardar.');
+                cantValInput.focus();
+                return;
+            }
+
+            const btn = createEl.querySelector('#cr_guardar');
+            btn.disabled = true;
+            try {
+                const equipoId = Number(createEl.querySelector('#cr_equipoId')?.value || 0);
+                const materialId = Number(createEl.querySelector('#cr_materialId')?.value || 0);
+                const cantValV = cantValInput.value;
+                const cantidadValidada = (cantValV==='') ? null : Number(cantValV);
+
+                const fechaStr = (inputFecha && inputFecha.value) ? inputFecha.value : hoyISO();
+                const fechaISO = new Date(fechaStr + 'T00:00:00').toISOString();
+
+                if(!equipoId){ alert('Equipo es obligatorio.'); btn.disabled=false; return; }
+                if(cantidadValidada===null || Number.isNaN(cantidadValidada)){
+                    alert('Cantidad validada es obligatoria y debe ser un número válido.');
+                    btn.disabled=false;
+                    return;
+                }
+
+                const payload = {
+                    _equipoId: equipoId,
+                    _materialId: materialId,
+                    _cantidadValidada: Number.isFinite(cantidadValidada) ? cantidadValidada : null,
+                    _fechaReporte: fechaISO
+                };
+
+                fetch(URL_CREATE_HUMEDAD,{
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify(payload)
+                })
+                .then(r=>r.json())
+                .then(res=>{
+                    if(res && res.success){
+                        showAlert('Humedad registrada correctamente.');
+                        hideCreateOverlay();
+                        selectEquipo.value = '';
+                        loadBOMConsumo(0);
+                        loadBOMProduccion(0);
+                        if(inputFecha){ inputFecha.dispatchEvent(new Event('change')); }
+                    } else {
+                        alert('No se pudo registrar: ' + (res?.message || 'Error desconocido'));
+                    }
+                })
+                .catch(err=>{
+                    console.error(err);
+                    alert('Error al registrar la humedad.');
+                })
+                .finally(()=>{ btn.disabled=false; });
+            }catch(e){
+                console.error(e);
+                alert('Error inesperado.');
+                btn.disabled=false;
+            }
+        }
+
+        if(btnAgregar){
+            btnAgregar.addEventListener('click', e=>{
+                e.preventDefault();
+                showCreateOverlay();
+            });
+        }
+
+        // init
+        loadEquipos();
+    });
 </script>
 
 
@@ -498,6 +581,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const inputFecha = document.getElementById('fechaReporte'); // opcional, si no existe se usa hoy
 
         // Endpoints
+        // NOTA: Reemplaza estas URLs con las que sean correctas para tu entorno
         const URL_MAT_PROD = '/Material/GetMaterialProducido';
         const URL_MAT_CONS = '/Material/GetMaterialConsumido';
         const URL_CREAR_PROD = '/OperationDataToReport/CrearCapturaHumedadByMaterialProduccion';
@@ -568,6 +652,7 @@ document.addEventListener('DOMContentLoaded', function () {
             createEl.id = 'overlayCrear';
             createEl.style.cssText = 'position:fixed;left:50%;top:8vh;transform:translateX(-50%);z-index:2051;display:none;max-width:760px;width:calc(100% - 32px);background:#fff;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.2);';
 
+            // ESTRUCTURA BASE: CAMBIO DE type="number" a type="text" en cr_cantVal
             createEl.innerHTML = `
         <div style="padding:.75rem 1rem;border-bottom:1px solid #e9ecef;" class="d-flex align-items-center justify-content-between">
             <strong>Nueva Captura de Humedad</strong>
@@ -576,8 +661,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <div style="padding:1rem;">
             <div class="row g-2">
                 <input id="cr_materialId" type="hidden">
-                <input id="cr_tipoMaterial" type="hidden"> <!-- PROD o CONS -->
-
+                <input id="cr_tipoMaterial" type="hidden">
                 <div class="col-md-6">
                     <label class="form-label">Material</label>
                     <input id="cr_materialDesc" class="form-control" disabled>
@@ -590,17 +674,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="col-md-6">
                     <label class="form-label">Cant PIMS</label>
                     <div class="input-group">
-                        <!-- DESHABILITADO Y SOLO VISUAL -->
                         <input id="cr_cantPims" type="number" step="0.000001" class="form-control text-end" disabled>
                         <span class="input-group-text" style="min-width:56px;">%</span>
                     </div>
                 </div>
+
                 <div class="col-md-6">
                     <label class="form-label">Cant Validada</label>
                     <div class="input-group">
-                        <input id="cr_cantVal" type="number" step="0.000001" class="form-control text-end">
+                        <input id="cr_cantVal" type="text" class="form-control text-end">
                         <span class="input-group-text" style="min-width:56px;">%</span>
                     </div>
+                    <div id="cr_cantVal_error" class="text-danger small mt-1" style="display:none;"></div>
                 </div>
 
                 <div class="col-12">
@@ -621,7 +706,66 @@ document.addEventListener('DOMContentLoaded', function () {
             createEl.querySelector('#cr_close_top').addEventListener('click', hideCreateOverlay);
             createEl.querySelector('#cr_cancel').addEventListener('click', hideCreateOverlay);
             createEl.querySelector('#cr_guardar').addEventListener('click', guardarDesdeCreateOverlay);
+
+            // Listener para la validación en tiempo real (input y blur)
+            createEl.querySelector('#cr_cantVal').addEventListener('input', validateCantidadValidada);
+            createEl.querySelector('#cr_cantVal').addEventListener('blur', validateCantidadValidada); // Para validar al salir del campo
         }
+
+        // Función de validación (ajustada para el control estricto)
+        function validateCantidadValidada() {
+            if (!createEl) return false;
+            const input = createEl.querySelector('#cr_cantVal');
+            const errorEl = createEl.querySelector('#cr_cantVal_error');
+            const guardarBtn = createEl.querySelector('#cr_guardar');
+            let value = input.value.trim();
+            let errorMessage = '';
+
+            // 1. Limpiar estilos y mensajes
+            input.classList.remove('is-invalid');
+            errorEl.style.display = 'none';
+            errorEl.textContent = '';
+            guardarBtn.disabled = false;
+
+            // **VALIDACIÓN ESTRICTA DE CAMPO VACÍO (ROJO INMEDIATO)**
+            if (value === '') {
+                errorMessage = 'La cantidad es obligatoria.';
+            } else if (value.includes(',')) {
+                // 1. Validación de comas (,) - **SOLO PUNTOS**
+                errorMessage = 'No se permiten comas, use un punto (.) como separador decimal.';
+            } else {
+                // Validación de formato general: debe ser un número con opcionalmente un punto y hasta 3 dígitos.
+                // Usamos Regex para ser estrictos con los decimales
+                const regex = /^\d+(\.\d{1,3})?$/;
+                if (!regex.test(value)) {
+                    // Si falla el regex, podría ser más de 3 decimales o un formato incorrecto (ej: "123.4567" o "12.3.")
+                    const parts = value.split('.');
+                    if (parts.length > 1 && parts[1].length > 3) {
+                        errorMessage = 'Solo se permiten hasta 3 decimales.';
+                    } else if (Number.isNaN(Number(value))) {
+                        errorMessage = 'Formato numérico inválido.';
+                    }
+                }
+
+                // 2. Validación de valor > 100
+                const numValue = Number(value);
+                if (Number.isFinite(numValue) && numValue > 100) {
+                    errorMessage = 'La cantidad no puede ser mayor a 100.';
+                }
+            }
+
+            if (errorMessage) {
+                input.classList.add('is-invalid'); // Clase de Bootstrap para poner en rojo el input
+                errorEl.textContent = errorMessage;
+                errorEl.style.display = 'block';
+                guardarBtn.disabled = true;
+                return false;
+            }
+
+            guardarBtn.disabled = false;
+            return true;
+        }
+
 
         function showCreateOverlay() {
             const matProdId = selProd.value ? Number(selProd.value) : 0;
@@ -651,6 +795,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             createEl.querySelector('#cr_cantVal').value = '';
 
+            // Limpiar errores al abrir el modal y FORZAR VALIDACIÓN
+            validateCantidadValidada();
+
             createBg.style.display = 'block';
             createEl.style.display = 'block';
         }
@@ -663,25 +810,35 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         function guardarDesdeCreateOverlay() {
+            const cantValInput = createEl.querySelector('#cr_cantVal');
+
+            // 1. Ejecutar validación final antes de guardar
+            if (!validateCantidadValidada()) {
+                alert('Corrija la cantidad validada antes de guardar.');
+                cantValInput.focus();
+                return;
+            }
+
             const btn = createEl.querySelector('#cr_guardar');
             btn.disabled = true;
             try {
                 const tipo = createEl.querySelector('#cr_tipoMaterial').value; // PROD o CONS
                 const materialId = Number(createEl.querySelector('#cr_materialId').value || 0);
-                const cantValV = createEl.querySelector('#cr_cantVal').value;
+                const cantValV = cantValInput.value;
+                // Al ser type="text", usamos Number() en el valor validado para el payload
                 const cantidadVal = (cantValV === '') ? null : Number(cantValV);
 
                 const fechaStr = (inputFecha && inputFecha.value) ? inputFecha.value : todayISO();
                 const fechaISO = new Date(fechaStr + 'T00:00:00').toISOString();
 
+                // 2. Validación de Obligatoriedad (adicional, aunque ya la cubre validateCantidadValidada)
                 if (!materialId) { alert('Material es obligatorio.'); btn.disabled = false; return; }
                 if (cantidadVal === null || Number.isNaN(cantidadVal)) { alert('Cantidad validada es obligatoria.'); btn.disabled = false; return; }
 
-                // >>> No enviamos _cantidadPims <<<
                 const payload = {
                     _materialId: materialId,
                     _cantidadValidada: Number.isFinite(cantidadVal) ? cantidadVal : null,
-                    _equipoId: 0,
+                    _equipoId: 0, // Se mantiene el 0 para la compatibilidad con el endpoint
                     _fechaReporte: fechaISO
                 };
 
@@ -954,6 +1111,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function parseNumber(text){
       if(text == null) return null;
+      // Quitamos '%' y reemplazamos coma por punto
       const t = String(text).trim().replace(/%/g,'').replace(/\s+/g,'');
       const formatted = t.includes(',') ? t.replace(',', '.') : t;
       if(formatted === '') return null;
@@ -963,13 +1121,67 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function toISODateOnly(dateStr){
       const base = dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
-                   ? dateStr
-                   : (new Date()).toISOString().split('T')[0];
+                             ? dateStr
+                             : (new Date()).toISOString().split('T')[0];
       return new Date(base + 'T00:00:00').toISOString();
     }
 
 
     let editBg=null, editEl=null;
+
+    // Función de validación adaptada para el modal de edición
+    function validateEditCantidadValidada(){
+        if(!editEl) return false;
+        const input = editEl.querySelector('#ed_cantVal');
+        const errorEl = editEl.querySelector('#ed_cantVal_error');
+        const guardarBtn = editEl.querySelector('#ed_guardar');
+        let value = input.value.trim();
+        let errorMessage = '';
+
+        // 1. Limpiar estilos y mensajes
+        input.classList.remove('is-invalid');
+        errorEl.style.display = 'none';
+        errorEl.textContent = '';
+        guardarBtn.disabled = false;
+
+        // **VALIDACIÓN ESTRICTA DE CAMPO VACÍO**
+        if (value === '') {
+            errorMessage = 'La cantidad es obligatoria.';
+        } else if (value.includes(',')) {
+            // 1. Validación de comas (,) - **SOLO PUNTOS**
+            errorMessage = 'No se permiten comas, use un punto (.) como separador decimal.';
+        } else {
+            // Validación de formato general: debe ser un número con opcionalmente un punto y hasta 3 dígitos.
+            const regex = /^\d+(\.\d{1,3})?$/;
+            if (!regex.test(value)) {
+                // Si falla el regex, podría ser más de 3 decimales o un formato incorrecto (ej: "123.4567" o "12.3.")
+                const parts = value.split('.');
+                if (parts.length > 1 && parts[1].length > 3) {
+                    errorMessage = 'Solo se permiten hasta 3 decimales.';
+                } else if (Number.isNaN(Number(value))) {
+                    errorMessage = 'Formato numérico inválido.';
+                }
+            }
+
+            // 2. Validación de valor > 100
+            const numValue = Number(value);
+            if (Number.isFinite(numValue) && numValue > 100) {
+                errorMessage = 'La cantidad no puede ser mayor a 100.';
+            }
+        }
+
+        if (errorMessage) {
+            input.classList.add('is-invalid'); // Clase de Bootstrap para poner en rojo el input
+            errorEl.textContent = errorMessage;
+            errorEl.style.display = 'block';
+            guardarBtn.disabled = true;
+            return false;
+        }
+
+        guardarBtn.disabled = false;
+        return true;
+    }
+
 
     function ensureEditOverlay(){
       if(editBg && editEl) return;
@@ -982,6 +1194,7 @@ document.addEventListener('DOMContentLoaded', function () {
       editEl.id = 'overlayEdit';
       editEl.style.cssText = 'position:fixed;left:50%;top:10vh;transform:translateX(-50%);z-index:3061;display:none;max-width:560px;width:calc(100% - 32px);background:#fff;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.2);';
 
+      // ESTRUCTURA BASE: Se añade el div para el mensaje de error de validación
       editEl.innerHTML = `
         <div class="d-flex align-items-center justify-content-between" style="padding:.75rem 1rem;border-bottom:1px solid #e9ecef;">
           <strong>Editar Captura de Humedad</strong>
@@ -1004,6 +1217,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <input id="ed_cantVal" type="text" inputmode="decimal" class="form-control text-end" required>
                 <span class="input-group-text" style="min-width:56px;">%</span>
               </div>
+              <div id="ed_cantVal_error" class="text-danger small mt-1" style="display:none;"></div>
             </div>
             <div class="col-12">
               <div class="alert alert-info py-2 mb-0">
@@ -1021,10 +1235,15 @@ document.addEventListener('DOMContentLoaded', function () {
       document.body.appendChild(editBg);
       document.body.appendChild(editEl);
 
+      // Event Listeners
       editBg.addEventListener('click', hideEditOverlay);
       editEl.querySelector('#ed_close_top').addEventListener('click', hideEditOverlay);
       editEl.querySelector('#ed_cancel').addEventListener('click', hideEditOverlay);
       editEl.querySelector('#ed_guardar').addEventListener('click', guardarEdicionOverlay);
+
+      // AÑADIDO: Listeners para la validación en tiempo real
+      editEl.querySelector('#ed_cantVal').addEventListener('input', validateEditCantidadValidada);
+      editEl.querySelector('#ed_cantVal').addEventListener('blur', validateEditCantidadValidada);
     }
 
     function showEditOverlay({ id, pims, validada, fechaISO }){
@@ -1034,7 +1253,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Muestra el valor con punto
         editEl.querySelector('#ed_cantPims').value = (pims === null || pims === undefined) ? '' : String(pims);
+        // Al mostrar el valor, inmediatamente aplicamos la validación
         editEl.querySelector('#ed_cantVal').value  = (validada === null || validada === undefined) ? '' : String(validada);
+
+        // AÑADIDO: Forzar validación al abrir para marcar en rojo si está vacío
+        validateEditCantidadValidada();
 
         editBg.style.display = 'block';
         editEl.style.display = 'block';
@@ -1047,6 +1270,15 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function guardarEdicionOverlay(){
+      const cantValInput = editEl.querySelector('#ed_cantVal');
+
+      // AÑADIDO: Ejecutar validación final antes de guardar
+      if (!validateEditCantidadValidada()) {
+          alert('Corrija la cantidad validada antes de guardar.');
+          cantValInput.focus();
+          return;
+      }
+
       const btn = editEl.querySelector('#ed_guardar');
       btn.disabled = true;
 
@@ -1054,15 +1286,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const idStr = editEl.querySelector('#ed_row_id')?.value || '';
         const id    = Number(idStr);
 
-        // Aunque el campo está deshabilitado, leeremos su valor por si acaso,
-        // pero principalmente nos centraremos en Cant Validada
-        // NOTA: Si el campo está 'disabled', su valor NO se envía en un formulario normal.
-        // Dado que usamos JS/fetch, el valor está disponible.
         const pimsValue = editEl.querySelector('#ed_cantPims')?.value;
         const pimsN = parseNumber(pimsValue);
-        const valN  = parseNumber(editEl.querySelector('#ed_cantVal')?.value);
+        // El valor de Cant Validada ya fue validado en validateEditCantidadValidada
+        const valN  = parseNumber(cantValInput.value);
 
         if(!id){ alert('No se pudo identificar el registro.'); btn.disabled=false; return; }
+        // La validación de null ya se hace en validateEditCantidadValidada
         if(valN === null){ alert('Cantidad validada es obligatoria.'); btn.disabled=false; return; }
 
         const fechaOriginalStr = editEl.querySelector('#ed_fecha_iso_original')?.value || '';
@@ -1073,12 +1303,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const tipoMaterialSel = currentParams.tipoMaterial || '';
 
         const payload = {
-          _dataOperacionId:    id,
-          _cantidadPims:       pimsN,
-          _cantidadValidada:   valN,
-          _fechaReporte:       fechaBackendISO,
-          _equipoId:           equipoId,
-          _tipoMaterial:       tipoMaterialSel
+          _dataOperacionId:      id,
+          _cantidadPims:         pimsN,
+          _cantidadValidada:     valN,
+          _fechaReporte:         fechaBackendISO,
+          _equipoId:             equipoId,
+          _tipoMaterial:         tipoMaterialSel
         };
 
         fetch(URL_UPDATE_HUMEDAD, {
@@ -1102,7 +1332,7 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .catch(err => {
             console.error(err);
-            alert('Error al actualizar la humedad: Asegúrate de que los valores numéricos no contienen caracteres inválidos.');
+            alert('Error al actualizar la humedad.');
         })
         .finally(() => { btn.disabled=false; });
       } catch(e){

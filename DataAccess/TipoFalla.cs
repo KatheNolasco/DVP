@@ -26,9 +26,9 @@ namespace DataAccess
         public Nullable<int> ComponenteEquipoID { get; set; }
         public string CodigoDet { get; set; }
     
+        public virtual Clasificacion Clasificacion { get; set; }
         public virtual ComponenteEquipo ComponenteEquipo { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<Paros> Paros { get; set; }
-        public virtual Clasificacion Clasificacion { get; set; }
     }
 }

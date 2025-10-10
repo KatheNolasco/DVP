@@ -27,11 +27,11 @@ namespace DataAccess
         public Nullable<bool> StatusValidate { get; set; }
         public string OrdenProcesoSAP { get; set; }
     
-        public virtual TipoOperacion TipoOperacion { get; set; }
-        public virtual UnidadMedida UnidadMedida { get; set; }
-        public virtual Equipo Equipo { get; set; }
         public virtual Material Material { get; set; }
+        public virtual Equipo Equipo { get; set; }
         public virtual Material Material1 { get; set; }
         public virtual TipoMovimientoSAP TipoMovimientoSAP { get; set; }
+        public virtual TipoOperacion TipoOperacion { get; set; }
+        public virtual UnidadMedida UnidadMedida { get; set; }
     }
 }

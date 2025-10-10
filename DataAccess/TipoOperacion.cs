@@ -17,9 +17,9 @@ namespace DataAccess
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
         public TipoOperacion()
         {
+            this.BillOfMaterial = new HashSet<BillOfMaterial>();
             this.DataOperacion = new HashSet<DataOperacion>();
             this.TagEquipo = new HashSet<TagEquipo>();
-            this.BillOfMaterial = new HashSet<BillOfMaterial>();
         }
     
         public int TipoOperacionID { get; set; }
@@ -27,10 +27,10 @@ namespace DataAccess
         public Nullable<bool> AfectaInventario { get; set; }
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<BillOfMaterial> BillOfMaterial { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<DataOperacion> DataOperacion { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<TagEquipo> TagEquipo { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<BillOfMaterial> BillOfMaterial { get; set; }
     }
 }

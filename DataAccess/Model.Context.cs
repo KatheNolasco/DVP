@@ -27,10 +27,17 @@ namespace DataAccess
             throw new UnintentionalCodeFirstException();
         }
     
+        public virtual DbSet<BillOfMaterial> BillOfMaterial { get; set; }
         public virtual DbSet<CierreStatus> CierreStatus { get; set; }
+        public virtual DbSet<Clasificacion> Clasificacion { get; set; }
         public virtual DbSet<ClasificacionMaterial> ClasificacionMaterial { get; set; }
+        public virtual DbSet<ComponenteEquipo> ComponenteEquipo { get; set; }
+        public virtual DbSet<DataOperacion> DataOperacion { get; set; }
         public virtual DbSet<Entradas> Entradas { get; set; }
+        public virtual DbSet<Equipo> Equipo { get; set; }
         public virtual DbSet<Gerencia> Gerencia { get; set; }
+        public virtual DbSet<Inventarios> Inventarios { get; set; }
+        public virtual DbSet<Material> Material { get; set; }
         public virtual DbSet<Pais> Pais { get; set; }
         public virtual DbSet<Paros> Paros { get; set; }
         public virtual DbSet<Planta> Planta { get; set; }
@@ -38,27 +45,20 @@ namespace DataAccess
         public virtual DbSet<Proceso> Proceso { get; set; }
         public virtual DbSet<Rol> Rol { get; set; }
         public virtual DbSet<Salidas> Salidas { get; set; }
+        public virtual DbSet<SubEquipo> SubEquipo { get; set; }
         public virtual DbSet<sysdiagrams> sysdiagrams { get; set; }
+        public virtual DbSet<TagEquipo> TagEquipo { get; set; }
         public virtual DbSet<TipoEvento> TipoEvento { get; set; }
+        public virtual DbSet<TipoFalla> TipoFalla { get; set; }
+        public virtual DbSet<TipoMovimientoSAP> TipoMovimientoSAP { get; set; }
+        public virtual DbSet<TipoOperacion> TipoOperacion { get; set; }
+        public virtual DbSet<TipoParo> TipoParo { get; set; }
         public virtual DbSet<TokenRegistro> TokenRegistro { get; set; }
         public virtual DbSet<UnidadMedida> UnidadMedida { get; set; }
         public virtual DbSet<UnidadOperativa> UnidadOperativa { get; set; }
         public virtual DbSet<Usuario> Usuario { get; set; }
         public virtual DbSet<UsuarioRol> UsuarioRol { get; set; }
         public virtual DbSet<ValidacionReportes> ValidacionReportes { get; set; }
-        public virtual DbSet<Inventarios> Inventarios { get; set; }
-        public virtual DbSet<TipoOperacion> TipoOperacion { get; set; }
-        public virtual DbSet<DataOperacion> DataOperacion { get; set; }
-        public virtual DbSet<TagEquipo> TagEquipo { get; set; }
-        public virtual DbSet<ComponenteEquipo> ComponenteEquipo { get; set; }
-        public virtual DbSet<Equipo> Equipo { get; set; }
-        public virtual DbSet<SubEquipo> SubEquipo { get; set; }
-        public virtual DbSet<TipoFalla> TipoFalla { get; set; }
-        public virtual DbSet<BillOfMaterial> BillOfMaterial { get; set; }
-        public virtual DbSet<Material> Material { get; set; }
-        public virtual DbSet<TipoMovimientoSAP> TipoMovimientoSAP { get; set; }
-        public virtual DbSet<Clasificacion> Clasificacion { get; set; }
-        public virtual DbSet<TipoParo> TipoParo { get; set; }
     
         public virtual int sp_alterdiagram(string diagramname, Nullable<int> owner_id, Nullable<int> version, byte[] definition)
         {

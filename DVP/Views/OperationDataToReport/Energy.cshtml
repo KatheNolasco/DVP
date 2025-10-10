@@ -116,22 +116,51 @@
                             <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
                                 Agregado correctamente!
                             </div>
-
-                            <div class="card-body" style="text-align: right;">
-                                <input type="date" id="fechaReporte" style="text-align: right;" onchange="filtrarPorFecha()">
-                            </div>
+                            <!-- Fecha de validación -->
+                            <br />
+                            <h5 class="card-title fw-semibold mb-4">
+                                <div class="d-flex flex-column align-items-end gap-2">
+                                    <br />
+                                    <select class="form-select" id="_plantaAsignada" style="width: auto; min-width: 200px;">
+                                        <option value="">Seleccione una planta</option>
+                                    </select>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button onclick="" id="btnDescargarEnergy" class="btn btn-link p-0 m-0 align-baseline" title="Download energy">
+                                            <i class="bi bi-arrow-down-circle-fill text-success ms-2"></i>
+                                        </button>
+                                        <button type="button" id="create" class="btn btn-link p-0 m-0" title="New energy">
+                                            <i class="bi bi-plus-circle-fill fs-4 text-dark"></i>
+                                        </button>
+                                        <span>Energy Validation Date:</span>
+                                        <button onclick="cerrarReporte()" id="btnCerrarReporte" class="btn btn-link p-0 m-0 align-baseline" title="Close report">
+                                            <i class="bi bi-unlock-fill text-warning ms-2"></i>
+                                        </button>
+                                        <input type="date" id="fechaReporte" onchange="filtrarPorFecha()">
+                                        <a id="btnenergy" onclick="sendtoenergyvalidation()"
+                                           class="btn btn-link p-0 m-0 align-baseline"
+                                           style="display: none;" role="button">
+                                            <i class="bi bi-arrow-right-circle-fill text-danger"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </h5>
                         </div>
-                        <h5 class="card-title fw-semibold mb-4">Energy</h5>
-                        <br />
                         <div class="mb-3">
-                            <label class="form-label">Agregar energía</label>
                             <div class="d-flex">
-                                <select class="form-select" id="selectEquipo" disabled>
+                                <select class="form-select" id="kwhmaterial" disabled>
                                     <option value="KWH">KWH</option>
                                 </select>
-                                <button id="agregar" class="btn btn-sm btn-primary ms-2">Agregar</button>
                             </div>
-                            <br />
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <div id="totalkwhpims" class="alert alert-success p-2 my-2"
+                                 style="width: fit-content;">
+                                Total KWH PIMS: <strong id="countkwhpims">0</strong>
+                            </div>
+                            <div id="totalkwhvalidado" class="alert alert-success p-2 my-2"
+                                 style="width: fit-content;">
+                                Total KWH Validado: <strong id="countkwhvalidado">0</strong>
+                            </div>
                         </div>
                         <div id="filtrosListado" class="row g-3 mb-2"></div>
                         <div id="contenedorListado" class="mt-3"></div>
@@ -153,356 +182,673 @@
 
 </body>
 
-@*Create*@
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  'use strict';
-
-  // ---- UI base (HTML ya existe) ----
-  const btnAgregar       = document.getElementById('agregar');
-  const selectEquipo     = document.getElementById('selectEquipo');
-  const selectConsumo    = document.getElementById('selectConsumo');
-  const selectProduccion = document.getElementById('selectProduccion');
-  const inputFecha       = document.getElementById('fechaReporte'); // se enviará como _fechaReporte
-
-  // ---- Endpoints ----
-  const URL_EQUIPOS          = '@Url.Action("GetEquiposporPaislogguedUser", "Equipo")';
-  const URL_BOMS_CONSUMO     = '@Url.Action("GetBOMsConsumoByEquipo", "BillOfMaterial")';
-  const URL_BOMS_PRODUCCION  = '@Url.Action("GetBOMsProduccionByEquipo", "BillOfMaterial")';
-  const URL_CREATE_ENERGIA   = '@Url.Action("AddEnergy", "OperationDataToReport")';
-
-  // ---- Helpers ----
-  function option(el, value, text){ const o=document.createElement('option'); o.value=value; o.textContent=text; el.appendChild(o); }
-  function fillSelect(selectEl, list, valueKey, textKey, placeholder){
-    if(!selectEl) return;
-    selectEl.innerHTML=''; option(selectEl,'',placeholder);
-    (list||[]).forEach(x=>{
-      const v=x?.[valueKey], t=x?.[textKey];
-      if(v!==undefined && t!==undefined) option(selectEl,String(v),String(t));
-    });
-  }
-  function showAlert(msg){
-    const el=document.getElementById('alertsuccesclose');
-    if(el){ el.textContent=msg; el.style.display='block'; setTimeout(()=>el.style.display='none',2500); }
-    else alert(msg);
-  }
-  function hoyISO(){ return new Date().toISOString().split('T')[0]; }
-
-  // ---- Cargas catálogo ----
-  function loadEquipos(){
-    selectEquipo.disabled=true;
-    selectEquipo.innerHTML='<option value="">Cargando equipos...</option>';
-    fetch(URL_EQUIPOS,{headers:{'Accept':'application/json'}})
-      .then(r=>r.json())
-      .then(data=>{
-        if(data && data.success===false){ fillSelect(selectEquipo,[], '', '', '(sesión no iniciada)'); return; }
-        const list = Array.isArray(data)?data:(Array.isArray(data?.data)?data.data:[]);
-        fillSelect(selectEquipo,list,'EquipoID','Descripcion','Seleccione equipo');
-      })
-      .catch(e=>{ console.error('[Equipos]',e); fillSelect(selectEquipo,[], '', '', '(error al cargar equipos)'); })
-      .finally(()=>{ selectEquipo.disabled=false; });
-  }
-  function loadBOMConsumo(equipoId){
-    selectConsumo.disabled=true;
-    selectConsumo.innerHTML='<option value="">Cargando consumo...</option>';
-    if(!equipoId){ fillSelect(selectConsumo,[], '', '', 'Seleccione material consumo'); selectConsumo.disabled=false; return; }
-    fetch(`${URL_BOMS_CONSUMO}?equipoId=${encodeURIComponent(equipoId)}`,{headers:{'Accept':'application/json'}})
-      .then(r=>r.json())
-      .then(res=>{
-        const arr=(res && res.success && Array.isArray(res.data))?res.data:[];
-        const items=[]; const seen=new Set();
-        arr.forEach(x=>{
-          const id = x?._materialConsumoID, txt = x?._materialConsumoDescripcion;
-          if(id && txt && !seen.has(id)){ seen.add(id); items.push({ id, txt }); }
-        });
-        fillSelect(selectConsumo,items,'id','txt','Seleccione material consumo');
-      })
-      .catch(e=>{ console.error('[Consumo]',e); fillSelect(selectConsumo,[], '', '', '(error al cargar consumo)'); })
-      .finally(()=>{ selectConsumo.disabled=false; });
-  }
-  function loadBOMProduccion(equipoId){
-    selectProduccion.disabled=true;
-    selectProduccion.innerHTML='<option value="">Cargando producción...</option>';
-    if(!equipoId){ fillSelect(selectProduccion,[], '', '', 'Seleccione material producción'); selectProduccion.disabled=false; return; }
-    fetch(`${URL_BOMS_PRODUCCION}?equipoId=${encodeURIComponent(equipoId)}`,{headers:{'Accept':'application/json'}})
-      .then(r=>r.json())
-      .then(res=>{
-        const arr=(res && res.success && Array.isArray(res.data))?res.data:[];
-        const items=[]; const seen=new Set();
-        arr.forEach(x=>{
-          const id = x?._materialProduccionID, txt = x?._materialProduccionDescripcion;
-          if(id && txt && !seen.has(id)){ seen.add(id); items.push({ id, txt }); }
-        });
-        fillSelect(selectProduccion,items,'id','txt','Seleccione material producción');
-      })
-      .catch(e=>{ console.error('[Producción]',e); fillSelect(selectProduccion,[], '', '', '(error al cargar producción)'); })
-      .finally(()=>{ selectProduccion.disabled=false; });
-  }
-
-  // ---- Bloqueo cruzado de selects de material ----
-  selectConsumo.addEventListener('change', ()=>{
-    if(selectConsumo.value){ selectProduccion.value=''; selectProduccion.disabled=true; }
-    else { selectProduccion.disabled=false; }
-  });
-  selectProduccion.addEventListener('change', ()=>{
-    if(selectProduccion.value){ selectConsumo.value=''; selectConsumo.disabled=true; }
-    else { selectConsumo.disabled=false; }
-  });
-  selectEquipo.addEventListener('change', function(){
-    const eqId = this.value ? Number(this.value) : 0;
-    selectConsumo.disabled=false; selectConsumo.value='';
-    selectProduccion.disabled=false; selectProduccion.value='';
-    loadBOMConsumo(eqId);
-    loadBOMProduccion(eqId);
-  });
-
-  // ---- Modal CREATE (energía kWh) ----
-  let createBg=null, createEl=null;
-
-  function ensureCreateOverlay(){
-    if(createBg && createEl) return;
-
-    createBg=document.createElement('div');
-    createBg.id='overlayCrearEnergy_bg';
-    createBg.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:2050;display:none;';
-
-    createEl=document.createElement('div');
-    createEl.id='overlayCrearEnergy';
-    createEl.style.cssText='position:fixed;left:50%;top:8vh;transform:translateX(-50%);z-index:2051;display:none;max-width:760px;width:calc(100% - 32px);background:#fff;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.2);';
-
-    createEl.innerHTML=`
-      <div class="d-flex align-items-center justify-content-between" style="padding:.75rem 1rem;border-bottom:1px solid #e9ecef;">
-        <strong>Nueva Captura de Energía (kWh)</strong>
-        <button type="button" id="crE_close_top" class="btn btn-sm btn-outline-secondary">Cerrar</button>
-      </div>
-      <div style="padding:1rem;">
-        <div class="row g-2">
-          <!-- ocultos -->
-          <input id="crE_equipoId" type="hidden">
-          <input id="crE_materialId" type="hidden">
-
-          <div class="col-md-6">
-            <label class="form-label">Equipo</label>
-            <input id="crE_equipoDesc" class="form-control" disabled>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label">Material</label>
-            <input id="crE_materialDesc" class="form-control" disabled>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label">Cantidad (PIMS) <span class="text-muted">(opcional)</span></label>
-            <div class="input-group">
-              <input id="crE_cantPims" type="number" step="0.000001" class="form-control text-end">
-              <span class="input-group-text" style="min-width:56px;">kWh</span>
-            </div>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label">Cantidad Validada <span class="text-danger">*</span></label>
-            <div class="input-group">
-              <input id="crE_cantVal" type="number" step="0.000001" class="form-control text-end" required>
-              <span class="input-group-text" style="min-width:56px;">kWh</span>
-            </div>
-          </div>
-
-          <div class="col-12">
-            <div class="alert alert-info py-2 mb-0">
-              Se registrará con la fecha seleccionada y se validará automáticamente.
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="d-flex justify-content-end gap-2" style="padding:.75rem 1rem;border-top:1px solid #e9ecef;">
-        <button type="button" class="btn btn-secondary" id="crE_cancel">Cancelar</button>
-        <button type="button" class="btn btn-success" id="crE_guardar">Guardar</button>
-      </div>
-    `;
-
-    document.body.appendChild(createBg);
-    document.body.appendChild(createEl);
-
-    createBg.addEventListener('click', hideCreateOverlay);
-    createEl.querySelector('#crE_close_top').addEventListener('click', hideCreateOverlay);
-    createEl.querySelector('#crE_cancel').addEventListener('click', hideCreateOverlay);
-    createEl.querySelector('#crE_guardar').addEventListener('click', guardarDesdeCreateOverlay);
-  }
-
-  function showCreateOverlay(){
-    const eqId     = Number(selectEquipo.value || 0);
-    const eqDesc   = selectEquipo.options[selectEquipo.selectedIndex]?.text || '';
-    const matConsId   = Number(selectConsumo.value || 0);
-    const matConsDesc = matConsId ? (selectConsumo.options[selectConsumo.selectedIndex]?.text || '') : '';
-    const matProdId   = Number(selectProduccion.value || 0);
-    const matProdDesc = matProdId ? (selectProduccion.options[selectProduccion.selectedIndex]?.text || '') : '';
-
-    if(!eqId){ alert('Debe seleccionar un equipo.'); return; }
-    if(!matConsId && !matProdId){ alert('Seleccione un material de consumo o uno de producción.'); return; }
-
-    ensureCreateOverlay();
-
-    createEl.querySelector('#crE_equipoId').value     = eqId;
-    createEl.querySelector('#crE_materialId').value   = matConsId || matProdId;
-    createEl.querySelector('#crE_equipoDesc').value   = eqDesc;
-    createEl.querySelector('#crE_materialDesc').value = matConsDesc || matProdDesc;
-
-    // limpiar cantidades
-    createEl.querySelector('#crE_cantPims').value = '';
-    createEl.querySelector('#crE_cantVal').value  = '';
-
-    createBg.style.display='block';
-    createEl.style.display='block';
-  }
-  function hideCreateOverlay(){ if(createBg && createEl){ createBg.style.display='none'; createEl.style.display='none'; } }
-
-  function guardarDesdeCreateOverlay(){
-    const btn = createEl.querySelector('#crE_guardar');
-    btn.disabled = true;
-
-    try{
-      const equipoId   = Number(createEl.querySelector('#crE_equipoId')?.value || 0);
-      const materialId = Number(createEl.querySelector('#crE_materialId')?.value || 0);
-      const cantPimsV  = createEl.querySelector('#crE_cantPims')?.value;
-      const cantValV   = createEl.querySelector('#crE_cantVal')?.value;
-
-      const cantidadPims     = (cantPimsV==='') ? null : Number(cantPimsV);
-      const cantidadValidada = (cantValV==='')  ? null : Number(cantValV);
-
-      const fechaISO = (inputFecha && inputFecha.value) ? inputFecha.value : hoyISO(); // YYYY-MM-DD
-
-      if(!equipoId){ alert('Equipo es obligatorio.'); btn.disabled=false; return; }
-      if(cantidadValidada===null || Number.isNaN(cantidadValidada)){ alert('Cantidad validada es obligatoria.'); btn.disabled=false; return; }
-
-      const payload = {
-        _equipoId:         equipoId,
-        _materialId:       materialId,            // el backend setea U.M. y TipoMov SAP
-        _cantidadPims:     (cantidadPims===null || !Number.isFinite(cantidadPims)) ? null : cantidadPims,
-        _cantidadValidada: Number.isFinite(cantidadValidada) ? cantidadValidada : null,
-        _fechaReporte:     fechaISO
-      };
-
-      fetch(URL_CREATE_ENERGIA, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(payload)
-      })
-      .then(r=>r.json())
-      .then(res=>{
-        if(res && res.success){
-          showAlert('Energía registrada correctamente.');
-          hideCreateOverlay();
-          if(typeof window.filtrarPorFecha === 'function'){ window.filtrarPorFecha(); }
-          else if(inputFecha){ inputFecha.dispatchEvent(new Event('change')); }
-        } else {
-          alert(res?.message || 'No se pudo registrar la energía.');
-        }
-      })
-      .catch(err=>{ console.error(err); alert('Error al registrar la energía.'); })
-      .finally(()=>{ btn.disabled=false; });
-    }catch(e){
-      console.error(e); alert('Error inesperado.'); btn.disabled=false;
-    }
-  }
-
-  // ---- Wire botón Agregar ----
-  if(btnAgregar){ btnAgregar.addEventListener('click', e=>{ e.preventDefault(); showCreateOverlay(); }); }
-
-  // ---- Init ----
-  loadEquipos();
-});
-</script>
-
-
 
 
 @*List*@
 
-
-
-
-
-
-@*Edit*@
-
-
-
-
-@*Fecha*@
-
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const inputFecha = document.getElementById("fechaReporte");
+document.addEventListener('DOMContentLoaded', function () {
+    'use strict';
 
-        // Obtener la fecha de ayer
-        const hoy = new Date();
-        hoy.setDate(hoy.getDate() - 1); // resta un día
+    const MAX_QUANTITY = 100000; // Límite máximo para la cantidad validada
 
-        // Formatear a yyyy-mm-dd
-        const año = hoy.getFullYear();
-        const mes = String(hoy.getMonth() + 1).padStart(2, "0");
-        const dia = String(hoy.getDate()).padStart(2, "0");
-        const fechaFormateada = `${año}-${mes}-${dia}`;
+    const contenedorListado = document.getElementById('contenedorListado');
+    const inputFecha        = document.getElementById('fechaReporte');
+    const selectEquipoList  = document.getElementById('selectEquipoList');
 
-        // Asignar la fecha al input
-        inputFecha.value = fechaFormateada;
+    // === NUEVOS ELEMENTOS DE TOTALES ===
+    const totalKwhPimsEl = document.getElementById('countkwhpims');
+    const totalKwhValidadoEl = document.getElementById('countkwhvalidado');
+    // ===================================
 
-        // Ejecutar fetch automáticamente al cargar con la fecha de ayer
-        filtrarPorFecha();
+    // URLS DE ACCIÓN
+    const URL_GET_ENERGY = '@Url.Action("GetEnergy", "OperationDataToReport")';
+    const URL_EQUIPOS    = '@Url.Action("GetEquiposporPaislogguedUser", "Equipo")';
+    const URL_SAVE_VALIDATED_QTY = '@Url.Action("UpdateEnergy", "OperationDataToReport")';
+
+    // --- Funciones de Utilidad ---
+
+    function option(el, value, text){ const o=document.createElement('option'); o.value=value; o.textContent=text; el.appendChild(o); }
+    function fillSelect(selectEl, list, valueKey, textKey, placeholder){
+      if(!selectEl) return;
+      selectEl.innerHTML=''; option(selectEl,'',placeholder);
+      (list||[]).forEach(x=>{
+        const v=x?.[valueKey], t=x?.[textKey];
+        if(v!==undefined && t!==undefined) option(selectEl,String(v),String(t));
+      });
+    }
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    // showMsg: AHORA INCLUYE LA LÓGICA DE RECARGA PARA 'danger'
+    function showMsg(msg,type='info'){
+      if (!msg || msg.includes('Cargando datos') || type === 'secondary' || type === 'success') {
+          contenedorListado.innerHTML = '';
+          // Limpia los totales al cargar
+          updateTotals(0, 0);
+          return;
+      }
+      if (type === 'danger' || type === 'warning') {
+          contenedorListado.innerHTML = `<div class="alert alert-${type}" role="alert" style="margin-top:8px;">${escapeHtml(msg)}</div>`;
+      }
+
+      // === LÓGICA AÑADIDA PARA RECARGAR LA PÁGINA EN CASO DE 'danger' ===
+      if (type === 'danger') {
+          console.error(`Alerta 'danger' activada: Recargando en 2 segundos. Mensaje: ${msg}`);
+          setTimeout(() => {
+              window.location.reload();
+          }, 2000); // 2 segundos de espera antes de la recarga
+      }
+    }
+    // -----------------------------------------------------------------
+
+    function fmtFechaHora(d){
+      if(!d) return '';
+      const m=/\/Date\((\d+)\)\//.exec(String(d));
+      let dt=null;
+      if(m){ const ms=parseInt(m[1],10); if(!Number.isNaN(ms)) dt=new Date(ms); }
+      else dt=new Date(d);
+      if(!dt || Number.isNaN(dt.getTime())) return '';
+      const yyyy=dt.getFullYear();
+      const mm=String(dt.getMonth()+1).padStart(2,'0');
+      const dd=String(dt.getDate()).padStart(2,'0');
+      const hh=String(dt.getHours()).padStart(2,'0');
+      const mi=String(dt.getMinutes()).padStart(2,'0');
+      return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+    }
+
+    // Función original para StatusValidate (check/x)
+    function renderCheck(v){
+        return v ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>';
+    }
+
+    // *** NUEVA FUNCIÓN SOLO PARA StatusClose (Candado) - Arreglo CS0103 con @@ ***
+    /**
+     * Renderiza un candado cerrado (bloqueado, true) o abierto (desbloqueado, false).
+     * @@param {boolean} v - El valor booleano (true=cerrado, false=abierto).
+     * @@returns {string} El HTML del icono de candado.
+     */
+    function renderCloseStatus(v){
+        // Si es TRUE (cerrado/bloqueado) -> Candado cerrado (bi-lock-fill, color rojo para indicar bloqueo)
+        if (v) {
+            return '<i class="bi bi-lock-fill text-warning"></i>';
+        }
+        // Si es FALSE (abierto/desbloqueado) -> Candado abierto (bi-unlock-fill, text-warning como solicitaste)
+        else {
+            return '<i class="bi bi-unlock-fill text-warning"></i>';
+        }
+    }
+    // ********************************************************************************
+
+    function getPimsRaw(r){
+      if (r.hasOwnProperty('CantidadPIMS')) return r.CantidadPIMS;
+      if (r.hasOwnProperty('CantidadPims')) return r.CantidadPims;
+      return null;
+    }
+
+    function defaultAyerISO(){
+      const hoy = new Date();
+      const ayer = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 1);
+      return ayer.toISOString().split('T')[0];
+    }
+
+    function fmtNumero(val, decimals = 3) {
+        if (val === null || val === undefined || val === '') return '';
+        const num = Number(val);
+        if (!Number.isFinite(num)) return '';
+
+        const options = {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: decimals,
+            useGrouping: true
+        };
+        // Usamos 'en-US' (punto decimal) para el formato visual
+        return num.toLocaleString('en-US', options);
+    }
+
+
+    window.getCurrentParams = function(){
+      const fechaISO  = (inputFecha && inputFecha.value) ? inputFecha.value : defaultAyerISO();
+      const equipoId  = selectEquipoList && selectEquipoList.value ? Number(selectEquipoList.value) : null;
+      return { fechaISO, equipoId };
+    };
+
+    function buildTheadHtml(){
+      return `<thead><tr>
+        <th class="text-center">Fecha/Hora</th><th class="text-center">Equipo</th>
+        <th class="text-center">Material</th><th class="text-center">Cant PIMS</th>
+        <th class="text-center">Cant Validada</th><th class="text-center">Unidad</th>
+        <th class="text-center">Tipo Mov SAP</th><th class="text-center">Close</th>
+        <th class="text-center">Validate</th>
+      </tr></thead>`;
+    }
+
+    // ======================================================================
+    // === NUEVA FUNCIÓN DE CÁLCULO Y ACTUALIZACIÓN DE TOTALES ================
+    // ======================================================================
+
+    function updateTotals(totalPims, totalValidado) {
+        // Asegura que los elementos existen antes de intentar actualizarlos
+        if (totalKwhPimsEl) {
+            totalKwhPimsEl.textContent = fmtNumero(totalPims, 3);
+        }
+        if (totalKwhValidadoEl) {
+            totalKwhValidadoEl.textContent = fmtNumero(totalValidado, 3);
+        }
+    }
+
+    function calculateAndRenderTotals(rows) {
+        let totalPims = 0;
+        let totalValidado = 0;
+
+        (Array.isArray(rows) ? rows : []).forEach(r => {
+            const pimsRaw = getPimsRaw(r);
+            const valRaw  = (r.CantidadValidada !== undefined) ? r.CantidadValidada : null;
+
+            // Suma de PIMS (solo si es un número finito)
+            if (pimsRaw !== null && Number.isFinite(pimsRaw)) {
+                totalPims += Number(pimsRaw);
+            }
+
+            // Suma de Validado (solo si es un número finito)
+            if (valRaw !== null && Number.isFinite(valRaw)) {
+                totalValidado += Number(valRaw);
+            }
+        });
+
+        // Llama a la función para actualizar los div con los totales
+        updateTotals(totalPims, totalValidado);
+    }
+
+    // ======================================================================
+    // === FIN NUEVA FUNCIÓN DE CÁLCULO Y ACTUALIZACIÓN DE TOTALES =============
+    // ======================================================================
+
+
+    function renderTabla(rows){
+      const data = Array.isArray(rows) ? rows : [];
+
+      // *** 1. CÁLCULO DE TOTALES ANTES DE DEVOLVER UN MENSAJE DE ADVERTENCIA ***
+      calculateAndRenderTotals(data);
+
+      if(!data.length){ showMsg('No hay registros para los filtros aplicados','warning'); return; }
+
+      contenedorListado.innerHTML = '';
+
+      let tbody = '<tbody>';
+      data.forEach(r=>{
+        const pimsRaw = getPimsRaw(r);
+        const valRaw  = (r.CantidadValidada !== undefined) ? r.CantidadValidada : null;
+
+        const unidad = r.UnidadMedida || 'KWH';
+        const pimsTxt = (pimsRaw === null || pimsRaw === undefined) ? '—' : `${fmtNumero(pimsRaw, 3)} ${unidad}`;
+        const valTxt  = (valRaw  === null || valRaw  === undefined) ? '—' : `${fmtNumero(valRaw, 3)} ${unidad}`;
+
+        const materialDesc = r.Material ?? r.MaterialDescripcion ?? r.MaterialConsumo ?? r.MaterialProduccion ?? '';
+        const sapMovDesc = (r.TipoMovimientoSAP && String(r.TipoMovimientoSAP).trim())
+                             || (r.TipoMovimientoSAPDescripcion && String(r.TipoMovimientoSAPDescripcion).trim())
+                             || '';
+        const sapMovShown = sapMovDesc || (r.TipoMovimientoSAPID ?? '');
+
+        let fechaData = '';
+        let fechaHoraDisplay = '—';
+
+        if (r.FechaReporte){
+          const m=/\/Date\((\d+)\)\//.exec(String(r.FechaReporte));
+          const dt = m ? new Date(parseInt(m[1],10)) : new Date(r.FechaReporte);
+          if(!Number.isNaN(dt?.getTime?.())){
+            const yyyy=dt.getFullYear();
+            const mm=String(dt.getMonth()+1).padStart(2,'0');
+            const dd=String(dt.getDate()).padStart(2,'0');
+            fechaData = `${yyyy}-${mm}-${dd}`;
+            fechaHoraDisplay = fmtFechaHora(r.FechaReporte);
+          }
+        }
+
+        const dataOpId = r.DataOperacionID ?? null;
+
+        const equipoIdFila = r.EquipoID ?? null;
+
+        tbody += `<tr>
+          <td class="text-center" data-col="fecha" data-value="${escapeHtml(fechaData)}">${escapeHtml(fechaHoraDisplay)}</td>
+          <td class="text-center" data-col="equipo" data-id="${equipoIdFila}">${escapeHtml(r.Equipo || '')}</td>
+          <td class="text-center">${escapeHtml(materialDesc || '')}</td>
+          <td class="text-end" data-col="pims" data-value="${pimsRaw ?? ''}">${pimsTxt}</td>
+          <td class="text-end editable-validada" data-col="validada" data-id="${dataOpId}" data-value="${valRaw ?? ''}">${valTxt}</td>
+          <td class="text-center" data-col="unidad">${escapeHtml(r.UnidadMedida || '')}</td>
+          <td class="text-center">${renderCloseStatus(!!r.StatusClose)}</td>
+          <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>
+        </tr>`;
+      });
+      tbody += '</tbody>';
+
+      contenedorListado.innerHTML = `
+        <div class="table-responsive w-100" style="max-height:420px; overflow-y:auto; background-color:#fff; padding:10px; border-radius:10px;">
+          <table class="table table-bordered table-sm table-striped mb-0" style="background-color:#fff;">
+            ${buildTheadHtml()}${tbody}
+          </table>
+        </div>`;
+    }
+
+    function cargarCapturas(params){
+      const { fechaISO, equipoId } = params;
+
+      // Limpiar y resetear los totales mientras se carga
+      showMsg('Cargando datos...', 'secondary');
+
+      let url = `${URL_GET_ENERGY}?_fecha=${encodeURIComponent(fechaISO)}`;
+      if(equipoId !== null && equipoId > 0){
+          url += `&_equipoId=${encodeURIComponent(equipoId)}`;
+      }
+
+      fetch(url, { headers:{'Accept':'application/json'} })
+        .then(r=>{
+            if(!r.ok) {
+                throw new Error('HTTP ' + r.status + (r.statusText ? ': ' + r.statusText : ''));
+            }
+            return r.json();
+        })
+        .then(arr=> renderTabla(arr))
+        .catch(err=>{
+            console.error(err);
+            showMsg('No se pudo cargar la data de Energía (KWH). ' + err.message,'danger');
+        });
+    }
+
+
+    function loadEquiposList() {
+      if(!selectEquipoList) return;
+      selectEquipoList.disabled = true;
+      selectEquipoList.innerHTML = '<option value="">Cargando equipos...</option>';
+      fetch(URL_EQUIPOS, { headers:{'Accept':'application/json'} })
+        .then(r=>r.json())
+        .then(data=>{
+          if(data && data.success===false){
+            fillSelect(selectEquipoList, [], '', '', '(sesion no iniciada)');
+            return;
+          }
+          const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+          fillSelect(selectEquipoList, list, 'EquipoID', 'Descripcion', 'Todos los equipos');
+        })
+        .catch(err=>{
+          console.error('[Equipos List] ', err);
+          fillSelect(selectEquipoList, [], '', '', '(error al cargar equipos)');
+        })
+        .finally(()=>{ selectEquipoList.disabled=false; });
+    }
+
+    window.filtrarPorFecha = function(){
+      cargarCapturas(window.getCurrentParams());
+    };
+
+    // Listeners de filtro
+    if(inputFecha){
+      if(!inputFecha.value) inputFecha.value = defaultAyerISO();
+      inputFecha.addEventListener('change', window.filtrarPorFecha);
+    }
+    if(selectEquipoList){
+      selectEquipoList.addEventListener('change', window.filtrarPorFecha);
+    }
+
+    loadEquiposList();
+    window.filtrarPorFecha();
+
+    // ======================================================================
+    // === LÓGICA DE EDICIÓN EN LÍNEA PARA CANTIDAD VALIDADA =================
+    // ======================================================================
+
+    const restoreCellContent = function(cell, val) {
+        const unityEl = cell.closest('tr').querySelector('[data-col="unidad"]');
+        const unity = unityEl ? unityEl.textContent.trim() : 'KWH';
+        const txt = (val === null || val === undefined || val === '') ? '—' : `${fmtNumero(val, 3)} ${unity}`;
+        cell.textContent = txt;
+        cell.classList.remove('editing');
+    };
+
+
+    function saveValidatedQuantity(dataOpId, newQuantity, tdCell, originalValue) {
+        const tr = tdCell.closest('tr');
+
+        // ... (Tu lógica para obtener EquipoID y FechaReporteISO) ...
+        const fechaReporteISO = tr.querySelector('[data-col="fecha"]').getAttribute('data-value');
+
+        const equipoIdColumna = tr.querySelector('[data-col="equipo"]').getAttribute('data-id');
+        const equipoID = Number(equipoIdColumna) > 0
+                                 ? Number(equipoIdColumna)
+                                 : (window.getCurrentParams().equipoId || null);
+
+        if (!equipoID || equipoID <= 0 || !fechaReporteISO) {
+            showMsg('Error: ID de Equipo o Fecha de Reporte de la fila no válidos para crear/actualizar.', 'danger');
+            restoreCellContent(tdCell, originalValue);
+            return;
+        }
+
+        const payload = {
+            _dataOperacionId: dataOpId,
+            _cantidadValidada: newQuantity,
+            _equipoId: equipoID,
+            _fechaReporte: fechaReporteISO
+        };
+
+        tdCell.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        tdCell.style.minWidth = '100px';
+
+        fetch(URL_SAVE_VALIDATED_QTY, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(r => {
+            if (!r.ok) {
+                return r.text().then(text => { throw new Error(`HTTP ${r.status}: ${r.statusText} - ${text.substring(0, 100)}...`); });
+            }
+            return r.json();
+        })
+        .then(result => {
+            if (result && result.success === true) {
+
+                let isCreation = !dataOpId;
+
+                if (isCreation && result.id) {
+                    tdCell.setAttribute('data-id', result.id);
+                }
+
+                tdCell.setAttribute('data-value', newQuantity ?? '');
+                restoreCellContent(tdCell, newQuantity);
+
+                // *** CAMBIO CLAVE: Llama a filtrarPorFecha (que recarga la tabla y recalcula totales) ***
+                setTimeout(() => {
+                    window.filtrarPorFecha();
+                }, 500);
+
+            } else {
+                throw new Error(result?.message || 'Fallo de servidor al guardar.');
+            }
+        })
+        .catch(err => {
+            console.error('Error de guardado:', err);
+            restoreCellContent(tdCell, originalValue);
+            showMsg('Error al actualizar: ' + (err.message || 'Error de red.'), 'danger');
+        })
+        .finally(() => {
+             tdCell.classList.remove('editing');
+             tdCell.style.minWidth = '';
+        });
+    }
+
+    /**
+     * Inicia la edición en línea en la celda y maneja las validaciones.
+     */
+    function startInlineEdit(tdCell) {
+        // ... (Tu lógica de startInlineEdit sin cambios) ...
+        const dataOpId = Number(tdCell.getAttribute('data-id')) || null;
+        const currentValue = tdCell.getAttribute('data-value') || '';
+
+        if (tdCell.classList.contains('editing')) {
+            return;
+        }
+
+        tdCell.classList.add('editing');
+        tdCell.innerHTML = '';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-control form-control-sm text-end';
+        input.value = currentValue;
+        input.min = '0';
+        input.style.width = '100%';
+        input.style.maxWidth = '150px';
+        input.style.margin = '0 auto';
+        input.setAttribute('placeholder', 'Max 100000.000');
+
+
+        const cancelEdit = function() {
+            if (tdCell.contains(input)) {
+                restoreCellContent(tdCell, currentValue);
+            }
+            input.removeEventListener('blur', handleAction);
+            input.removeEventListener('keyup', handleKeyup);
+        };
+
+        // *** FUNCIÓN CLAVE DE VALIDACIÓN Y GUARDADO ***
+        const handleAction = function() {
+            if (!tdCell.contains(input)) return;
+
+            const rawValue = input.value.trim();
+
+            if (rawValue === '') {
+                 saveValidatedQuantity(dataOpId, null, tdCell, currentValue);
+                 return;
+            }
+
+            if (rawValue.includes(',')) {
+                showMsg('Error de formato: Solo se permite el punto (".") como separador decimal. La coma (",") no es válida.','danger');
+                cancelEdit();
+                return;
+            }
+
+            const parts = rawValue.split('.');
+            if (parts.length > 2) {
+                showMsg('Error de formato: Solo se permite un punto decimal.','danger');
+                cancelEdit();
+                return;
+            }
+            if (parts.length === 2 && parts[1].length > 3) {
+                showMsg('Error de formato: No puede tener más de 3 dígitos después del punto.','danger');
+                cancelEdit();
+                return;
+            }
+
+            const newQuantity = Number(rawValue);
+
+            if (!Number.isFinite(newQuantity) || newQuantity < 0) {
+                showMsg('Error: El valor debe ser un número positivo válido (solo punto decimal).','danger');
+                cancelEdit();
+                return;
+            }
+
+            if (newQuantity > MAX_QUANTITY) {
+                showMsg(`Error: La cantidad no puede ser mayor a ${fmtNumero(MAX_QUANTITY)}.`, 'danger');
+                cancelEdit();
+                return;
+            }
+
+            const finalQuantity = parseFloat(newQuantity.toFixed(3));
+
+            if (String(finalQuantity) !== currentValue) {
+                saveValidatedQuantity(dataOpId, finalQuantity, tdCell, currentValue);
+            } else {
+                cancelEdit();
+            }
+        };
+        // *** FIN FUNCIÓN CLAVE DE VALIDACIÓN Y GUARDADO ***
+
+
+        const handleKeyup = function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                input.blur();
+            } else if (e.key === 'Escape') {
+                cancelEdit();
+            }
+        };
+
+        tdCell.appendChild(input);
+
+        input.addEventListener('blur', handleAction);
+        input.addEventListener('keyup', handleKeyup);
+
+        setTimeout(() => {
+            input.focus();
+            input.select();
+        }, 0);
+    }
+
+    // Delegación de eventos
+    contenedorListado.addEventListener('click', function(e) {
+        const targetCell = e.target.closest('td.editable-validada');
+
+        if (targetCell && !targetCell.classList.contains('editing')) {
+            startInlineEdit(targetCell);
+        }
     });
 
-    function filtrarPorFecha() {
-        const fecha = document.getElementById("fechaReporte").value;
-
-        fetch(`/TuControlador/GetCapturasHumedad?fecha=${encodeURIComponent(fecha)}`)
-            .then(response => {
-                if (!response.ok) throw new Error("Error al obtener datos");
-                return response.json();
-            })
-            .then(data => {
-                console.log("Datos recibidos:", data);
-                // aquí puedes llenar tu tabla o contenedor con los datos
-            })
-            .catch(error => {
-                console.error("Error en la solicitud:", error);
-            });
-    }
+});
 </script>
 
-
-@*Loading*@
 
 <script>
+function cerrarReporte() {
+    // 1. Obtener la fecha y el ID del equipo usando la función que ya existe
+    // Esta función maneja si el valor es el ID específico o 0/null para 'Todos'
+    const { fechaISO, equipoId } = window.getCurrentParams();
 
-    (function () {
-        function showLoading() {
-            var m = document.getElementById('loadingModal');
-            if (m) m.style.display = 'block';
+    const boton = document.getElementById('btnCerrarReporte');
+    const alerta = document.getElementById("alertsuccesclose");
+
+    // 2. Solo validar que la FECHA exista, permitiendo que equipoId sea 0 o null
+    if (!fechaISO) {
+        alert("Por favor selecciona una fecha.");
+        return;
+    }
+
+    // Desactivar el botón para evitar múltiples clics
+    boton.disabled = true;
+
+    const url = '@Url.Action("CerrarReporteEnergia", "OperationDataToReport")';
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        // 3. Enviar el Body con las propiedades que espera el ViewModel de C#
+        body: JSON.stringify({
+            _fechaReporte: fechaISO,
+            _equipoId: equipoId // Se envía 0 o null si es 'Todos', o el ID específico
+        })
+    })
+    .then(response => {
+        // Manejo de errores HTTP
+        if (!response.ok) {
+            return response.json().then(error => {
+                throw new Error(error.message || `Error HTTP: ${response.status}`);
+            }).catch(() => {
+                throw new Error(`Error HTTP: ${response.status} ${response.statusText}`);
+            });
         }
-        function hideLoading() {
-            var m = document.getElementById('loadingModal');
-            if (m) m.style.display = 'none';
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Lógica de éxito: mostrar alerta, guardar bandera, y recargar
+            alerta.style.display = "block";
+            localStorage.setItem('mostrarFlecha', 'true');
+
+            setTimeout(() => {
+                alerta.style.display = "none";
+                location.reload();
+            }, 3000);
+        } else {
+            // Lógica de fallo del servidor
+            alert(data.message || "No se pudo cerrar el reporte.");
+            boton.disabled = false;
         }
-        // expone helpers por si quieres usarlos en otros fetch
-        window.showLoading = showLoading;
-        window.hideLoading = hideLoading;
-
-        // muestra lo antes posible (cuando el DOM ya esta parseado)
-        document.addEventListener('readystatechange', function () {
-            if (document.readyState === 'interactive') showLoading();
-        });
-
-        // oculta cuando ya cargo todo (assets incluidos)
-        window.addEventListener('load', function () {
-            setTimeout(hideLoading, 200);
-        });
-
-        // muestra al navegar/recargar (cuando cambias de pagina)
-        window.addEventListener('beforeunload', function () {
-            showLoading();
-        });
-    })();
+    })
+    .catch(error => {
+        // Lógica de error de red o fetch
+        console.error('Error:', error);
+        alert("Ocurrió un error al intentar cerrar el reporte: " + error.message);
+        boton.disabled = false;
+    });
+}
 
 </script>
+
+    
+
+    @*Fecha*@
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const inputFecha = document.getElementById("fechaReporte");
+
+            // Obtener la fecha de ayer
+            const hoy = new Date();
+            hoy.setDate(hoy.getDate() - 1); // resta un día
+
+            // Formatear a yyyy-mm-dd
+            const año = hoy.getFullYear();
+            const mes = String(hoy.getMonth() + 1).padStart(2, "0");
+            const dia = String(hoy.getDate()).padStart(2, "0");
+            const fechaFormateada = `${año}-${mes}-${dia}`;
+
+            // Asignar la fecha al input
+            inputFecha.value = fechaFormateada;
+
+            // Ejecutar fetch automáticamente al cargar con la fecha de ayer
+            filtrarPorFecha();
+        });
+
+        function filtrarPorFecha() {
+            const fecha = document.getElementById("fechaReporte").value;
+
+            fetch(`/TuControlador/GetCapturasHumedad?fecha=${encodeURIComponent(fecha)}`)
+                .then(response => {
+                    if (!response.ok) throw new Error("Error al obtener datos");
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Datos recibidos:", data);
+                    // aquí puedes llenar tu tabla o contenedor con los datos
+                })
+                .catch(error => {
+                    console.error("Error en la solicitud:", error);
+                });
+        }
+    </script>
+
+    @*Loading*@
+
+    <script>
+
+        (function () {
+            function showLoading() {
+                var m = document.getElementById('loadingModal');
+                if (m) m.style.display = 'block';
+            }
+            function hideLoading() {
+                var m = document.getElementById('loadingModal');
+                if (m) m.style.display = 'none';
+            }
+            // expone helpers por si quieres usarlos en otros fetch
+            window.showLoading = showLoading;
+            window.hideLoading = hideLoading;
+
+            // muestra lo antes posible (cuando el DOM ya esta parseado)
+            document.addEventListener('readystatechange', function () {
+                if (document.readyState === 'interactive') showLoading();
+            });
+
+            // oculta cuando ya cargo todo (assets incluidos)
+            window.addEventListener('load', function () {
+                setTimeout(hideLoading, 200);
+            });
+
+            // muestra al navegar/recargar (cuando cambias de pagina)
+            window.addEventListener('beforeunload', function () {
+                showLoading();
+            });
+        })();
+
+    </script>
+
+
+
+
 
 
