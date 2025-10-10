@@ -417,6 +417,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <td class="text-end" data-col="pims" data-value="${pimsRaw ?? ''}">${pimsTxt}</td>
           <td class="text-end editable-validada" data-col="validada" data-id="${dataOpId}" data-value="${valRaw ?? ''}">${valTxt}</td>
           <td class="text-center" data-col="unidad">${escapeHtml(r.UnidadMedida || '')}</td>
+          <td class="text-center">${escapeHtml(sapMovShown)}</td>
           <td class="text-center">${renderCloseStatus(!!r.StatusClose)}</td>
           <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>
         </tr>`;

@@ -1,7 +1,878 @@
-﻿
+﻿@model DVP.Models.OperationDataToReportViewModel
+
 @{
-    ViewBag.Title = "Operation";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Downtime Page";
 }
 
-<h2>Operation</h2>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+
+<style>
+    /* Estilo para el contenedor de la fecha y hora */
+    .container {
+        font-family: Arial, sans-serif;
+        display: flex; /* Usamos flex para alinearlos horizontalmente */
+        justify-content: center; /* Centra los elementos horizontalmente */
+        align-items: center; /* Centra los elementos verticalmente */
+        gap: 20px; /* Espacio entre los divs */
+        margin-top: 20px;
+    }
+    /* Estilo para los divs de fecha y hora */
+    .input-container {
+        font-size: 18px;
+        display: flex;
+        flex-direction: column; /* Los inputs se alinean de arriba hacia abajo */
+        align-items: center;
+    }
+
+    input {
+        padding: 10px;
+        font-size: 16px;
+        margin-top: 10px;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        background-color: #f0f0f0;
+    }
+
+    .scrollable-table {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa; /* color fondo header */
+        z-index: 2;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .table tbody td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 45px;
+        height: 24px;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .switch .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+            .switch .slider:before {
+                position: absolute;
+                content: "";
+                height: 18px;
+                width: 18px;
+                left: 3px;
+                bottom: 3px;
+                background-color: white;
+                transition: .4s;
+                border-radius: 50%;
+            }
+
+        .switch input:checked + .slider {
+            background-color: #13DEB9; /* Verde menta */
+        }
+
+            .switch input:checked + .slider:before {
+                transform: translateX(21px);
+            }
+
+    .switch-label {
+        font-size: 14px;
+        color: #555;
+        vertical-align: middle;
+    }
+</style>
+
+
+<body>
+    <div class="container-fluid" style="padding-left: 200px;">
+        <div class="card">
+            <div class="container-fluid">
+                <div class="container-fluid">
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
+                                Agregado correctamente!
+                            </div>
+                            <!-- Fecha de validación -->
+                            <br />
+                            <h5 class="card-title fw-semibold mb-4">
+                                <div class="d-flex flex-column align-items-end gap-2">
+                                    <br />
+                                    <select class="form-select" id="_plantaAsignada" style="width: auto; min-width: 200px;">
+                                        <option value="">Seleccione una planta</option>
+                                    </select>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button onclick="" id="btnDescargarEnergy" class="btn btn-link p-0 m-0 align-baseline" title="Download energy">
+                                            <i class="bi bi-arrow-down-circle-fill text-success ms-2"></i>
+                                        </button>
+                                        <button type="button" id="create" class="btn btn-link p-0 m-0" title="New energy">
+                                            <i class="bi bi-plus-circle-fill fs-4 text-dark"></i>
+                                        </button>
+                                        <span>Operation Validation Date:</span>
+                                        <button onclick="cerrarReporte()" id="btnCerrarReporte" class="btn btn-link p-0 m-0 align-baseline" title="Close report">
+                                            <i class="bi bi-unlock-fill text-warning ms-2"></i>
+                                        </button>
+                                        <input type="date" id="fechaReporte" onchange="filtrarPorFecha()">
+                                        <a id="btnenergy" onclick="sendtoenergyvalidation()"
+                                           class="btn btn-link p-0 m-0 align-baseline"
+                                           style="display: none;" role="button">
+                                            <i class="bi bi-arrow-right-circle-fill text-danger"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </h5>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <div id="totalkwhpims" class="alert alert-success p-2 my-2"
+                                 style="width: fit-content;">
+                                Total KWH PIMS: <strong id="countkwhpims">0</strong>
+                            </div>
+                            <div id="totalkwhvalidado" class="alert alert-success p-2 my-2"
+                                 style="width: fit-content;">
+                                Total KWH Validado: <strong id="countkwhvalidado">0</strong>
+                            </div>
+                        </div>
+                        <div id="filtrosListado" class="row g-3 mb-2"></div>
+                        <div id="contenedorListado" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @*___________________________________________________________________Modal Cargando__________________________________________________*@
+    <div id="loadingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: rgba(0, 0, 0, 0.5);">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 25px 35px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.3); min-width: 250px;">
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <img src="/Content/loading-green-loading.gif" alt="Cargando..." style="width: 40px; height: 40px; margin-right: 15px;" />
+                <span style="color: black; font-size: 16px;">Cargando...</span>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+
+
+@*List*@
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    'use strict';
+
+    const MAX_QUANTITY = 100000; // Límite máximo para la cantidad validada
+
+    const contenedorListado = document.getElementById('contenedorListado');
+    const inputFecha        = document.getElementById('fechaReporte');
+    const selectEquipoList  = document.getElementById('selectEquipoList');
+
+    // === ELEMENTOS DE TOTALES (SE MANTIENEN POR SI AÚN SE USAN EN OTROS CONTEXTOS) ===
+    // Nota: Estos totales ahora sumarán todas las cantidades validadas, independientemente del material.
+    // Si solo quieres totales de KWH, necesitarás un filtro adicional aquí.
+    const totalKwhPimsEl = document.getElementById('countkwhpims');
+    const totalKwhValidadoEl = document.getElementById('countkwhvalidado');
+    // ===================================
+
+    // URLS DE ACCIÓN
+    // NOTA: Se cambia el nombre de la URL de "GetEnergy" a "GetOperation" para reflejar el cambio en el backend.
+    const URL_GET_OPERATION = '@Url.Action("GetOperation", "OperationDataToReport")';
+    const URL_EQUIPOS    = '@Url.Action("GetEquiposporPaislogguedUser", "Equipo")';
+    // NOTA: Se mantiene la URL de guardado por simplicidad, asumiendo que el controlador puede manejar
+    // la actualización de cualquier tipo de DataOperacion.
+    const URL_SAVE_VALIDATED_QTY = '@Url.Action("UpdateEnergy", "OperationDataToReport")';
+
+    // --- Funciones de Utilidad ---
+
+    function option(el, value, text){ const o=document.createElement('option'); o.value=value; o.textContent=text; el.appendChild(o); }
+    function fillSelect(selectEl, list, valueKey, textKey, placeholder){
+      if(!selectEl) return;
+      selectEl.innerHTML=''; option(selectEl,'',placeholder);
+      (list||[]).forEach(x=>{
+        const v=x?.[valueKey], t=x?.[textKey];
+        if(v!==undefined && t!==undefined) option(selectEl,String(v),String(t));
+      });
+    }
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    function showMsg(msg,type='info'){
+      if (!msg || msg.includes('Cargando datos') || type === 'secondary' || type === 'success') {
+          contenedorListado.innerHTML = '';
+          // Limpia los totales al cargar
+          updateTotals(0, 0);
+          return;
+      }
+      if (type === 'danger' || type === 'warning') {
+          contenedorListado.innerHTML = `<div class="alert alert-${type}" role="alert" style="margin-top:8px;">${escapeHtml(msg)}</div>`;
+      }
+
+      if (type === 'danger') {
+          console.error(`Alerta 'danger' activada: Recargando en 2 segundos. Mensaje: ${msg}`);
+          setTimeout(() => {
+              window.location.reload();
+          }, 2000); // 2 segundos de espera antes de la recarga
+      }
+    }
+    // -----------------------------------------------------------------
+
+    function fmtFechaHora(d){
+      if(!d) return '';
+      const m=/\/Date\((\d+)\)\//.exec(String(d));
+      let dt=null;
+      if(m){ const ms=parseInt(m[1],10); if(!Number.isNaN(ms)) dt=new Date(ms); }
+      else dt=new Date(d);
+      if(!dt || Number.isNaN(dt.getTime())) return '';
+      const yyyy=dt.getFullYear();
+      const mm=String(dt.getMonth()+1).padStart(2,'0');
+      const dd=String(dt.getDate()).padStart(2,'0');
+      const hh=String(dt.getHours()).padStart(2,'0');
+      const mi=String(dt.getMinutes()).padStart(2,'0');
+      return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+    }
+
+    function renderCheck(v){
+        return v ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>';
+    }
+
+    function renderCloseStatus(v){
+        // Si es TRUE (cerrado/bloqueado) -> Candado cerrado (bi-lock-fill, color rojo para indicar bloqueo)
+        if (v) {
+            return '<i class="bi bi-lock-fill text-warning"></i>';
+        }
+        // Si es FALSE (abierto/desbloqueado) -> Candado abierto (bi-unlock-fill, text-warning como solicitaste)
+        else {
+            return '<i class="bi bi-unlock-fill text-warning"></i>';
+        }
+    }
+
+    function getPimsRaw(r){
+      if (r.hasOwnProperty('CantidadPIMS')) return r.CantidadPIMS;
+      if (r.hasOwnProperty('CantidadPims')) return r.CantidadPims;
+      return null;
+    }
+
+    function defaultAyerISO(){
+      const hoy = new Date();
+      const ayer = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 1);
+      return ayer.toISOString().split('T')[0];
+    }
+
+    function fmtNumero(val, decimals = 3) {
+        if (val === null || val === undefined || val === '') return '';
+        const num = Number(val);
+        if (!Number.isFinite(num)) return '';
+
+        const options = {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: decimals,
+            useGrouping: true
+        };
+        // Usamos 'en-US' (punto decimal) para el formato visual
+        return num.toLocaleString('en-US', options);
+    }
+
+
+    window.getCurrentParams = function(){
+      const fechaISO  = (inputFecha && inputFecha.value) ? inputFecha.value : defaultAyerISO();
+      const equipoId  = selectEquipoList && selectEquipoList.value ? Number(selectEquipoList.value) : null;
+      return { fechaISO, equipoId };
+    };
+
+    // ======================================================================
+    // === MODIFICACIÓN CLAVE 1: Nueva columna para OrdenProcesoSAP (SAP OP)
+    // ======================================================================
+    function buildTheadHtml(){
+      return `<thead><tr>
+        <th class="text-center">Fecha/Hora</th>
+        <th class="text-center">Equipo</th>
+        <th class="text-center">Material</th>
+        <th class="text-center">Cant PIMS</th>
+        <th class="text-center">Cant Validada</th>
+        <th class="text-center">Unidad</th>
+        <th class="text-center">Tipo Mov SAP</th>
+        <th class="text-center">SAP OP</th> <th class="text-center">Close</th>
+        <th class="text-center">Validate</th>
+      </tr></thead>`;
+    }
+    // ======================================================================
+
+
+    function updateTotals(totalPims, totalValidado) {
+        if (totalKwhPimsEl) {
+            totalKwhPimsEl.textContent = fmtNumero(totalPims, 3);
+        }
+        if (totalKwhValidadoEl) {
+            totalKwhValidadoEl.textContent = fmtNumero(totalValidado, 3);
+        }
+    }
+
+    function calculateAndRenderTotals(rows) {
+        let totalPims = 0;
+        let totalValidado = 0;
+
+        (Array.isArray(rows) ? rows : []).forEach(r => {
+            const pimsRaw = getPimsRaw(r);
+            const valRaw  = (r.CantidadValidada !== undefined) ? r.CantidadValidada : null;
+
+            // Se mantiene la suma general, aunque el nombre de las etiquetas ('kwh') podría ser engañoso.
+            if (pimsRaw !== null && Number.isFinite(pimsRaw)) {
+                totalPims += Number(pimsRaw);
+            }
+            if (valRaw !== null && Number.isFinite(valRaw)) {
+                totalValidado += Number(valRaw);
+            }
+        });
+
+        updateTotals(totalPims, totalValidado);
+    }
+
+
+    // ======================================================================
+    // === MODIFICACIÓN CLAVE 2: Adaptar renderTabla para múltiples registros/materiales
+    // ======================================================================
+    function renderTabla(rows){
+      const data = Array.isArray(rows) ? rows : [];
+
+      // 1. CÁLCULO DE TOTALES
+      calculateAndRenderTotals(data);
+
+      if(!data.length){ showMsg('No hay registros para los filtros aplicados','warning'); return; }
+
+      contenedorListado.innerHTML = '';
+
+      let tbody = '<tbody>';
+      data.forEach(r=>{
+        const pimsRaw = getPimsRaw(r);
+        const valRaw  = (r.CantidadValidada !== undefined) ? r.CantidadValidada : null;
+
+        // Si no hay DataOperacion, UnidadMedida será null y mostrará 'N/A' (del backend modificado).
+        const unidad = r.UnidadMedida || '';
+
+        // Si la data es NULL (Left Join), muestra '—'
+        const pimsTxt = (pimsRaw === null || pimsRaw === undefined) ? '—' : `${fmtNumero(pimsRaw, 3)} ${unidad}`;
+        const valTxt  = (valRaw  === null || valRaw  === undefined) ? '—' : `${fmtNumero(valRaw, 3)} ${unidad}`;
+
+        // Si la data es NULL, el material será "SIN REGISTRO" (del backend modificado).
+        const materialDesc = r.Material ?? '';
+
+        const sapMovDesc = (r.TipoMovimientoSAP && String(r.TipoMovimientoSAP).trim())
+                             || '';
+        const sapMovShown = sapMovDesc || (r.TipoMovimientoSAPID ?? '');
+
+        // Obtener la Orden de Proceso SAP
+        const sapOrder = r.OrdenProcesoSAP ?? '';
+
+
+        let fechaData = '';
+        let fechaHoraDisplay = '—';
+
+        if (r.FechaReporte){
+          const m=/\/Date\((\d+)\)\//.exec(String(r.FechaReporte));
+          const dt = m ? new Date(parseInt(m[1],10)) : new Date(r.FechaReporte);
+          if(!Number.isNaN(dt?.getTime?.())){
+            const yyyy=dt.getFullYear();
+            const mm=String(dt.getMonth()+1).padStart(2,'0');
+            const dd=String(dt.getDate()).padStart(2,'0');
+            fechaData = `${yyyy}-${mm}-${dd}`;
+            fechaHoraDisplay = fmtFechaHora(r.FechaReporte);
+          }
+        }
+
+        const dataOpId = r.DataOperacionID ?? null;
+        const equipoIdFila = r.EquipoID ?? null;
+
+        // El campo 'editable-validada' solo debe aparecer si hay un DataOperacionID al menos para actualizar.
+        // Si dataOpId es null, el campo será solo 'text-end'. Si es null, el guardado intentará una CREACIÓN.
+        // Mantenemos la clase editable para ambos casos, pero el guardado manejará la creación si dataOpId es null.
+        const isEditable = true; // Mantener editable para crear o actualizar
+
+        tbody += `<tr>
+          <td class="text-center" data-col="fecha" data-value="${escapeHtml(fechaData)}">${escapeHtml(fechaHoraDisplay)}</td>
+          <td class="text-center" data-col="equipo" data-id="${equipoIdFila}">${escapeHtml(r.Equipo || '')}</td>
+          <td class="text-center">${escapeHtml(materialDesc || '')}</td>
+          <td class="text-end" data-col="pims" data-value="${pimsRaw ?? ''}">${pimsTxt}</td>
+          <td class="text-end ${isEditable ? 'editable-validada' : ''}" data-col="validada" data-id="${dataOpId}" data-value="${valRaw ?? ''}">${valTxt}</td>
+          <td class="text-center" data-col="unidad">${escapeHtml(unidad || '')}</td>
+          <td class="text-center">${escapeHtml(sapMovShown)}</td>
+          <td class="text-center">${escapeHtml(sapOrder)}</td> <td class="text-center">${renderCloseStatus(!!r.StatusClose)}</td>
+          <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>
+        </tr>`;
+      });
+      tbody += '</tbody>';
+
+      contenedorListado.innerHTML = `
+        <div class="table-responsive w-100" style="max-height:420px; overflow-y:auto; background-color:#fff; padding:10px; border-radius:10px;">
+          <table class="table table-bordered table-sm table-striped mb-0" style="background-color:#fff;">
+            ${buildTheadHtml()}${tbody}
+          </table>
+        </div>`;
+    }
+    // ======================================================================
+
+    function cargarCapturas(params){
+      const { fechaISO, equipoId } = params;
+
+      showMsg('Cargando datos...', 'secondary');
+
+      // NOTA: Se cambia URL_GET_ENERGY por URL_GET_OPERATION
+      let url = `${URL_GET_OPERATION}?_fecha=${encodeURIComponent(fechaISO)}`;
+      if(equipoId !== null && equipoId > 0){
+          url += `&_equipoId=${encodeURIComponent(equipoId)}`;
+      }
+
+      fetch(url, { headers:{'Accept':'application/json'} })
+        .then(r=>{
+            if(!r.ok) {
+                throw new Error('HTTP ' + r.status + (r.statusText ? ': ' + r.statusText : ''));
+            }
+            return r.json();
+        })
+        .then(arr=> renderTabla(arr))
+        .catch(err=>{
+            console.error(err);
+            // Mensaje genérico para no asumir que es solo KWH
+            showMsg('No se pudo cargar la data de Operación. ' + err.message,'danger');
+        });
+    }
+
+
+    function loadEquiposList() {
+      if(!selectEquipoList) return;
+      selectEquipoList.disabled = true;
+      selectEquipoList.innerHTML = '<option value="">Cargando equipos...</option>';
+      fetch(URL_EQUIPOS, { headers:{'Accept':'application/json'} })
+        .then(r=>r.json())
+        .then(data=>{
+          if(data && data.success===false){
+            fillSelect(selectEquipoList, [], '', '', '(sesion no iniciada)');
+            return;
+          }
+          const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+          fillSelect(selectEquipoList, list, 'EquipoID', 'Descripcion', 'Todos los equipos');
+        })
+        .catch(err=>{
+          console.error('[Equipos List] ', err);
+          fillSelect(selectEquipoList, [], '', '', '(error al cargar equipos)');
+        })
+        .finally(()=>{ selectEquipoList.disabled=false; });
+    }
+
+    window.filtrarPorFecha = function(){
+      cargarCapturas(window.getCurrentParams());
+    };
+
+    // Listeners de filtro
+    if(inputFecha){
+      if(!inputFecha.value) inputFecha.value = defaultAyerISO();
+      inputFecha.addEventListener('change', window.filtrarPorFecha);
+    }
+    if(selectEquipoList){
+      selectEquipoList.addEventListener('change', window.filtrarPorFecha);
+    }
+
+    loadEquiposList();
+    window.filtrarPorFecha();
+
+    // ======================================================================
+    // === LÓGICA DE EDICIÓN EN LÍNEA PARA CANTIDAD VALIDADA =================
+    // ======================================================================
+
+    const restoreCellContent = function(cell, val) {
+        const unityEl = cell.closest('tr').querySelector('[data-col="unidad"]');
+        // Quitar la asunción de KWH
+        const unity = unityEl ? unityEl.textContent.trim() : '';
+        const txt = (val === null || val === undefined || val === '') ? '—' : `${fmtNumero(val, 3)} ${unity}`;
+        cell.textContent = txt;
+        cell.classList.remove('editing');
+    };
+
+
+    function saveValidatedQuantity(dataOpId, newQuantity, tdCell, originalValue) {
+        const tr = tdCell.closest('tr');
+
+        const fechaReporteISO = tr.querySelector('[data-col="fecha"]').getAttribute('data-value');
+
+        const equipoIdColumna = tr.querySelector('[data-col="equipo"]').getAttribute('data-id');
+        const equipoID = Number(equipoIdColumna) > 0
+                                 ? Number(equipoIdColumna)
+                                 : (window.getCurrentParams().equipoId || null);
+
+        if (!equipoID || equipoID <= 0 || !fechaReporteISO) {
+            showMsg('Error: ID de Equipo o Fecha de Reporte de la fila no válidos para crear/actualizar.', 'danger');
+            restoreCellContent(tdCell, originalValue);
+            return;
+        }
+
+        const payload = {
+            _dataOperacionId: dataOpId,
+            _cantidadValidada: newQuantity,
+            _equipoId: equipoID,
+            _fechaReporte: fechaReporteISO,
+            // NOTA: Para CREAR una nueva DataOperacion, el controlador NECESITARÍA
+            // MaterialID y UnidadMedidaID, pero como solo actualizamos un campo
+            // en una fila que ya existe (o creamos una con datos predeterminados),
+            // asumimos que el controlador maneja la lógica de creación/búsqueda.
+        };
+
+        tdCell.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+        tdCell.style.minWidth = '100px';
+
+        fetch(URL_SAVE_VALIDATED_QTY, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(r => {
+            if (!r.ok) {
+                return r.text().then(text => { throw new Error(`HTTP ${r.status}: ${r.statusText} - ${text.substring(0, 100)}...`); });
+            }
+            return r.json();
+        })
+        .then(result => {
+            if (result && result.success === true) {
+
+                let isCreation = !dataOpId;
+
+                if (isCreation && result.id) {
+                    tdCell.setAttribute('data-id', result.id);
+                }
+
+                tdCell.setAttribute('data-value', newQuantity ?? '');
+                restoreCellContent(tdCell, newQuantity);
+
+                // CAMBIO CLAVE: Llama a filtrarPorFecha (que recarga la tabla y recalcula totales)
+                setTimeout(() => {
+                    window.filtrarPorFecha();
+                }, 500);
+
+            } else {
+                throw new Error(result?.message || 'Fallo de servidor al guardar.');
+            }
+        })
+        .catch(err => {
+            console.error('Error de guardado:', err);
+            restoreCellContent(tdCell, originalValue);
+            showMsg('Error al actualizar: ' + (err.message || 'Error de red.'), 'danger');
+        })
+        .finally(() => {
+             tdCell.classList.remove('editing');
+             tdCell.style.minWidth = '';
+        });
+    }
+
+    /**
+     * Inicia la edición en línea en la celda y maneja las validaciones.
+     */
+    function startInlineEdit(tdCell) {
+        // La validación de StatusClose (si la fila está bloqueada) debería ir aquí
+        // o ser manejada por la delegación de eventos. Si no está, se mantiene como estaba.
+
+        const dataOpId = Number(tdCell.getAttribute('data-id')) || null;
+        const currentValue = tdCell.getAttribute('data-value') || '';
+
+        if (tdCell.classList.contains('editing')) {
+            return;
+        }
+
+        tdCell.classList.add('editing');
+        tdCell.innerHTML = '';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-control form-control-sm text-end';
+        input.value = currentValue;
+        input.min = '0';
+        input.style.width = '100%';
+        input.style.maxWidth = '150px';
+        input.style.margin = '0 auto';
+        input.setAttribute('placeholder', 'Max 100000.000');
+
+
+        const cancelEdit = function() {
+            if (tdCell.contains(input)) {
+                restoreCellContent(tdCell, currentValue);
+            }
+            input.removeEventListener('blur', handleAction);
+            input.removeEventListener('keyup', handleKeyup);
+        };
+
+        const handleAction = function() {
+            if (!tdCell.contains(input)) return;
+
+            const rawValue = input.value.trim();
+
+            if (rawValue === '') {
+                 saveValidatedQuantity(dataOpId, null, tdCell, currentValue);
+                 return;
+            }
+
+            if (rawValue.includes(',')) {
+                showMsg('Error de formato: Solo se permite el punto (".") como separador decimal. La coma (",") no es válida.','danger');
+                cancelEdit();
+                return;
+            }
+
+            const parts = rawValue.split('.');
+            if (parts.length > 2) {
+                showMsg('Error de formato: Solo se permite un punto decimal.','danger');
+                cancelEdit();
+                return;
+            }
+            if (parts.length === 2 && parts[1].length > 3) {
+                showMsg('Error de formato: No puede tener más de 3 dígitos después del punto.','danger');
+                cancelEdit();
+                return;
+            }
+
+            const newQuantity = Number(rawValue);
+
+            if (!Number.isFinite(newQuantity) || newQuantity < 0) {
+                showMsg('Error: El valor debe ser un número positivo válido (solo punto decimal).','danger');
+                cancelEdit();
+                return;
+            }
+
+            if (newQuantity > MAX_QUANTITY) {
+                showMsg(`Error: La cantidad no puede ser mayor a ${fmtNumero(MAX_QUANTITY)}.`, 'danger');
+                cancelEdit();
+                return;
+            }
+
+            const finalQuantity = parseFloat(newQuantity.toFixed(3));
+
+            if (String(finalQuantity) !== currentValue) {
+                saveValidatedQuantity(dataOpId, finalQuantity, tdCell, currentValue);
+            } else {
+                cancelEdit();
+            }
+        };
+
+
+        const handleKeyup = function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                input.blur();
+            } else if (e.key === 'Escape') {
+                cancelEdit();
+            }
+        };
+
+        tdCell.appendChild(input);
+
+        input.addEventListener('blur', handleAction);
+        input.addEventListener('keyup', handleKeyup);
+
+        setTimeout(() => {
+            input.focus();
+            input.select();
+        }, 0);
+    }
+
+    // Delegación de eventos
+    contenedorListado.addEventListener('click', function(e) {
+        const targetCell = e.target.closest('td.editable-validada');
+
+        if (targetCell) {
+            // Regla de NO edición si StatusClose es TRUE (Candado cerrado)
+            const tr = targetCell.closest('tr');
+            // Buscamos la columna de StatusClose para ver el icono o el valor (asumiendo que StatusClose es el penúltimo <td>)
+            // Ya que no tenemos un data-valor directo, debemos buscar el icono o el valor que viene en el JSON
+            // Una solución simple es añadir 'data-close-status' en la columna para evitar parsear HTML, pero aquí
+            // asumimos que el backend no permite guardar si está cerrado, o buscamos el icono.
+
+            // Simplificación: Asumiremos que el backend maneja el bloqueo, pero si queremos bloquear UI:
+            // if (tr.querySelector('.bi-lock-fill')) {
+            //     showMsg('Esta fila está cerrada y no se puede editar.', 'warning');
+            //     return;
+            // }
+
+            if (!targetCell.classList.contains('editing')) {
+                startInlineEdit(targetCell);
+            }
+        }
+    });
+
+});
+</script>
+
+
+@*Cerrar Reporte*@
+
+<script>
+function cerrarReporte() {
+    // 1. Obtener la fecha y el ID del equipo usando la función que ya existe
+    // Esta función maneja si el valor es el ID específico o 0/null para 'Todos'
+    const { fechaISO, equipoId } = window.getCurrentParams();
+
+    const boton = document.getElementById('btnCerrarReporte');
+    const alerta = document.getElementById("alertsuccesclose");
+
+    // 2. Solo validar que la FECHA exista, permitiendo que equipoId sea 0 o null
+    if (!fechaISO) {
+        alert("Por favor selecciona una fecha.");
+        return;
+    }
+
+    // Desactivar el botón para evitar múltiples clics
+    boton.disabled = true;
+
+    const url = '@Url.Action("CerrarReporteEnergia", "OperationDataToReport")';
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        // 3. Enviar el Body con las propiedades que espera el ViewModel de C#
+        body: JSON.stringify({
+            _fechaReporte: fechaISO,
+            _equipoId: equipoId // Se envía 0 o null si es 'Todos', o el ID específico
+        })
+    })
+    .then(response => {
+        // Manejo de errores HTTP
+        if (!response.ok) {
+            return response.json().then(error => {
+                throw new Error(error.message || `Error HTTP: ${response.status}`);
+            }).catch(() => {
+                throw new Error(`Error HTTP: ${response.status} ${response.statusText}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Lógica de éxito: mostrar alerta, guardar bandera, y recargar
+            alerta.style.display = "block";
+            localStorage.setItem('mostrarFlecha', 'true');
+
+            setTimeout(() => {
+                alerta.style.display = "none";
+                location.reload();
+            }, 3000);
+        } else {
+            // Lógica de fallo del servidor
+            alert(data.message || "No se pudo cerrar el reporte.");
+            boton.disabled = false;
+        }
+    })
+    .catch(error => {
+        // Lógica de error de red o fetch
+        console.error('Error:', error);
+        alert("Ocurrió un error al intentar cerrar el reporte: " + error.message);
+        boton.disabled = false;
+    });
+}
+
+</script>
+
+
+
+@*Fecha*@
+
+<script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const inputFecha = document.getElementById("fechaReporte");
+
+            // Obtener la fecha de ayer
+            const hoy = new Date();
+            hoy.setDate(hoy.getDate() - 1); // resta un día
+
+            // Formatear a yyyy-mm-dd
+            const año = hoy.getFullYear();
+            const mes = String(hoy.getMonth() + 1).padStart(2, "0");
+            const dia = String(hoy.getDate()).padStart(2, "0");
+            const fechaFormateada = `${año}-${mes}-${dia}`;
+
+            // Asignar la fecha al input
+            inputFecha.value = fechaFormateada;
+
+            // Ejecutar fetch automáticamente al cargar con la fecha de ayer
+            filtrarPorFecha();
+        });
+
+        function filtrarPorFecha() {
+            const fecha = document.getElementById("fechaReporte").value;
+
+            fetch(`/TuControlador/GetCapturasHumedad?fecha=${encodeURIComponent(fecha)}`)
+                .then(response => {
+                    if (!response.ok) throw new Error("Error al obtener datos");
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Datos recibidos:", data);
+                    // aquí puedes llenar tu tabla o contenedor con los datos
+                })
+                .catch(error => {
+                    console.error("Error en la solicitud:", error);
+                });
+        }
+</script>
+
+@*Loading*@
+
+<script>
+
+        (function () {
+            function showLoading() {
+                var m = document.getElementById('loadingModal');
+                if (m) m.style.display = 'block';
+            }
+            function hideLoading() {
+                var m = document.getElementById('loadingModal');
+                if (m) m.style.display = 'none';
+            }
+            // expone helpers por si quieres usarlos en otros fetch
+            window.showLoading = showLoading;
+            window.hideLoading = hideLoading;
+
+            // muestra lo antes posible (cuando el DOM ya esta parseado)
+            document.addEventListener('readystatechange', function () {
+                if (document.readyState === 'interactive') showLoading();
+            });
+
+            // oculta cuando ya cargo todo (assets incluidos)
+            window.addEventListener('load', function () {
+                setTimeout(hideLoading, 200);
+            });
+
+            // muestra al navegar/recargar (cuando cambias de pagina)
+            window.addEventListener('beforeunload', function () {
+                showLoading();
+            });
+        })();
+
+</script>
+
+
+
+
+
 

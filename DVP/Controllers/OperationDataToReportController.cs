@@ -532,7 +532,7 @@ namespace DVP.Controllers
 
             // 1. Obtener TODOS los equipos que el usuario logueado puede ver
             var todosLosEquipos = _dvpEntities.Equipo
-                .Where(e => e.PaisID == 1) // Asume que tienes este filtro de seguridad
+                .Where(e => e.PlantaID == 1) // Asume que tienes este filtro de seguridad
                 .Select(e => new { EquipoID = e.EquipoID, Descripcion = e.Descripcion })
                 .ToList();
 
@@ -582,6 +582,7 @@ namespace DVP.Controllers
                     UnidadMedida = x.Data?.UnidadMedida?.Descripcion ?? "KWH",
                     TipoMovimientoSAPID = x.Data?.TipoMovimientoSAPID,
                     TipoMovimientoSAP = x.Data?.TipoMovimientoSAP?.Descripcion,
+                    TipoMovimientoSAPDescripcion = x.Data?.TipoMovimientoSAP?.Descripcion,
 
                     // La fecha de reporte será la fecha filtrada (day), o la fecha real si existe
                     FechaReporte = x.Data?.FechaReporte ?? day,
@@ -723,6 +724,92 @@ namespace DVP.Controllers
                 return Json(new { success = false, message = "Error en la operación de cierre de reporte: " + ex.Message });
             }
         }
+
+
+
+        [HttpGet]
+        public JsonResult GetOperation(DateTime? _fecha, int? _equipoId = null)
+        {
+            // Obtener la fecha de inicio del día
+            var day = (_fecha ?? DateTime.Today).Date;
+
+            // 1. Obtener TODOS los equipos que el usuario logueado puede ver
+            var todosLosEquipos = _dvpEntities.Equipo
+                .Where(e => e.PlantaID == 1) // Asume que tienes este filtro de seguridad
+                .Select(e => new { EquipoID = e.EquipoID, Descripcion = e.Descripcion })
+                .ToList();
+
+            // 2. Obtener la data de operación para el día SIN FILTRO DE KWH
+            var datos = _dvpEntities.DataOperacion
+                .Where(d => DbFunctions.TruncateTime(d.FechaReporte) == day)
+                .ToList();
+
+            // 3. Aplicar el filtro de equipo si fue seleccionado
+            if (_equipoId.HasValue && _equipoId.Value > 0)
+            {
+                int eqId = _equipoId.Value;
+                todosLosEquipos = todosLosEquipos.Where(e => e.EquipoID == eqId).ToList();
+                // Opcional: Filtra la data también si solo quieres ver la del equipo seleccionado
+                datos = datos.Where(d => d.EquipoID == eqId).ToList();
+            }
+
+            // 4. Transformar los datos: Unir equipos con TODA su data de operación
+            var resultados = todosLosEquipos
+                .GroupJoin(
+                    datos,
+                    equipo => equipo.EquipoID,
+                    data => data.EquipoID,
+                    (equipo, dataGroup) => new
+                    {
+                        EquipoID = equipo.EquipoID,
+                        Equipo = equipo.Descripcion,
+                        // **Aquí cambiamos:** ahora dataGroup es una colección de registros (puede ser vacía)
+                        DataOperacion = dataGroup
+                    }
+                )
+                // **Nueva Estrategia:** Usar SelectMany para aplanar la lista.
+                // Por cada equipo y por cada registro de DataOperacion asociado (o un registro NULL si no hay data)
+                .SelectMany(
+                    x => x.DataOperacion.DefaultIfEmpty(), // Si DataOperacion está vacío, genera un elemento NULL
+                    (equipoData, data) => new
+                    {
+                        Data = data, // El registro de DataOperacion completo o NULL
+                        EquipoID = equipoData.EquipoID,
+                        Equipo = equipoData.Equipo
+                    }
+                )
+                .OrderBy(x => x.Equipo)
+                .Select(x => new
+                {
+                    DataOperacionID = x.Data?.DataOperacionID,
+                    EquipoID = x.EquipoID,
+                    Equipo = x.Equipo,
+
+                    // Si hay Data, toma el Material. Si no, usa un valor predeterminado, ej: "SIN REGISTRO"
+                    Material = x.Data?.Material?.Descripcion ?? "SIN REGISTRO",
+
+                    // Si hay Data, toma la Cantidad. Si no, pon 0.0
+                    CantidadPIMS = x.Data?.CantidadPIMS ?? 0.0m,
+                    CantidadPims = x.Data?.CantidadPIMS ?? 0.0m, // Duplicado en original, mantenido por consistencia
+                    CantidadValidada = x.Data?.CantidadValidada ?? 0.0m,
+
+                    UnidadMedidaID = x.Data?.UnidadMedidaID,
+                    UnidadMedida = x.Data?.UnidadMedida?.Descripcion ?? "N/A",
+                    TipoMovimientoSAPID = x.Data?.TipoMovimientoSAPID,
+                    TipoMovimientoSAP = x.Data?.TipoMovimientoSAP?.Descripcion,
+
+                    // La fecha de reporte será la fecha filtrada (day) si no hay data, o la fecha real si existe
+                    FechaReporte = x.Data?.FechaReporte ?? day,
+                    StatusClose = x.Data?.StatusClose ?? false,
+                    StatusValidate = x.Data?.StatusValidate ?? false,
+                    OrdenProcesoSAP = x.Data?.OrdenProcesoSAP
+                })
+                .ToList();
+
+            return Json(resultados, JsonRequestBehavior.AllowGet);
+        }
+
+
 
         public const int HUMEDAD = 11;
         public const int KWH_OPERATION = 4;
