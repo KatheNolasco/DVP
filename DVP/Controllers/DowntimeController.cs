@@ -1804,8 +1804,8 @@ namespace DVP.Controllers
 
         public static string RunPythonScript(string fecha = null)
         {
-            var exePath = ConfigurationManager.AppSettings["PythonExePath"];
-            var scriptPath = ConfigurationManager.AppSettings["PythonScriptPath"];
+            var exePath = ConfigurationManager.AppSettings["PythonExePathDowntimeDO"];
+            var scriptPath = ConfigurationManager.AppSettings["PythonScriptPathDowntimeDO"];
 
             if (string.IsNullOrEmpty(fecha))
                 fecha = DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd");

@@ -2,6 +2,7 @@
 using DVP.Models;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data.Entity;
 using System.Linq;
 using System.Web;
@@ -604,9 +605,6 @@ namespace DVP.Controllers
                 if (data._statusClose == true)
                     return Json(new { success = false, message = "No se pueden modificar campos ya cerrados." });
 
-                if (data._fechaReporte.Date <= DateTime.Now.AddDays(-2))
-                    return Json(new { success = false, message = "No se puede registrar 2 dias anteriores o mas del dia actual." });
-
                 if (data._fechaReporte.Date >= DateTime.Now.Date)
                     return Json(new { success = false, message = "No se puede registrar en día mayor o igual del dia actual." });
 
@@ -623,6 +621,14 @@ namespace DVP.Controllers
                 if (materialIdKwh <= 0)
                     return Json(new { success = false, message = "Error: No se pudo determinar el Material ID para KWH." });
 
+
+                bool existeDatos = _dvpEntities.DataOperacion
+                                   .Any(e => e.FechaReporte == data._fechaReporte.Date &&
+                                   e.StatusClose == true &&
+                                   e.TipoOperacionID == KWH_OPERATION);
+
+                if (existeDatos)
+                    return Json(new { success = false, message = $"No se puede agregar data para esta fecha {data._fechaReporte.ToShortDateString()} debido a que el reporte esta cerrado" });
 
                 // ----------------------------------------------------------------------------------
                 // === LÓGICA DE ACTUALIZACIÓN (Si DataOperacionID > 0) ===
@@ -645,6 +651,7 @@ namespace DVP.Controllers
                         return Json(new { success = false, message = "El registro no corresponde a KWH." });
 
                     registroAActualizar.CantidadValidada = data._cantidadValidada.Value;
+                    registroAActualizar.StatusValidate = true;
                     _dvpEntities.SaveChanges();
 
                     return Json(new { success = true, id = registroAActualizar.DataOperacionID, message = "Energía (KWH) actualizada." });
@@ -688,26 +695,24 @@ namespace DVP.Controllers
         {
             try
             {
-                // 1. Validar la fecha
-                // Asumiendo que data._fechaReporte es un DateTime o similar y que default significa nulo/no válido.
-                if (data._fechaReporte == default)
+                if (data._fechaReporte == default(DateTime))
                 {
                     return Json(new { success = false, message = "Debe proporcionar una fecha de reporte válida." });
                 }
 
-                var query = _dvpEntities.DataOperacion
-                    .Where(e => e.FechaReporte == data._fechaReporte && e.StatusClose == false && e.TipoOperacionID == KWH_OPERATION);
+                var fechaReporte = data._fechaReporte.Date; 
 
-                if (data._equipoId > 0)
-                {
-                    query = query.Where(e => e.EquipoID == data._equipoId);
-                }
+                var query = _dvpEntities.DataOperacion
+                       .Where(e => e.FechaReporte == fechaReporte &&
+                       e.StatusClose == false && 
+                       e.StatusValidate == true && 
+                       e.TipoOperacionID == KWH_OPERATION);
 
                 var energylist = query.ToList();
 
                 if (!energylist.Any())
                 {
-                    return Json(new { success = false, message = "No se encontraron reportes de energía abiertos para cerrar con los filtros proporcionados." });
+                    return Json(new { success = false, message = $"No se encontraron reportes de energía abiertos y validados para la fecha {data._fechaReporte.ToShortDateString()}." });
                 }
 
                 foreach (var energy in energylist)
@@ -717,15 +722,15 @@ namespace DVP.Controllers
 
                 _dvpEntities.SaveChanges();
 
-                return Json(new { success = true, message = $"Se cerraron exitosamente {energylist.Count} reportes." });
+                return Json(new { success = true, message = $"Se cerraron exitosamente {energylist.Count} reportes validados." });
 
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex.ToString());
                 return Json(new { success = false, message = "Error en la operación de cierre de reporte: " + ex.Message });
             }
         }
-
 
 
         [HttpGet]
@@ -822,6 +827,52 @@ namespace DVP.Controllers
                 .ToList();
 
             return Json(resultados, JsonRequestBehavior.AllowGet);
+        }
+
+
+        public static string RunPythonScriptKWH(string fecha = null)
+        {
+            var exePath = ConfigurationManager.AppSettings["PythonExePathKWHdo"];
+            var scriptPath = ConfigurationManager.AppSettings["PythonScriptPathKWHdo"];
+
+            if (string.IsNullOrEmpty(fecha))
+                fecha = DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd");
+
+            var start = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = exePath,
+                Arguments = $"\"{scriptPath}\" {fecha}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+                StandardOutputEncoding = System.Text.Encoding.UTF8,
+                StandardErrorEncoding = System.Text.Encoding.UTF8,
+                WorkingDirectory = System.IO.Path.GetDirectoryName(scriptPath)
+            };
+
+            using (var process = System.Diagnostics.Process.Start(start))
+            {
+                string stdout = process.StandardOutput.ReadToEnd();
+                string stderr = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                    stdout += $"\nEXIT CODE: {process.ExitCode}";
+
+                if (!string.IsNullOrEmpty(stderr))
+                    stdout += "\nERROR: " + stderr;
+
+                return stdout;
+            }
+        }
+
+
+        [HttpGet]
+        public JsonResult EjecutarScriptKWH(string fecha = null)
+        {
+            string resultado = RunPythonScriptKWH(fecha);
+            return Json(new { success = true, output = resultado }, JsonRequestBehavior.AllowGet);
         }
 
 

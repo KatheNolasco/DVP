@@ -140,11 +140,18 @@ namespace DVP.Controllers
                     return Json(new { success = false, message = "No encontrado." });
 
                 bool yaExiste = _dvpEntities.TagEquipo.Any(t =>
-                    t.EquipoID == data._equipoId &&
-                    t.TipoOperacionID == data._tipoOperacionId && t.MaterialID == data._materialId ||
-                    t.EquipoID == data._equipoId &&
-                    t.TipoOperacionID == data._tipoOperacionId
-                );
+                         t.TagEquipoID != data._tagEquipoId && 
+                         (
+                             (t.EquipoID == data._equipoId &&
+                              t.TagCode == data._tagCode &&
+                              t.TagName == data._tagName &&
+                              t.TipoOperacionID == data._tipoOperacionId &&
+                              t.MaterialID == data._materialId)
+                             ||
+                             (t.EquipoID == data._equipoId &&
+                              t.TipoOperacionID == data._tipoOperacionId)
+                         )
+                       );
 
                 if (yaExiste)
                     return Json(new { success = false, message = "Ya existe otro tag con ese Tipo de operación para este equipo ó material." });
@@ -167,7 +174,6 @@ namespace DVP.Controllers
             }
         }
 
-
         [HttpGet]
         public JsonResult GetTagId(int tagId)
         {
@@ -184,7 +190,8 @@ namespace DVP.Controllers
                     _tipoOperacionDescripcion = p.TipoOperacion.Descripcion,
                     _equipoId = p.EquipoID,
                     _equipoDescripcion = p.Equipo.Descripcion,
-                    _materialId = p.Material.Descripcion
+                    _materialId = p.MaterialID,
+                    _materialDescripcion = p.Material.Descripcion
                 })
                 .FirstOrDefault();
 

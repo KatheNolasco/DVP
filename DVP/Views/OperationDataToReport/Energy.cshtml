@@ -128,9 +128,6 @@
                                         <button onclick="" id="btnDescargarEnergy" class="btn btn-link p-0 m-0 align-baseline" title="Download energy">
                                             <i class="bi bi-arrow-down-circle-fill text-success ms-2"></i>
                                         </button>
-                                        <button type="button" id="create" class="btn btn-link p-0 m-0" title="New energy">
-                                            <i class="bi bi-plus-circle-fill fs-4 text-dark"></i>
-                                        </button>
                                         <span>Energy Validation Date:</span>
                                         <button onclick="cerrarReporte()" id="btnCerrarReporte" class="btn btn-link p-0 m-0 align-baseline" title="Close report">
                                             <i class="bi bi-unlock-fill text-warning ms-2"></i>
@@ -144,13 +141,6 @@
                                     </div>
                                 </div>
                             </h5>
-                        </div>
-                        <div class="mb-3">
-                            <div class="d-flex">
-                                <select class="form-select" id="kwhmaterial" disabled>
-                                    <option value="KWH">KWH</option>
-                                </select>
-                            </div>
                         </div>
                         <div style="display: flex; gap: 10px;">
                             <div id="totalkwhpims" class="alert alert-success p-2 my-2"
@@ -190,7 +180,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
-    const MAX_QUANTITY = 100000; // Límite máximo para la cantidad validada
+    const MAX_QUANTITY = 500000; // Límite máximo para la cantidad validada
 
     const contenedorListado = document.getElementById('contenedorListado');
     const inputFecha        = document.getElementById('fechaReporte');
@@ -585,7 +575,6 @@ document.addEventListener('DOMContentLoaded', function () {
      * Inicia la edición en línea en la celda y maneja las validaciones.
      */
     function startInlineEdit(tdCell) {
-        // ... (Tu lógica de startInlineEdit sin cambios) ...
         const dataOpId = Number(tdCell.getAttribute('data-id')) || null;
         const currentValue = tdCell.getAttribute('data-value') || '';
 
@@ -599,15 +588,16 @@ document.addEventListener('DOMContentLoaded', function () {
         const input = document.createElement('input');
         input.type = 'text';
         input.className = 'form-control form-control-sm text-end';
+        // Mostrar el valor actual tal como está, sin forzar formato
         input.value = currentValue;
         input.min = '0';
         input.style.width = '100%';
         input.style.maxWidth = '150px';
         input.style.margin = '0 auto';
-        input.setAttribute('placeholder', 'Max 100000.000');
+        input.setAttribute('placeholder', `Max ${fmtNumero(MAX_QUANTITY)}`); // Usar fmtNumero para el placeholder
 
 
-        const cancelEdit = function() {
+        const cancelEdit = function () {
             if (tdCell.contains(input)) {
                 restoreCellContent(tdCell, currentValue);
             }
@@ -615,64 +605,115 @@ document.addEventListener('DOMContentLoaded', function () {
             input.removeEventListener('keyup', handleKeyup);
         };
 
-        // *** FUNCIÓN CLAVE DE VALIDACIÓN Y GUARDADO ***
-        const handleAction = function() {
+        // *** FUNCIÓN CLAVE DE VALIDACIÓN Y GUARDADO MODIFICADA ***
+        const handleAction = function () {
             if (!tdCell.contains(input)) return;
 
-            const rawValue = input.value.trim();
+            let rawValue = input.value.trim();
 
             if (rawValue === '') {
-                 saveValidatedQuantity(dataOpId, null, tdCell, currentValue);
-                 return;
-            }
-
-            if (rawValue.includes(',')) {
-                showMsg('Error de formato: Solo se permite el punto (".") como separador decimal. La coma (",") no es válida.','danger');
-                cancelEdit();
+                saveValidatedQuantity(dataOpId, null, tdCell, currentValue);
                 return;
             }
 
-            const parts = rawValue.split('.');
-            if (parts.length > 2) {
-                showMsg('Error de formato: Solo se permite un punto decimal.','danger');
-                cancelEdit();
-                return;
-            }
-            if (parts.length === 2 && parts[1].length > 3) {
-                showMsg('Error de formato: No puede tener más de 3 dígitos después del punto.','danger');
-                cancelEdit();
-                return;
+            // 1. REEMPLAZAR COMA POR PUNTO
+            // Permite el uso de coma (,) como separador decimal, luego lo convierte a punto (.)
+            // Esto asume que el usuario no está usando ambos, lo cual es el estándar.
+            // Si el valor contiene una coma, reemplazamos la última coma por un punto.
+            // Para evitar problemas con el separador de miles.
+
+            // Reemplaza el último separador decimal (punto o coma) si es el único o el último en la cadena.
+            // Ejemplo: '100.000,50' -> '100000.50' (quita miles)
+            // Ejemplo: '100,50' -> '100.50'
+            // Ejemplo: '100.50' -> '100.50' (sin cambios si solo hay punto)
+
+            // Normalizar: quitar separadores de miles (punto o coma, lo que no sea el decimal final)
+            // Buscar el último separador decimal.
+            const lastComma = rawValue.lastIndexOf(',');
+            const lastDot = rawValue.lastIndexOf('.');
+
+            let normalizedValue = rawValue;
+
+            if (lastComma > lastDot) {
+                // La coma es el separador decimal (ej: 1.000,50 o 100,50)
+                // Removemos todos los puntos y luego cambiamos la coma final a punto.
+                normalizedValue = normalizedValue.replace(/\./g, '');
+                normalizedValue = normalizedValue.replace(',', '.');
+            } else if (lastDot > lastComma && lastComma !== -1) {
+                // El punto es el separador decimal y hay comas (ej: 1,000.50)
+                // Removemos todas las comas.
+                normalizedValue = normalizedValue.replace(/,/g, '');
+            } else if (lastDot !== -1 && lastComma === -1) {
+                // Solo hay puntos (ej: 1.000.50 - inválido, o 100.50)
+                // Si hay más de un punto, es un formato de miles incorrecto o inválido.
+                if ((normalizedValue.match(/\./g) || []).length > 1) {
+                    // Tratar el último punto como decimal y quitar los demás (miles).
+                    // Esto es una simplificación; un buen input debería usar `1000.50` o `1,000.50`.
+                    // Pero si llega '1.000.50', lo tratamos como '1000.50'
+                    const parts = normalizedValue.split('.');
+                    if (parts.length > 2 && parts[parts.length - 1].length <= 3) {
+                        normalizedValue = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
+                    }
+                }
+            } else if (lastComma !== -1 && lastDot === -1) {
+                // Solo hay comas (ej: 1.000,50 - inválido, o 100,50)
+                if ((normalizedValue.match(/,/g) || []).length > 1) {
+                    // Tratar la última coma como decimal y quitar las demás (miles).
+                    const parts = normalizedValue.split(',');
+                    if (parts.length > 2 && parts[parts.length - 1].length <= 3) {
+                        normalizedValue = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
+                    } else if (parts.length === 2) {
+                        // Es solo el decimal: 100,50 -> 100.50
+                        normalizedValue = normalizedValue.replace(',', '.');
+                    }
+                } else if ((normalizedValue.match(/,/g) || []).length === 1) {
+                    // Es solo el decimal: 100,50 -> 100.50
+                    normalizedValue = normalizedValue.replace(',', '.');
+                }
             }
 
-            const newQuantity = Number(rawValue);
+            // 2. VALIDACIÓN NUMÉRICA Y DE DECIMALES
+            const newQuantity = Number(normalizedValue);
 
             if (!Number.isFinite(newQuantity) || newQuantity < 0) {
-                showMsg('Error: El valor debe ser un número positivo válido (solo punto decimal).','danger');
+                showMsg('Error: El valor debe ser un número positivo válido. Puede usar punto o coma como separador decimal.', 'danger');
                 cancelEdit();
                 return;
             }
 
+            // Validar más de 3 decimales
+            const decimalPart = normalizedValue.split('.')[1];
+            if (decimalPart && decimalPart.length > 3) {
+                showMsg('Error de formato: No puede tener más de 3 dígitos después del separador decimal.', 'danger');
+                cancelEdit();
+                return;
+            }
+
+            // 3. VALIDACIÓN DE LÍMITE
             if (newQuantity > MAX_QUANTITY) {
-                showMsg(`Error: La cantidad no puede ser mayor a ${fmtNumero(MAX_QUANTITY)}.`, 'danger');
+                showMsg(`Error: La cantidad no puede ser mayor a ${fmtNumero(MAX_QUANTITY, 0)}.`, 'danger');
                 cancelEdit();
                 return;
             }
 
+            // 4. PREPARAR VALOR FINAL
+            // Siempre guardar con un máximo de 3 decimales para consistencia
             const finalQuantity = parseFloat(newQuantity.toFixed(3));
 
-            if (String(finalQuantity) !== currentValue) {
+            // Comprobar si realmente cambió el valor
+            if (String(finalQuantity) !== String(currentValue)) {
                 saveValidatedQuantity(dataOpId, finalQuantity, tdCell, currentValue);
             } else {
                 cancelEdit();
             }
         };
-        // *** FIN FUNCIÓN CLAVE DE VALIDACIÓN Y GUARDADO ***
+        // *** FIN FUNCIÓN CLAVE DE VALIDACIÓN Y GUARDADO MODIFICADA ***
 
 
-        const handleKeyup = function(e) {
+        const handleKeyup = function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                input.blur();
+                input.blur(); // Usar blur para disparar handleAction
             } else if (e.key === 'Escape') {
                 cancelEdit();
             }
@@ -701,6 +742,8 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
+
+@*Cerrar Reporte*@
 
 <script>
 function cerrarReporte() {
@@ -770,86 +813,141 @@ function cerrarReporte() {
 
 </script>
 
-    
 
-    @*Fecha*@
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const inputFecha = document.getElementById("fechaReporte");
+@*Fecha*@
 
-            // Obtener la fecha de ayer
-            const hoy = new Date();
-            hoy.setDate(hoy.getDate() - 1); // resta un día
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const inputFecha = document.getElementById("fechaReporte");
 
-            // Formatear a yyyy-mm-dd
-            const año = hoy.getFullYear();
-            const mes = String(hoy.getMonth() + 1).padStart(2, "0");
-            const dia = String(hoy.getDate()).padStart(2, "0");
-            const fechaFormateada = `${año}-${mes}-${dia}`;
+        // Obtener la fecha de ayer
+        const hoy = new Date();
+        hoy.setDate(hoy.getDate() - 1); // resta un día
 
-            // Asignar la fecha al input
-            inputFecha.value = fechaFormateada;
+        // Formatear a yyyy-mm-dd
+        const año = hoy.getFullYear();
+        const mes = String(hoy.getMonth() + 1).padStart(2, "0");
+        const dia = String(hoy.getDate()).padStart(2, "0");
+        const fechaFormateada = `${año}-${mes}-${dia}`;
 
-            // Ejecutar fetch automáticamente al cargar con la fecha de ayer
-            filtrarPorFecha();
+        // Asignar la fecha al input
+        inputFecha.value = fechaFormateada;
+
+        // Ejecutar fetch automáticamente al cargar con la fecha de ayer
+        filtrarPorFecha();
+    });
+
+    function filtrarPorFecha() {
+        const fecha = document.getElementById("fechaReporte").value;
+
+        fetch(`/TuControlador/GetCapturasHumedad?fecha=${encodeURIComponent(fecha)}`)
+            .then(response => {
+                if (!response.ok) throw new Error("Error al obtener datos");
+                return response.json();
+            })
+            .then(data => {
+                console.log("Datos recibidos:", data);
+                // aquí puedes llenar tu tabla o contenedor con los datos
+            })
+            .catch(error => {
+                console.error("Error en la solicitud:", error);
+            });
+    }
+</script>
+
+@*Loading*@
+
+<script>
+
+    (function () {
+        function showLoading() {
+            var m = document.getElementById('loadingModal');
+            if (m) m.style.display = 'block';
+        }
+        function hideLoading() {
+            var m = document.getElementById('loadingModal');
+            if (m) m.style.display = 'none';
+        }
+        // expone helpers por si quieres usarlos en otros fetch
+        window.showLoading = showLoading;
+        window.hideLoading = hideLoading;
+
+        // muestra lo antes posible (cuando el DOM ya esta parseado)
+        document.addEventListener('readystatechange', function () {
+            if (document.readyState === 'interactive') showLoading();
         });
 
-        function filtrarPorFecha() {
-            const fecha = document.getElementById("fechaReporte").value;
+        // oculta cuando ya cargo todo (assets incluidos)
+        window.addEventListener('load', function () {
+            setTimeout(hideLoading, 200);
+        });
 
-            fetch(`/TuControlador/GetCapturasHumedad?fecha=${encodeURIComponent(fecha)}`)
-                .then(response => {
-                    if (!response.ok) throw new Error("Error al obtener datos");
-                    return response.json();
-                })
-                .then(data => {
-                    console.log("Datos recibidos:", data);
-                    // aquí puedes llenar tu tabla o contenedor con los datos
-                })
-                .catch(error => {
-                    console.error("Error en la solicitud:", error);
+        // muestra al navegar/recargar (cuando cambias de pagina)
+        window.addEventListener('beforeunload', function () {
+            showLoading();
+        });
+    })();
+
+</script>
+
+
+
+<script>
+
+    function cargando() {
+        document.getElementById("loadingModal").style.display = "block";
+    };
+
+    //________________________________________________________________________ Llamar el script de python para descargar paros _____________________________________//
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const btn = document.getElementById("btnDescargarEnergy");
+        const fechaInput = document.getElementById("fechaReporte");
+        const alertaOk = document.getElementById("alertsuccesclose");
+
+        btn.addEventListener("click", async function () {
+            // Tomar fecha o usar hoy
+            let fecha = fechaInput?.value;
+            if (!fecha) {
+                const hoy = new Date();
+                const yyyy = hoy.getFullYear();
+                const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+                const dd = String(hoy.getDate()).padStart(2, '0');
+                fecha = `${yyyy}-${mm}-${dd}`;
+            }
+
+            const url = `/OperationDataToReport/EjecutarScriptKWH?fecha=${encodeURIComponent(fecha)}`;
+
+            // Mostrar cargando
+            cargando();
+            btn.disabled = true;
+
+            try {
+                const resp = await fetch(url, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
                 });
-        }
-    </script>
+                if (!resp.ok) throw new Error(`Status ${resp.status}`);
 
-    @*Loading*@
+                const data = await resp.json();
+                if (!data?.success) throw new Error(data?.error || "Fallo al ejecutar el script.");
 
-    <script>
-
-        (function () {
-            function showLoading() {
-                var m = document.getElementById('loadingModal');
-                if (m) m.style.display = 'block';
+                // ÉXITO: mostrar alerta y recargar
+                alertaOk.style.display = "block";
+                setTimeout(() => {
+                    location.reload();
+                }, 1200);
+            } catch (err) {
+                console.error(err);
+                alert("Ocurrió un error al ejecutar el script. Revisa la consola.");
+            } finally {
+                // Ocultar cargando en el mismo bloque
+                document.getElementById("loadingModal").style.display = "none";
+                btn.disabled = false;
             }
-            function hideLoading() {
-                var m = document.getElementById('loadingModal');
-                if (m) m.style.display = 'none';
-            }
-            // expone helpers por si quieres usarlos en otros fetch
-            window.showLoading = showLoading;
-            window.hideLoading = hideLoading;
-
-            // muestra lo antes posible (cuando el DOM ya esta parseado)
-            document.addEventListener('readystatechange', function () {
-                if (document.readyState === 'interactive') showLoading();
-            });
-
-            // oculta cuando ya cargo todo (assets incluidos)
-            window.addEventListener('load', function () {
-                setTimeout(hideLoading, 200);
-            });
-
-            // muestra al navegar/recargar (cuando cambias de pagina)
-            window.addEventListener('beforeunload', function () {
-                showLoading();
-            });
-        })();
-
-    </script>
-
-
-
-
+        });
+    });
+</script>
 
 

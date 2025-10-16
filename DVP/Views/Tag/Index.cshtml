@@ -119,10 +119,10 @@
                                             <thead style="position: sticky; top: 0; background-color: #ffffff; z-index: 2;">
                                                 <tr>
                                                     <th class="text-center">Status</th>
-                                                    <th class="text-center">Tag Name</th>
                                                     <th class="text-center">Tag Code</th>
+                                                    <th class="text-center">Name</th>
                                                     <th class="text-center">Operation Type</th>
-                                                    <th class="text-center">Equipment</th>
+                                                    <th class="text-center">Material</th>
                                                     <th class="text-center">Actions</th>
                                                 </tr>
                                             </thead>
@@ -177,12 +177,12 @@
                                                 <input type="text" class="form-control" id="_descripcion" required>
                                             </div>
                                             <div class="mb-3">
-                                                <label class="form-label">Tag Name</label>
-                                                <input type="text" class="form-control" id="_tagName" required>
-                                            </div>
-                                            <div class="mb-3">
                                                 <label class="form-label">Tag Code</label>
                                                 <input type="text" class="form-control" id="_tagCode" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Tag Name</label>
+                                                <input type="text" class="form-control" id="_tagName" required>
                                             </div>
                                             <div class="mb-3">
                                                 <label class="form-label">Tipo de Operación</label>
@@ -282,6 +282,12 @@
                                                     <label class="form-label">Equipo</label>
                                                     <select class="form-select" id="_equipoIdeditar">
                                                         <option value="">Seleccione un equipo</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Materiales</label>
+                                                    <select class="form-select" id="_materialIdeditar">
+                                                        <option value="">Seleccione un Material</option>
                                                     </select>
                                                 </div>
                                                 <div class="form-check form-switch mb-3">
@@ -559,10 +565,10 @@
               : '<i class="bi bi-x-circle-fill text-danger"></i>'
             }
           </td>
-          <td class="text-center">${item._descripcion || ''}</td>
           <td class="text-center">${item._tagCode || ''}</td>
+          <td class="text-center">${item._descripcion || ''}</td>
           <td class="text-center">${item._tipoOperacionDescripcion || ''}</td>
-          <td class="text-center">${item._equipoDescripcion || ''}</td>
+          <td class="text-center">${item._materialDescripcion || ''}</td>
           <td class="text-center bg-white">
             <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditarTag(${item._tagEquipoId})">
               <i class="bi bi-pencil me-2"></i>
@@ -595,14 +601,27 @@
     // Mostrar cargando
     document.getElementById("loadingModal").style.display = "block";
 
+    // 1. Obtener datos de selects (Equipos, Tipos Operación, Materiales)
     Promise.all([
-        fetch('@Url.Action("GetEquiposporPaislogguedUser", "Equipo")').then(res => res.json()),
-        fetch('@Url.Action("GetTipoOperacion", "Tag")').then(res => res.json())
+        fetch('@Url.Action("GetEquiposporPlantalogguedUser", "Equipo")').then(res => res.json()), // Retorna lista directa [{}, {}]
+        fetch('@Url.Action("GetTipoOperacion", "Tag")').then(res => res.json()),              // Retorna lista directa [{}, {}]
+        fetch('@Url.Action("GetMateriales", "Material")').then(res => res.json()),            // Retorna { data: [{}, {}] }
     ])
-    .then(([equipos, tiposOperacion]) => {
+    .then(([resultEquipos, resultTiposOperacion, resultMateriales]) => {
+
+        // 🚀 CORRECCIÓN CLAVE:
+        // Las respuestas que devuelven solo la lista deben usarse directamente (resultEquipos, resultTiposOperacion)
+        // Las respuestas envueltas deben usar .data (resultMateriales)
+        const equipos = resultEquipos.data || resultEquipos;
+        const tiposOperacion = resultTiposOperacion.data || resultTiposOperacion;
+        const materiales = resultMateriales.data || []; // Asumimos que Materiales sigue envuelto en 'data'
+
+        // Las propiedades de las listas SÍ son correctas (PascalCase), así que las mantenemos.
         llenarSelect('_equipoIdeditar', equipos, 'EquipoID', 'Descripcion');
         llenarSelect('_tipoOperacionIdeditar', tiposOperacion, 'TipoOperacionID', 'Descripcion');
+        llenarSelect('_materialIdeditar', materiales, '_materialID', '_descripcion'); // Este formato funciona
 
+        // 2. Obtener los datos del Tag (este retorna { success: true, data: { ... } })
         return fetch('@Url.Action("GetTagId", "Tag")' + '?tagId=' + tagId);
     })
     .then(res => res.json())
@@ -610,17 +629,17 @@
         if (result.success) {
             const data = result.data;
 
+            // Asignar valores a campos de texto y checkbox
             document.getElementById("tagIdhidden").value = data._tagEquipoId;
             document.getElementById("_descripcioneditar").value = data._descripcion;
             document.getElementById("_tagNameeditar").value = data._tagName;
             document.getElementById("_tagCodeeditar").value = data._tagCode;
             document.getElementById("_activoeditar").checked = data._activo;
 
-            // Asignar valores a los selects
-            setTimeout(() => {
-                document.getElementById("_tipoOperacionIdeditar").value = data._tipoOperacionId?.toString();
-                document.getElementById("_equipoIdeditar").value = data._equipoId?.toString();
-            }, 100);
+            // ✅ Asignar valores a los selects (usa los IDs que devuelve GetTagId con guion bajo)
+            document.getElementById("_tipoOperacionIdeditar").value = data._tipoOperacionId?.toString();
+            document.getElementById("_equipoIdeditar").value = data._equipoId?.toString();
+            document.getElementById("_materialIdeditar").value = data._materialId?.toString();
 
             // Abrir modal de edicion
             const modalElement = document.getElementById("editTag");
@@ -638,10 +657,7 @@
         // Ocultar cargando siempre al final
         document.getElementById("loadingModal").style.display = "none";
     });
-}
-
-
-
+    }
 
 
     function llenarSelect(selectId, items, valueProp, textProp) {
@@ -667,7 +683,9 @@
         _tagCode: document.getElementById("_tagCodeeditar").value,
         _tipoOperacionId: document.getElementById("_tipoOperacionIdeditar").value,
         _equipoId: document.getElementById("_equipoIdeditar").value,
-        _activo: document.getElementById("_activoeditar").checked
+        _activo: document.getElementById("_activoeditar").checked,
+        _materialId: document.getElementById("_materialIdeditar").value,
+
     };
 
     fetch('@Url.Action("EditTag", "Tag")', {
