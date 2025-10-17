@@ -97,6 +97,7 @@
                             <div class="card-body p-4">
                                 <div class="text-end mb-3">
                                     <div class="d-flex justify-content-end align-items-center gap-2 mb-3">
+                                        Total Tags: <strong id="countdata">0</strong>
                                         <i class="bi bi-binoculars-fill text-success"></i>
                                         <input type="text" class="form-control form-control-sm w-25" id="_buscar" placeholder="Buscar...">
                                         <button type="button" onclick="newEquipment()" class="btn btn-outline-dark btn-sm">
@@ -123,6 +124,7 @@
                                                     <th class="text-center">Name</th>
                                                     <th class="text-center">Operation Type</th>
                                                     <th class="text-center">Material</th>
+                                                    <th class="text-center">Equpment</th>
                                                     <th class="text-center">Actions</th>
                                                 </tr>
                                             </thead>
@@ -334,9 +336,6 @@
 
 <script>
 
-    document.addEventListener("DOMContentLoaded", function () {
-        loadEquipmentTable();
-    });
 
     function cargando() {
         document.getElementById("loadingModal").style.display = "block";
@@ -456,137 +455,153 @@
 
     //____________________________________________________________________ Mostrar Tags en el datatable_______________________________________________//
 
-  function cargarSelectFiltroEquipos() {
+
+function cargarSelectFiltroEquipos() {
     const sel = document.getElementById('selectFiltroEquipo');
-      sel.innerHTML = '<option value="">Equipment filter</option>';
+    sel.innerHTML = '<option value="">Equipment filter</option>';
 
     fetch('@Url.Action("GetEquiposporPlantalogguedUser", "Equipo")')
-      .then(r => r.json())
-      .then(data => {
-        if (!Array.isArray(data)) return;
-        data.forEach(eq => {
-          const opt = document.createElement('option');
-          opt.value = String(eq.EquipoID);
-          opt.textContent = eq.Descripcion || ('Equipo ' + eq.EquipoID);
-          sel.appendChild(opt);
-        });
-      })
-      .catch(err => console.error('Error cargando equipos filtro:', err));
-  }
+        .then(r => r.json())
+        .then(data => {
+            if (!Array.isArray(data)) return;
+            data.forEach(eq => {
+                const opt = document.createElement('option');
+                opt.value = String(eq.EquipoID);
+                opt.textContent = eq.Descripcion || ('Equipo ' + eq.EquipoID);
+                sel.appendChild(opt);
+            });
+        })
+        .catch(err => console.error('Error cargando equipos filtro:', err));
+}
 
-  function cargarSelectFiltroTipoOperacion() {
+function cargarSelectFiltroTipoOperacion() {
     const sel = document.getElementById('selectFiltroTipoOperacion');
-      sel.innerHTML = '<option value="">Operation type filter</option>';
+    sel.innerHTML = '<option value="">Operation type filter</option>';
 
     fetch('@Url.Action("GetTipoOperacion", "Tag")')
-      .then(r => r.json())
-      .then(data => {
-        if (!Array.isArray(data)) return;
-        data.forEach(op => {
-          const opt = document.createElement('option');
-          opt.value = String(op.TipoOperacionID);
-          opt.textContent = op.Descripcion || ('Tipo ' + op.TipoOperacionID);
-          sel.appendChild(opt);
-        });
-      })
-      .catch(err => console.error('Error cargando tipos operacion:', err));
-  }
+        .then(r => r.json())
+        .then(data => {
+            if (!Array.isArray(data)) return;
+            data.forEach(op => {
+                const opt = document.createElement('option');
+                opt.value = String(op.TipoOperacionID);
+                opt.textContent = op.Descripcion || ('Tipo ' + op.TipoOperacionID);
+                sel.appendChild(opt);
+            });
+        })
+        .catch(err => console.error('Error cargando tipos operacion:', err));
+}
 
-  function aplicarFiltros() {
+function aplicarFiltros() {
     const equipoId = document.getElementById('selectFiltroEquipo').value;
-    const tipoId   = document.getElementById('selectFiltroTipoOperacion').value;
+    const tipoId = document.getElementById('selectFiltroTipoOperacion').value;
 
     const filas = document.querySelectorAll('#downtimeTableBody tr');
     let visibles = 0;
 
     filas.forEach(tr => {
-      const filaEquipoId = tr.getAttribute('data-equipo-id') || '';
-      const filaTipoId   = tr.getAttribute('data-tipo-id') || '';
+        const filaEquipoId = tr.getAttribute('data-equipo-id') || '';
+        const filaTipoId = tr.getAttribute('data-tipo-id') || '';
 
-      const coincideEquipo = !equipoId || filaEquipoId === equipoId;
-      const coincideTipo   = !tipoId   || filaTipoId   === tipoId;
+        const coincideEquipo = !equipoId || filaEquipoId === equipoId;
+        const coincideTipo = !tipoId || filaTipoId === tipoId;
 
-      const mostrar = coincideEquipo && coincideTipo;
-      tr.style.display = mostrar ? '' : 'none';
-      if (mostrar) visibles++;
+        const mostrar = coincideEquipo && coincideTipo;
+        tr.style.display = mostrar ? '' : 'none';
+        if (mostrar) visibles++;
     });
 
-  }
+    // 🌟 ACTUALIZA EL CONTADOR DE FILAS VISIBLES
+    const countElement = document.getElementById('countdata');
+    if (countElement) {
+        countElement.textContent = visibles;
+    } else {
+        // Log de advertencia si el elemento del contador no existe
+        console.warn("Elemento con ID 'countdata' no encontrado para el contador.");
+    }
+}
 
-  document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
+    // 1. Asignar eventos de cambio para los filtros
     document.getElementById('selectFiltroEquipo')
-      .addEventListener('change', aplicarFiltros);
+        .addEventListener('change', aplicarFiltros);
 
     document.getElementById('selectFiltroTipoOperacion')
-      .addEventListener('change', aplicarFiltros);
+        .addEventListener('change', aplicarFiltros);
 
-    // Cargar opciones para ambos filtros al iniciar
+    // 2. Cargar opciones para ambos filtros al iniciar
     cargarSelectFiltroEquipos();
     cargarSelectFiltroTipoOperacion();
-  });
 
-  function loadEquipmentTable() {
-  const tbody = document.getElementById('downtimeTableBody');
-  tbody.innerHTML = '';
+    // 3. 🚀 INICIA LA CARGA DE LA TABLA
+    loadEquipmentTable();
+});
 
-  cargando();
+function loadEquipmentTable() {
+    const tbody = document.getElementById('downtimeTableBody');
+    // 💡 IMPORTANTE: Limpia el cuerpo de la tabla para evitar la duplicación de datos
+    tbody.innerHTML = '';
 
-  fetch('@Url.Action("GetTagsByPlantAndEquipment", "Tag")', { credentials: 'include' })
-    .then(async (response) => {
-      if (!response.ok) throw new Error('HTTP ' + response.status);
-      // Intenta parsear JSON; si te devolvieran HTML por redirección, esto fallará:
-      return await response.json();
-    })
-    .then(payload => {
-      // Esperamos { success: bool, data: [...] }
-      if (!payload || typeof payload !== 'object') {
-        alert('Respuesta inválida (no es objeto).');
-        return;
-      }
-      if (!payload.success) {
-        // Muestra el mensaje real del backend
-        alert(payload.message || 'Solicitud no exitosa.');
-        return;
-      }
-      if (!Array.isArray(payload.data)) {
-        alert('Respuesta inválida (data no es arreglo).');
-        return;
-      }
+    cargando(); // Asumiendo que 'cargando()' es una función existente.
 
-      payload.data.forEach(item => {
-        const row = document.createElement('tr');
-        row.setAttribute('data-equipo-id', item._equipoId != null ? String(item._equipoId) : '');
-        row.setAttribute('data-tipo-id',   item._tipoOperacionId != null ? String(item._tipoOperacionId) : '');
-
-        row.innerHTML = `
-          <td class="text-center">
-            ${item._activo
-              ? '<i class="bi bi-check-circle-fill text-success"></i>'
-              : '<i class="bi bi-x-circle-fill text-danger"></i>'
+    fetch('@Url.Action("GetTagsByPlantAndEquipment", "Tag")', { credentials: 'include' })
+        .then(async (response) => {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return await response.json();
+        })
+        .then(payload => {
+            if (!payload || typeof payload !== 'object' || !payload.success || !Array.isArray(payload.data)) {
+                // Si la respuesta del servidor es exitosa pero la data es incorrecta
+                console.error('Error: Respuesta inválida o solicitud no exitosa.', payload);
+                // No retornar aquí para que se ejecute el finally y oculte el modal,
+                // a menos que quieras bloquear completamente.
             }
-          </td>
-          <td class="text-center">${item._tagCode || ''}</td>
-          <td class="text-center">${item._descripcion || ''}</td>
-          <td class="text-center">${item._tipoOperacionDescripcion || ''}</td>
-          <td class="text-center">${item._materialDescripcion || ''}</td>
-          <td class="text-center bg-white">
-            <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditarTag(${item._tagEquipoId})">
-              <i class="bi bi-pencil me-2"></i>
-            </a>
-          </td>
-        `;
-        tbody.appendChild(row);
-      });
 
-      aplicarFiltros();
-    })
-    .catch(error => {
-      console.error('Error cargando la tabla de equipos:', error);
-      alert('Ocurrió un error al cargar los equipos.');
-    })
-    .finally(() => {
-      document.getElementById('loadingModal').style.display = 'none';
-    });
+            // Si hay datos, procesarlos
+            if (Array.isArray(payload.data)) {
+                payload.data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.setAttribute('data-equipo-id', item._equipoId != null ? String(item._equipoId) : '');
+                    row.setAttribute('data-tipo-id', item._tipoOperacionId != null ? String(item._tipoOperacionId) : '');
+
+                    row.innerHTML = `
+                        <td class="text-center">
+                            ${item._activo
+                                ? '<i class="bi bi-check-circle-fill text-success"></i>'
+                                : '<i class="bi bi-x-circle-fill text-danger"></i>'
+                            }
+                        </td>
+                        <td class="text-center">${item._tagCode || ''}</td>
+                        <td class="text-center">${item._descripcion || ''}</td>
+                        <td class="text-center">${item._tipoOperacionDescripcion || ''}</td>
+                        <td class="text-center">${item._materialDescripcion || ''}</td>
+                        <td class="text-center">${item._equipoDescripcion || ''}</td>
+                        <td class="text-center bg-white">
+                            <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditarTag(${item._tagEquipoId})">
+                                <i class="bi bi-pencil me-2"></i>
+                            </a>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+
+            // 🌟 INICIALIZA EL CONTADOR DE FILAS CON EL TOTAL CARGADO
+            aplicarFiltros();
+        })
+        .catch(error => {
+            // ⭐ Solo loguear el error en la consola (elimina el alert molesto)
+            console.error('Error cargando la tabla de equipos:', error);
+
+            // Opcional: si la tabla está vacía después del error, puedes mostrar un mensaje
+            if (tbody.childElementCount === 0) {
+                 // Puedes usar console.error o alert(error.message) para debug,
+                 // pero por ahora, solo la consola para ser menos intrusivo.
+            }
+        })
+        .finally(() => {
+            document.getElementById('loadingModal').style.display = 'none';
+        });
 }
 
 

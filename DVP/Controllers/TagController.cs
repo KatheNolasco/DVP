@@ -206,7 +206,7 @@ namespace DVP.Controllers
         [HttpGet]
         public JsonResult GetTags()
         {
-            var equipos = _dvpEntities.TagEquipo
+            var tagsQuery = _dvpEntities.TagEquipo
                 .Select(p => new
                 {
                     _tagEquipoId = p.TagEquipoID,
@@ -218,11 +218,13 @@ namespace DVP.Controllers
                     _tipoOperacionDescripcion = p.TipoOperacion.Descripcion,
                     _equipoId = p.EquipoID,
                     _equipoDescripcion = p.Equipo.Descripcion,
-                    _materialDescripcion = p.Material.Descripcion
-                })
-                .ToList();
+                    _materialDescripcion = p.Material.Descripcion 
+                });
 
-            if (equipos == null)
+            var equipos = tagsQuery.Distinct().ToList();
+
+            if (equipos == null || equipos.Count == 0) 
+
             {
                 return Json(new { success = false, message = "No encontrado" }, JsonRequestBehavior.AllowGet);
             }
@@ -235,7 +237,6 @@ namespace DVP.Controllers
         {
             try
             {
-
                 var tokenEnSession = Session["token"] as string;
                 if (string.IsNullOrEmpty(tokenEnSession))
                     return Json(new { success = false, message = "Sesión no iniciada" }, JsonRequestBehavior.AllowGet);
@@ -250,7 +251,7 @@ namespace DVP.Controllers
                 if (usuario.PlantaID == null)
                     return Json(new { success = false, message = "El usuario no tiene planta asignada" }, JsonRequestBehavior.AllowGet);
 
-                var tags = _dvpEntities.TagEquipo
+                var projectedTags = _dvpEntities.TagEquipo
                     .AsNoTracking()
                     .Where(t => t.Equipo != null && t.Equipo.PlantaID == usuario.PlantaID)
                     .Select(p => new
@@ -265,7 +266,11 @@ namespace DVP.Controllers
                         _equipoId = p.EquipoID,
                         _equipoDescripcion = p.Equipo != null ? p.Equipo.Descripcion : null,
                         _materialDescripcion = p.Material != null ? p.Material.Descripcion : null
-                    })
+                    });
+
+                // 🌟 APLICAMOS DISTINCT PARA ELIMINAR CUALQUIER DUPLICADO PROVENIENTE DE JOINS
+                var tags = projectedTags
+                    .Distinct()
                     .OrderBy(x => x._equipoDescripcion)
                     .ThenBy(x => x._descripcion)
                     .ToList();
@@ -280,7 +285,6 @@ namespace DVP.Controllers
                 return Json(new { success = false, message = "Error al obtener tags: " + ex.Message }, JsonRequestBehavior.AllowGet);
             }
         }
-
 
 
 
