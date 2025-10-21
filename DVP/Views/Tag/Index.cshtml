@@ -111,6 +111,9 @@
                                         <select id="selectFiltroTipoOperacion" class="form-select" style="max-width: 420px;">
                                             <option value="">Operation type filter</option>
                                         </select>
+                                        <select id="selectFiltroMaterialProducido" class="form-select" style="max-width: 420px;">
+                                            <option value="">Material type filter</option>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="d-flex gap-3">
@@ -123,8 +126,9 @@
                                                     <th class="text-center">Tag Code</th>
                                                     <th class="text-center">Name</th>
                                                     <th class="text-center">Operation Type</th>
-                                                    <th class="text-center">Material</th>
+                                                    <th class="text-center">Material Consumido</th>
                                                     <th class="text-center">Equpment</th>
+                                                    <th class="text-center">Material Producido</th>
                                                     <th class="text-center">Actions</th>
                                                 </tr>
                                             </thead>
@@ -197,15 +201,21 @@
                                         <!-- Columna derecha -->
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label class="form-label">Material</label>
+                                                <label class="form-label">Equipo</label>
+                                                <select class="form-select" id="_equipoId">
+                                                    <option value="">Seleccione un equipo</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Material Consumido</label>
                                                 <select class="form-select" id="_materialId">
                                                     <option value="">Seleccione un material</option>
                                                 </select>
                                             </div>
                                             <div class="mb-3">
-                                                <label class="form-label">Equipo</label>
-                                                <select class="form-select" id="_equipoId">
-                                                    <option value="">Seleccione un equipo</option>
+                                                <label class="form-label">Material Producido</label>
+                                                <select class="form-select" id="_materialProducidoId">
+                                                    <option value="">Seleccione un material</option>
                                                 </select>
                                             </div>
                                             <div class="form-check form-switch mb-3">
@@ -214,8 +224,6 @@
                                             </div>
                                         </div>
                                     </div>
-
-
                                     <!-- Botón y alerta -->
                                     <div class="text-end mt-3">
                                         <button type="button" id="creartag" class="btn btn-outline-success m-1"
@@ -223,7 +231,6 @@
                                             Crear <span class="text-success ms-2">&#10004;</span>
                                         </button>
                                     </div>
-
                                     <div id="alertSuccess" class="alert alert-success mt-3" role="alert" style="display: none;">
                                         ¡Creado exitosamente!
                                     </div>
@@ -287,8 +294,14 @@
                                                     </select>
                                                 </div>
                                                 <div class="mb-3">
-                                                    <label class="form-label">Materiales</label>
+                                                    <label class="form-label">Materiales Consumido</label>
                                                     <select class="form-select" id="_materialIdeditar">
+                                                        <option value="">Seleccione un Material</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Material Producido</label>
+                                                    <select class="form-select" id="_materialProducidoIdeditar">
                                                         <option value="">Seleccione un Material</option>
                                                     </select>
                                                 </div>
@@ -334,82 +347,137 @@
 }
 
 
+
+
 <script>
 
-
+    //________________________________________________________________________________________________New Tag___________________________________
     function cargando() {
         document.getElementById("loadingModal").style.display = "block";
     }
 
-    //___________________________________________________________________ Crear Tag __________________________________________________________________//
+    function limpiarSelect(selectId, placeholder = "Seleccione una opción") {
+        const select = document.getElementById(selectId);
+        select.innerHTML = `<option value="">${placeholder}</option>`;
+    }
 
-        function newEquipment() {
+    function llenarSelect(selectId, items, valueProp, textProp) {
+        const select = document.getElementById(selectId);
+        const data = items.data || items;
+        if (!Array.isArray(data) || data.length === 0) return;
+
+        data.forEach(item => {
+            if (item[valueProp] != null) {
+                const opt = document.createElement("option");
+                opt.value = String(item[valueProp]);
+                opt.textContent = item[textProp];
+                select.appendChild(opt);
+            }
+        });
+    }
+
+    const getSafeId = (id) => {
+        if (id == null || id === 0 || id === "0") return '';
+        let idStr = String(id).trim();
+        if (idStr.endsWith('.0')) {
+            idStr = idStr.substring(0, idStr.length - 2);
+        }
+        return idStr;
+    };
+
+    function newEquipment() {
         const modalElement = document.getElementById("newTag");
         const modal = new bootstrap.Modal(modalElement);
         modal.show();
         cargarCombosEquipo();
+
+        const selectEquipo = document.getElementById("_equipoId");
+        selectEquipo.onchange = null;
+        selectEquipo.onchange = function() {
+            const equipoId = this.value;
+            cargarMaterialesProducidosCreate(equipoId);
+            cargarMaterialesConsumidosCreate(equipoId);
+        };
     }
 
     function cargarCombosEquipo() {
         limpiarSelect("_tipoOperacionId", "Seleccione un tipo de operacion");
         limpiarSelect("_equipoId", "Seleccione un equipo");
-        limpiarSelect("_materialId", "Seleccione un material (opcional)");
+        limpiarSelect("_materialId", "Seleccione un Equipo primero");
+        limpiarSelect("_materialProducidoId", "Seleccione un Equipo primero");
 
-        // Equipo
         fetch('@Url.Action("GetEquiposporPlantalogguedUser", "Equipo")')
             .then(r => r.json())
             .then(data => llenarSelect("_equipoId", data, "EquipoID", "Descripcion"));
 
-        // Tipo Operacion
         fetch('@Url.Action("GetTipoOperacion", "Tag")')
             .then(r => r.json())
             .then(data => llenarSelect("_tipoOperacionId", data, "TipoOperacionID", "Descripcion"));
+    }
 
-        // Material (endpoint con wrapper { success, data })
-        fetch('@Url.Action("GetMateriales", "Material")')
-            .then(r => r.json())
+    function cargarMaterialesConsumidosCreate(equipoId) {
+        const selectId = '_materialId';
+        const select = document.getElementById(selectId);
+        if (!equipoId) {
+            limpiarSelect(selectId, "Seleccione un Equipo primero");
+            return;
+        }
+        select.innerHTML = '<option value="">Cargando materiales...</option>';
+        const url = '@Url.Action("GetMaterialesConsumidosByEquipo", "Material")' + '?equipoId=' + equipoId;
+        fetch(url)
+            .then(res => res.json())
             .then(result => {
-                if (!result || result.success !== true || !Array.isArray(result.data)) return;
-                llenarSelect("_materialId", result.data, "_materialID", "_descripcion");
+                const materialesConsumo = result.data || result;
+                const placeholderText = Array.isArray(materialesConsumo) && materialesConsumo.length > 0 ? "Seleccione un material (opcional)" : "No hay materiales de consumo disponibles";
+                limpiarSelect(selectId, placeholderText);
+                llenarSelect(selectId, materialesConsumo, 'MaterialID', 'Descripcion');
             })
-            .catch(err => console.error("Error cargando materiales:", err));
+            .catch(error => {
+                console.error("Error al cargar materiales consumidos:", error);
+                select.innerHTML = '<option value="">Error al cargar materiales</option>';
+            });
     }
 
-    function llenarSelect(selectId, data, valueField, textField) {
+    function cargarMaterialesProducidosCreate(equipoId) {
+        const selectId = '_materialProducidoId';
         const select = document.getElementById(selectId);
-        data.forEach(item => {
-            const opt = document.createElement("option");
-            opt.value = item[valueField];
-            opt.text = item[textField];
-            select.appendChild(opt);
-        });
+        if (!equipoId) {
+            limpiarSelect(selectId, "Seleccione un Equipo primero");
+            return;
+        }
+        select.innerHTML = '<option value="">Cargando materiales...</option>';
+        const url = '@Url.Action("GetMaterialesProducidosByEquipo", "Material")' + '?equipoId=' + equipoId;
+        fetch(url)
+            .then(res => res.json())
+            .then(result => {
+                const materialesProducidos = result.data || result;
+                const placeholderText = Array.isArray(materialesProducidos) && materialesProducidos.length > 0 ? "Seleccione una opción" : "No hay materiales disponibles";
+                limpiarSelect(selectId, placeholderText);
+                llenarSelect(selectId, materialesProducidos, 'MaterialID', 'Descripcion');
+            })
+            .catch(error => {
+                console.error("Error al cargar materiales producidos:", error);
+                select.innerHTML = '<option value="">Error al cargar materiales</option>';
+            });
     }
 
-    function limpiarSelect(selectId, placeholder) {
-        const select = document.getElementById(selectId);
-        const text = placeholder || "Seleccione una opcion";
-        select.innerHTML = `<option value="">${text}</option>`;
-    }
-
-    document.getElementById("creartag").addEventListener("click", crearEquipoNuevo);
+    document.getElementById("creartag")?.addEventListener("click", crearEquipoNuevo);
 
     function crearEquipoNuevo() {
-        const descripcion = document.getElementById("_descripcion").value.trim();
-        const tagName = document.getElementById("_tagName").value.trim();
-        const tagCode = document.getElementById("_tagCode").value.trim();
-
-        const tipoOperacionVal = document.getElementById("_tipoOperacionId").value;
-        const equipoVal = document.getElementById("_equipoId").value;
-        const materialVal = document.getElementById("_materialId").value; // puede ser ""
-
+        const descripcion = document.getElementById("_descripcion")?.value.trim();
+        const tagName = document.getElementById("_tagName")?.value.trim();
+        const tagCode = document.getElementById("_tagCode")?.value.trim();
+        const tipoOperacionVal = document.getElementById("_tipoOperacionId")?.value;
+        const equipoVal = document.getElementById("_equipoId")?.value;
+        const materialVal = document.getElementById("_materialId")?.value;
+        const materialProducidoVal = document.getElementById("_materialProducidoId")?.value;
         const tipoOperacionId = tipoOperacionVal ? parseInt(tipoOperacionVal) : null;
         const equipoId = equipoVal ? parseInt(equipoVal) : null;
-        const materialId = materialVal ? parseInt(materialVal) : null; // opcional
+        const materialId = materialVal ? parseInt(materialVal) : null;
+        const materialProducidoId = materialProducidoVal ? parseInt(materialProducidoVal) : null;
+        const activo = document.getElementById("_activo")?.checked;
+        const url = document.getElementById("creartag")?.getAttribute("data-url");
 
-        const activo = document.getElementById("_activo").checked;
-        const url = document.getElementById("creartag").getAttribute("data-url");
-
-        // validaciones basicas (material no requerido)
         if (!descripcion || !tagName || !tagCode || !tipoOperacionId || !equipoId) {
             alert("Complete los campos requeridos.");
             return;
@@ -421,8 +489,9 @@
             _tagCode: tagCode,
             _tipoOperacionId: tipoOperacionId,
             _equipoId: equipoId,
-            _materialId: materialId, // puede ir null
-            _activo: activo
+            _materialId: materialId,
+            _activo: activo,
+            _materialProducidoId: materialProducidoId
         };
 
         fetch(url, {
@@ -434,13 +503,12 @@
         .then(result => {
             if (result.success) {
                 const alertEl = document.getElementById("alertSuccess");
-                alertEl.style.display = "block";
-
+                if (alertEl) alertEl.style.display = "block";
                 setTimeout(() => {
-                    alertEl.style.display = "none";
+                    if (alertEl) alertEl.style.display = "none";
                     const modal = bootstrap.Modal.getInstance(document.getElementById("newTag"));
-                    modal.hide();
-                    document.querySelector("#newTag form").reset();
+                    if (modal) modal.hide();
+                    document.querySelector("#newTag form")?.reset();
                     if (typeof loadEquipmentTable === "function") loadEquipmentTable();
                 }, 1500);
             } else {
@@ -453,306 +521,405 @@
         });
     }
 
-    //____________________________________________________________________ Mostrar Tags en el datatable_______________________________________________//
 
+    //______________________________________________________________________________________Tag List_______________________________________________
 
-function cargarSelectFiltroEquipos() {
-    const sel = document.getElementById('selectFiltroEquipo');
-    sel.innerHTML = '<option value="">Equipment filter</option>';
-
-    fetch('@Url.Action("GetEquiposporPlantalogguedUser", "Equipo")')
-        .then(r => r.json())
-        .then(data => {
-            if (!Array.isArray(data)) return;
-            data.forEach(eq => {
-                const opt = document.createElement('option');
-                opt.value = String(eq.EquipoID);
-                opt.textContent = eq.Descripcion || ('Equipo ' + eq.EquipoID);
-                sel.appendChild(opt);
-            });
-        })
-        .catch(err => console.error('Error cargando equipos filtro:', err));
-}
-
-function cargarSelectFiltroTipoOperacion() {
-    const sel = document.getElementById('selectFiltroTipoOperacion');
-    sel.innerHTML = '<option value="">Operation type filter</option>';
-
-    fetch('@Url.Action("GetTipoOperacion", "Tag")')
-        .then(r => r.json())
-        .then(data => {
-            if (!Array.isArray(data)) return;
-            data.forEach(op => {
-                const opt = document.createElement('option');
-                opt.value = String(op.TipoOperacionID);
-                opt.textContent = op.Descripcion || ('Tipo ' + op.TipoOperacionID);
-                sel.appendChild(opt);
-            });
-        })
-        .catch(err => console.error('Error cargando tipos operacion:', err));
-}
-
-function aplicarFiltros() {
-    const equipoId = document.getElementById('selectFiltroEquipo').value;
-    const tipoId = document.getElementById('selectFiltroTipoOperacion').value;
-
-    const filas = document.querySelectorAll('#downtimeTableBody tr');
-    let visibles = 0;
-
-    filas.forEach(tr => {
-        const filaEquipoId = tr.getAttribute('data-equipo-id') || '';
-        const filaTipoId = tr.getAttribute('data-tipo-id') || '';
-
-        const coincideEquipo = !equipoId || filaEquipoId === equipoId;
-        const coincideTipo = !tipoId || filaTipoId === tipoId;
-
-        const mostrar = coincideEquipo && coincideTipo;
-        tr.style.display = mostrar ? '' : 'none';
-        if (mostrar) visibles++;
-    });
-
-    // 🌟 ACTUALIZA EL CONTADOR DE FILAS VISIBLES
-    const countElement = document.getElementById('countdata');
-    if (countElement) {
-        countElement.textContent = visibles;
-    } else {
-        // Log de advertencia si el elemento del contador no existe
-        console.warn("Elemento con ID 'countdata' no encontrado para el contador.");
+    function guardarFiltros() {
+        const equipoId = document.getElementById('selectFiltroEquipo')?.value;
+        const tipoId = document.getElementById('selectFiltroTipoOperacion')?.value;
+        const materialProducidoId = document.getElementById('selectFiltroMaterialProducido')?.value;
+        localStorage.setItem('filtroEquipoId', equipoId || '');
+        localStorage.setItem('filtroTipoOperacionId', tipoId || '');
+        localStorage.setItem('filtroMaterialProducidoId', materialProducidoId || '');
     }
-}
 
-document.addEventListener('DOMContentLoaded', function () {
-    // 1. Asignar eventos de cambio para los filtros
-    document.getElementById('selectFiltroEquipo')
-        .addEventListener('change', aplicarFiltros);
+    function cargarSelectFiltroEquipos() {
+        const sel = document.getElementById('selectFiltroEquipo');
+        if (!sel) return Promise.resolve();
+        limpiarSelect('selectFiltroEquipo', 'Equipment filter');
+        const savedEquipoId = localStorage.getItem('filtroEquipoId');
+        return fetch('@Url.Action("GetEquiposporPlantalogguedUser", "Equipo")')
+            .then(r => r.json())
+            .then(data => {
+                llenarSelect('selectFiltroEquipo', data, "EquipoID", "Descripcion");
+                if (savedEquipoId) {
+                    sel.value = savedEquipoId;
+                }
+            })
+            .catch(err => console.error('Error cargando equipos filtro:', err));
+    }
 
-    document.getElementById('selectFiltroTipoOperacion')
-        .addEventListener('change', aplicarFiltros);
+    function cargarSelectFiltroTipoOperacion() {
+        const sel = document.getElementById('selectFiltroTipoOperacion');
+        if (!sel) return Promise.resolve();
+        limpiarSelect('selectFiltroTipoOperacion', 'Operation type filter');
+        const savedTipoId = localStorage.getItem('filtroTipoOperacionId');
+        return fetch('@Url.Action("GetTipoOperacion", "Tag")')
+            .then(r => r.json())
+            .then(data => {
+                llenarSelect('selectFiltroTipoOperacion', data, "TipoOperacionID", "Descripcion");
+                if (savedTipoId) {
+                    sel.value = savedTipoId;
+                }
+            })
+            .catch(err => console.error('Error cargando tipos operacion:', err));
+    }
 
-    // 2. Cargar opciones para ambos filtros al iniciar
-    cargarSelectFiltroEquipos();
-    cargarSelectFiltroTipoOperacion();
+    function cargarSelectFiltroMaterialProducidoDinamico(equipoId) {
+        const selectId = 'selectFiltroMaterialProducido';
+        const sel = document.getElementById(selectId);
+        if (!sel) return Promise.resolve();
+        const savedMaterialId = localStorage.getItem('filtroMaterialProducidoId') || "";
 
-    // 3. 🚀 INICIA LA CARGA DE LA TABLA
-    loadEquipmentTable();
-});
+        limpiarSelect(selectId, "Material type filter");
 
-function loadEquipmentTable() {
-    const tbody = document.getElementById('downtimeTableBody');
-    // 💡 IMPORTANTE: Limpia el cuerpo de la tabla para evitar la duplicación de datos
-    tbody.innerHTML = '';
+        if (!equipoId) {
+            return Promise.resolve();
+        }
 
-    cargando(); // Asumiendo que 'cargando()' es una función existente.
+        sel.innerHTML = '<option value="">Cargando materiales...</option>';
+        const url = '@Url.Action("GetMaterialesProducidosByEquipo", "Material")' + '?equipoId=' + equipoId;
+        return fetch(url)
+            .then(res => res.json())
+            .then(result => {
+                const materialesProducidos = result.data || result;
+                limpiarSelect(selectId, "Material type filter");
+                llenarSelect(selectId, materialesProducidos, 'MaterialID', 'Descripcion');
 
-    fetch('@Url.Action("GetTagsByPlantAndEquipment", "Tag")', { credentials: 'include' })
-        .then(async (response) => {
-            if (!response.ok) throw new Error('HTTP ' + response.status);
-            return await response.json();
-        })
-        .then(payload => {
-            if (!payload || typeof payload !== 'object' || !payload.success || !Array.isArray(payload.data)) {
-                // Si la respuesta del servidor es exitosa pero la data es incorrecta
-                console.error('Error: Respuesta inválida o solicitud no exitosa.', payload);
-                // No retornar aquí para que se ejecute el finally y oculte el modal,
-                // a menos que quieras bloquear completamente.
-            }
+                if (savedMaterialId) {
+                    const opciones = Array.from(sel.options).map(opt => opt.value);
+                    if (opciones.includes(savedMaterialId)) {
+                        sel.value = savedMaterialId;
+                    } else {
+                        sel.value = "";
+                    }
+                } else {
+                    sel.value = "";
+                }
 
-            // Si hay datos, procesarlos
-            if (Array.isArray(payload.data)) {
-                payload.data.forEach(item => {
-                    const row = document.createElement('tr');
-                    row.setAttribute('data-equipo-id', item._equipoId != null ? String(item._equipoId) : '');
-                    row.setAttribute('data-tipo-id', item._tipoOperacionId != null ? String(item._tipoOperacionId) : '');
+                localStorage.removeItem('filtroMaterialProducidoId');
+            })
+            .catch(error => {
+                console.error("Error al cargar materiales producidos para el filtro:", error);
+                limpiarSelect(selectId, "Error al cargar");
+            });
+    }
 
-                    row.innerHTML = `
-                        <td class="text-center">
-                            ${item._activo
-                                ? '<i class="bi bi-check-circle-fill text-success"></i>'
-                                : '<i class="bi bi-x-circle-fill text-danger"></i>'
-                            }
-                        </td>
-                        <td class="text-center">${item._tagCode || ''}</td>
-                        <td class="text-center">${item._descripcion || ''}</td>
-                        <td class="text-center">${item._tipoOperacionDescripcion || ''}</td>
-                        <td class="text-center">${item._materialDescripcion || ''}</td>
-                        <td class="text-center">${item._equipoDescripcion || ''}</td>
-                        <td class="text-center bg-white">
-                            <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditarTag(${item._tagEquipoId})">
-                                <i class="bi bi-pencil me-2"></i>
-                            </a>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            }
+    function loadEquipmentTable() {
+        const tbody = document.getElementById('downtimeTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        const countElement = document.getElementById('countdata');
+        if (countElement) {
+             countElement.textContent = '0';
+        }
+        cargando();
 
-            // 🌟 INICIALIZA EL CONTADOR DE FILAS CON EL TOTAL CARGADO
-            aplicarFiltros();
-        })
-        .catch(error => {
-            // ⭐ Solo loguear el error en la consola (elimina el alert molesto)
-            console.error('Error cargando la tabla de equipos:', error);
+        const equipoId = getSafeId(document.getElementById('selectFiltroEquipo')?.value);
+        const tipoId = getSafeId(document.getElementById('selectFiltroTipoOperacion')?.value);
+        const materialProducidoId = getSafeId(document.getElementById('selectFiltroMaterialProducido')?.value);
 
-            // Opcional: si la tabla está vacía después del error, puedes mostrar un mensaje
-            if (tbody.childElementCount === 0) {
-                 // Puedes usar console.error o alert(error.message) para debug,
-                 // pero por ahora, solo la consola para ser menos intrusivo.
-            }
-        })
-        .finally(() => {
-            document.getElementById('loadingModal').style.display = 'none';
-        });
-}
+        let url = '@Url.Action("GetTagsByPlantAndEquipment", "Tag")' +
+                  `?equipoId=${equipoId}&tipoOperacionId=${tipoId}&materialProducidoId=${materialProducidoId}`;
+
+        fetch(url, { credentials: 'include' })
+            .then(async (response) => {
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                return await response.json();
+            })
+            .then(payload => {
+                if (payload.success && Array.isArray(payload.data) && payload.data.length > 0) {
+                    payload.data.forEach(item => {
+                        const row = document.createElement('tr');
+
+                        row.setAttribute('data-equipo-id', getSafeId(item._equipoId));
+                        row.setAttribute('data-tipo-id', getSafeId(item._tipoOperacionId));
+                        row.setAttribute('data-material-producido-id', getSafeId(item._materialProducidoId));
+
+                        row.innerHTML = `
+                            <td class="text-center">
+                                ${item._activo ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}
+                            </td>
+                            <td class="text-center">${item._tagCode || ''}</td>
+                            <td class="text-center">${item._descripcion || ''}</td>
+                            <td class="text-center">${item._tipoOperacionDescripcion || ''}</td>
+                            <td class="text-center">${item._materialDescripcion || ''}</td>
+                            <td class="text-center">${item._equipoDescripcion || ''}</td>
+                            <td class="text-center">${item._materialProducidoDescripcion || ''}</td>
+                            <td class="text-center bg-white">
+                                <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditarTag(${item._tagEquipoId})">
+                                    <i class="bi bi-pencil me-2"></i>
+                                </a>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+
+                    if (countElement) {
+                        countElement.textContent = payload.data.length;
+                    }
+                } else {
+                    if (!payload.success && payload.message) {
+                        console.warn("Filtro sin resultados:", payload.message);
+                    }
+                }
+                guardarFiltros();
+            })
+            .catch(error => {
+                console.error('Error cargando la tabla de equipos:', error);
+            })
+            .finally(() => {
+                document.getElementById('loadingModal').style.display = 'none';
+            });
+    }
 
 
-
-
-
-
-    //____________________________________________________________________ Editar Equipo_________________________________________________________________//
+    //____________________________________________________________________________________________Edit Tags_______________________________________________________
 
 
     function abrirModalEditarTag(tagId) {
-    // Mostrar cargando
-    document.getElementById("loadingModal").style.display = "block";
+        document.getElementById("loadingModal").style.display = "block";
 
-    // 1. Obtener datos de selects (Equipos, Tipos Operación, Materiales)
-    Promise.all([
-        fetch('@Url.Action("GetEquiposporPlantalogguedUser", "Equipo")').then(res => res.json()), // Retorna lista directa [{}, {}]
-        fetch('@Url.Action("GetTipoOperacion", "Tag")').then(res => res.json()),              // Retorna lista directa [{}, {}]
-        fetch('@Url.Action("GetMateriales", "Material")').then(res => res.json()),            // Retorna { data: [{}, {}] }
-    ])
-    .then(([resultEquipos, resultTiposOperacion, resultMateriales]) => {
+        Promise.all([
+            fetch('@Url.Action("GetEquiposporPlantalogguedUser", "Equipo")').then(res => res.json()),
+            fetch('@Url.Action("GetTipoOperacion", "Tag")').then(res => res.json()),
+        ])
+        .then(([resultEquipos, resultTiposOperacion]) => {
+            const equipos = resultEquipos.data || resultEquipos;
+            const tiposOperacion = resultTiposOperacion.data || resultTiposOperacion;
 
-        // 🚀 CORRECCIÓN CLAVE:
-        // Las respuestas que devuelven solo la lista deben usarse directamente (resultEquipos, resultTiposOperacion)
-        // Las respuestas envueltas deben usar .data (resultMateriales)
-        const equipos = resultEquipos.data || resultEquipos;
-        const tiposOperacion = resultTiposOperacion.data || resultTiposOperacion;
-        const materiales = resultMateriales.data || []; // Asumimos que Materiales sigue envuelto en 'data'
+            limpiarSelect('_equipoIdeditar', 'Seleccione un equipo');
+            llenarSelect('_equipoIdeditar', equipos, 'EquipoID', 'Descripcion');
 
-        // Las propiedades de las listas SÍ son correctas (PascalCase), así que las mantenemos.
-        llenarSelect('_equipoIdeditar', equipos, 'EquipoID', 'Descripcion');
-        llenarSelect('_tipoOperacionIdeditar', tiposOperacion, 'TipoOperacionID', 'Descripcion');
-        llenarSelect('_materialIdeditar', materiales, '_materialID', '_descripcion'); // Este formato funciona
+            limpiarSelect('_tipoOperacionIdeditar', 'Seleccione un tipo de operacion');
+            llenarSelect('_tipoOperacionIdeditar', tiposOperacion, 'TipoOperacionID', 'Descripcion');
 
-        // 2. Obtener los datos del Tag (este retorna { success: true, data: { ... } })
-        return fetch('@Url.Action("GetTagId", "Tag")' + '?tagId=' + tagId);
-    })
-    .then(res => res.json())
-    .then(result => {
-        if (result.success) {
-            const data = result.data;
+            limpiarSelect('_materialIdeditar', 'Seleccione un Equipo primero');
+            limpiarSelect('_materialProducidoIdeditar', 'Seleccione un Equipo primero');
 
-            // Asignar valores a campos de texto y checkbox
-            document.getElementById("tagIdhidden").value = data._tagEquipoId;
-            document.getElementById("_descripcioneditar").value = data._descripcion;
-            document.getElementById("_tagNameeditar").value = data._tagName;
-            document.getElementById("_tagCodeeditar").value = data._tagCode;
-            document.getElementById("_activoeditar").checked = data._activo;
+            return fetch('@Url.Action("GetTagId", "Tag")' + '?tagId=' + tagId);
+        })
+        .then(res => res.json())
+        .then(result => {
+            if (result.success) {
+                const data = result.data;
+                const equipoId = data._equipoId;
+                const materialProducidoId = data._materialProducidoId;
+                const materialConsumoId = data._materialId;
 
-            // ✅ Asignar valores a los selects (usa los IDs que devuelve GetTagId con guion bajo)
-            document.getElementById("_tipoOperacionIdeditar").value = data._tipoOperacionId?.toString();
-            document.getElementById("_equipoIdeditar").value = data._equipoId?.toString();
-            document.getElementById("_materialIdeditar").value = data._materialId?.toString();
+                document.getElementById("tagIdhidden").value = data._tagEquipoId;
+                document.getElementById("_descripcioneditar").value = data._descripcion;
+                document.getElementById("_tagNameeditar").value = data._tagName;
+                document.getElementById("_tagCodeeditar").value = data._tagCode;
+                document.getElementById("_activoeditar").checked = data._activo;
 
-            // Abrir modal de edicion
-            const modalElement = document.getElementById("editTag");
-            const modal = new bootstrap.Modal(modalElement);
-            modal.show();
-        } else {
-            alert("Error al obtener datos del tag: " + result.message);
-        }
-    })
-    .catch(error => {
-        console.error("Error:", error);
-        alert("Error al cargar el formulario de edicion.");
-    })
-    .finally(() => {
-        // Ocultar cargando siempre al final
-        document.getElementById("loadingModal").style.display = "none";
-    });
-    }
+                document.getElementById("_tipoOperacionIdeditar").value = data._tipoOperacionId?.toString() || '';
+                document.getElementById("_equipoIdeditar").value = equipoId?.toString() || '';
 
+                if (equipoId) {
+                    cargarMaterialesProducidos(equipoId, materialProducidoId);
+                    cargarMaterialesConsumidos(equipoId, materialConsumoId);
+                }
 
-    function llenarSelect(selectId, items, valueProp, textProp) {
-        const select = document.getElementById(selectId);
-        select.innerHTML = '<option value="">Seleccione una opción</option>';
+                const selectEquipo = document.getElementById("_equipoIdeditar");
+                selectEquipo.onchange = null;
+                selectEquipo.onchange = function() {
+                    const nuevoEquipoId = this.value;
+                    cargarMaterialesProducidos(nuevoEquipoId);
+                    cargarMaterialesConsumidos(nuevoEquipoId);
+                };
 
-        items.forEach(item => {
-            const option = document.createElement("option");
-            option.value = item[valueProp];
-            option.textContent = item[textProp];
-            select.appendChild(option);
+                const modalElement = document.getElementById("editTag");
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            } else {
+                alert("Error al obtener datos del tag: " + result.message);
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("Error al cargar el formulario de edicion.");
+        })
+        .finally(() => {
+            document.getElementById("loadingModal").style.display = "none";
         });
     }
 
 
-    function submitEditEquipmentForm() {
-    cargando();
-
-    const data = {
-        _tagEquipoId: document.getElementById("tagIdhidden").value,
-        _descripcion: document.getElementById("_descripcioneditar").value,
-        _tagName: document.getElementById("_tagNameeditar").value,
-        _tagCode: document.getElementById("_tagCodeeditar").value,
-        _tipoOperacionId: document.getElementById("_tipoOperacionIdeditar").value,
-        _equipoId: document.getElementById("_equipoIdeditar").value,
-        _activo: document.getElementById("_activoeditar").checked,
-        _materialId: document.getElementById("_materialIdeditar").value,
-
-    };
-
-    fetch('@Url.Action("EditTag", "Tag")', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    })
-    .then(res => res.json())
-    .then(response => {
-        if (response.success) {
-            // Mostrar mensaje de éxito
-            document.getElementById("alertEditeSuccesseditar").style.display = "block";
-
-            setTimeout(() => {
-                // Ocultar el mensaje
-                document.getElementById("alertEditeSuccesseditar").style.display = "none";
-
-                // Cerrar modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById("editTag"));
-                modal.hide();
-
-                // Recargar página
-                window.location.reload();
-            }, 2000);
-        } else {
-            alert("Error: " + response.message);
+    function cargarMaterialesConsumidos(equipoId, materialConsumoIdToSelect = null) {
+        const selectId = '_materialIdeditar';
+        const select = document.getElementById(selectId);
+        if (!equipoId) {
+            limpiarSelect(selectId, 'Seleccione un Equipo primero');
+            return;
         }
-    })
-    .catch(error => {
-        console.error("Error al enviar datos:", error);
-        alert("Ocurrió un error al enviar los datos.");
+        select.innerHTML = '<option value="">Cargando materiales...</option>';
+        const url = '@Url.Action("GetMaterialesConsumidosByEquipo", "Material")' + '?equipoId=' + equipoId;
+        fetch(url)
+            .then(res => res.json())
+            .then(result => {
+                const materialesConsumo = result.data || result;
+                const placeholderText = Array.isArray(materialesConsumo) && materialesConsumo.length > 0 ? "Seleccione un material (opcional)" : "No hay materiales de consumo disponibles";
+                limpiarSelect(selectId, placeholderText);
+                llenarSelect(selectId, materialesConsumo, 'MaterialID', 'Descripcion');
+                if (materialConsumoIdToSelect) {
+                    select.value = materialConsumoIdToSelect.toString();
+                }
+            })
+            .catch(error => {
+                console.error("Error al cargar materiales consumidos:", error);
+                select.innerHTML = '<option value="">Error al cargar materiales</option>';
+            });
+    }
+
+    function cargarMaterialesProducidos(equipoId, materialProducidoIdToSelect = null) {
+        const selectId = '_materialProducidoIdeditar';
+        const select = document.getElementById(selectId);
+        if (!equipoId) {
+            limpiarSelect(selectId, 'Seleccione un Equipo primero');
+            return;
+        }
+        select.innerHTML = '<option value="">Cargando materiales...</option>';
+        const url = '@Url.Action("GetMaterialesProducidosByEquipo", "Material")' + '?equipoId=' + equipoId;
+        fetch(url)
+            .then(res => res.json())
+            .then(result => {
+                const materialesProducidos = result.data || result;
+                limpiarSelect(selectId, 'Seleccione una opción');
+                llenarSelect(selectId, materialesProducidos, 'MaterialID', 'Descripcion');
+                if (materialProducidoIdToSelect) {
+                    select.value = materialProducidoIdToSelect.toString();
+                }
+            })
+            .catch(error => {
+                console.error("Error al cargar materiales producidos:", error);
+                select.innerHTML = '<option value="">Error al cargar materiales</option>';
+            });
+    }
+
+    function submitEditEquipmentForm() {
+        cargando();
+        const data = {
+            _tagEquipoId: document.getElementById("tagIdhidden")?.value,
+            _descripcion: document.getElementById("_descripcioneditar")?.value,
+            _tagName: document.getElementById("_tagNameeditar")?.value,
+            _tagCode: document.getElementById("_tagCodeeditar")?.value,
+            _tipoOperacionId: document.getElementById("_tipoOperacionIdeditar")?.value,
+            _equipoId: document.getElementById("_equipoIdeditar")?.value,
+            _activo: document.getElementById("_activoeditar")?.checked,
+            _materialId: document.getElementById("_materialIdeditar")?.value,
+            _materialProducidoId: document.getElementById("_materialProducidoIdeditar")?.value,
+        };
+
+        fetch('@Url.Action("EditTag", "Tag")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(response => {
+            if (response.success) {
+                document.getElementById("alertEditeSuccesseditar").style.display = "block";
+                setTimeout(() => {
+                    document.getElementById("alertEditeSuccesseditar").style.display = "none";
+                    const modal = bootstrap.Modal.getInstance(document.getElementById("editTag"));
+                    modal.hide();
+                    loadEquipmentTable();
+                }, 2000);
+            } else {
+                alert("Error: " + response.message);
+            }
+        })
+        .catch(error => {
+            console.error("Error al enviar datos:", error);
+            alert("Ocurrió un error al enviar los datos.");
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectEquipo = document.getElementById('selectFiltroEquipo');
+
+        if (!selectEquipo) {
+            loadEquipmentTable();
+            return;
+        }
+
+        selectEquipo.addEventListener('change', function() {
+            const equipoId = this.value;
+            cargarSelectFiltroMaterialProducidoDinamico(equipoId)
+                .then(() => {
+                    loadEquipmentTable();
+                })
+                .catch(() => {
+                    loadEquipmentTable();
+                });
+        });
+
+        document.getElementById('selectFiltroTipoOperacion')
+            ?.addEventListener('change', loadEquipmentTable);
+
+        document.getElementById('selectFiltroMaterialProducido')
+            ?.addEventListener('change', loadEquipmentTable);
+
+        Promise.all([
+            cargarSelectFiltroEquipos(),
+            cargarSelectFiltroTipoOperacion()
+        ])
+        .then(() => {
+            const equipoIdPreseleccionado = selectEquipo.value;
+            return cargarSelectFiltroMaterialProducidoDinamico(equipoIdPreseleccionado);
+        })
+        .then(() => {
+            loadEquipmentTable();
+        })
+        .catch(error => {
+            console.error("Error al inicializar filtros, cargando la tabla sin persistencia de filtros.", error);
+            loadEquipmentTable();
+        });
     });
-}
 
-
-
-
-    //____________________________________________________________________ Buscar ________________________________________________________________________//
-
-
-    document.getElementById("_buscar").addEventListener("keyup", function () {
+    document.getElementById("_buscar")?.addEventListener("keyup", function () {
         const filtro = this.value.toLowerCase();
         const filas = document.querySelectorAll("#downtimeTableBody tr");
+        let visibles = 0;
+
+        const equipoId = getSafeId(document.getElementById('selectFiltroEquipo')?.value);
+        const tipoId = getSafeId(document.getElementById('selectFiltroTipoOperacion')?.value);
+        const materialProducidoId = getSafeId(document.getElementById('selectFiltroMaterialProducido')?.value);
 
         filas.forEach(fila => {
             const textoFila = fila.textContent.toLowerCase();
-            fila.style.display = textoFila.includes(filtro) ? "" : "none";
+            const esVisiblePorTexto = textoFila.includes(filtro);
+
+            if (esVisiblePorTexto) {
+                const filaEquipoId = fila.getAttribute('data-equipo-id') || '';
+                const filaTipoId = fila.getAttribute('data-tipo-id') || '';
+                const filaMaterialProducidoId = fila.getAttribute('data-material-producido-id') || '';
+
+                const coincideEquipo = !equipoId || filaEquipoId === equipoId;
+                const coincideTipo = !tipoId || filaTipoId === tipoId;
+
+                let coincideMaterialProducido;
+                if (!materialProducidoId) {
+                    coincideMaterialProducido = true;
+                } else {
+                    coincideMaterialProducido = filaMaterialProducidoId === materialProducidoId;
+                }
+
+                const mostrar = coincideEquipo && coincideTipo && coincideMaterialProducido;
+
+                fila.style.display = mostrar ? "" : "none";
+                if (mostrar) visibles++;
+            } else {
+                fila.style.display = "none";
+            }
         });
+        const countElement = document.getElementById('countdata');
+        if (countElement) {
+            countElement.textContent = visibles;
+        }
     });
+</script>   
 
 
-</script>
-
+        

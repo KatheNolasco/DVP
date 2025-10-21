@@ -310,5 +310,56 @@ namespace DVP.Controllers
             return Json(list, JsonRequestBehavior.AllowGet);
         }
 
+        [HttpGet]
+        public JsonResult GetMaterialesProducidosByEquipo(int equipoId)
+        {
+            try
+            {
+                var lista = _dvpEntities.BillOfMaterial
+                    .Where(b => b.EquipoID == equipoId && b.MaterialProduccionID.HasValue)
+                    .GroupBy(b => new {
+                        MaterialID = b.MaterialProduccionID,
+                        Descripcion = b.Material1.Descripcion
+                    })
+                    .Select(g => new
+                    {
+                        MaterialID = g.Key.MaterialID,
+                        Descripcion = g.Key.Descripcion,
+                    })
+                    .ToList();
+
+                return Json(new { success = true, data = lista }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al obtener Materiales Producidos: " + ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        [HttpGet]
+        public JsonResult GetMaterialesConsumidosByEquipo(int equipoId)
+        {
+            try
+            {
+                var lista = _dvpEntities.BillOfMaterial
+                    .Where(b => b.EquipoID == equipoId && b.MaterialConsumoID.HasValue)
+                    .GroupBy(b => new {
+                        MaterialID = b.MaterialConsumoID,
+                        Descripcion = b.Material.Descripcion
+                    })
+                    .Select(g => new
+                    {
+                        MaterialID = g.Key.MaterialID,
+                        Descripcion = g.Key.Descripcion,
+                    })
+                    .ToList();
+
+                return Json(new { success = true, data = lista }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al obtener Materiales Producidos: " + ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
     }
 }

@@ -19,7 +19,8 @@ namespace DVP.Models
         public string _equipoDescripcion { get; set; }
         public int? _materialId { get; set; }
         public string _materialDescripcion { get; set; }
-
+        public int? _materialProducidoId { get; set; }
+        public string _materialProducidoDescripcion { get; set; }
 
     }
 }

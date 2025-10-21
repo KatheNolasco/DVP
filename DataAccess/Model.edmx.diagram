@@ -4,7 +4,7 @@
   <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
-      <Diagram DiagramId="12c3c23084cf4e7da572ad9d505b8ec5" Name="Diagram1" ZoomLevel="10">
+      <Diagram DiagramId="12c3c23084cf4e7da572ad9d505b8ec5" Name="Diagram1" ZoomLevel="67">
         <EntityTypeShape EntityType="DVPModel.BillOfMaterial" Width="1.5" PointX="11.25" PointY="17.25" IsExpanded="true" />
         <EntityTypeShape EntityType="DVPModel.CierreStatus" Width="1.5" PointX="13.5" PointY="27.875" IsExpanded="true" />
         <EntityTypeShape EntityType="DVPModel.Clasificacion" Width="1.5" PointX="9" PointY="30.375" IsExpanded="true" />
@@ -25,7 +25,6 @@
         <EntityTypeShape EntityType="DVPModel.Salidas" Width="1.5" PointX="4.75" PointY="0.75" IsExpanded="true" />
         <EntityTypeShape EntityType="DVPModel.SubEquipo" Width="1.5" PointX="5.25" PointY="37.375" IsExpanded="true" />
         <EntityTypeShape EntityType="DVPModel.sysdiagrams" Width="1.5" PointX="0.75" PointY="4.75" IsExpanded="true" />
-        <EntityTypeShape EntityType="DVPModel.TagEquipo" Width="1.5" PointX="8.25" PointY="26" IsExpanded="true" />
         <EntityTypeShape EntityType="DVPModel.TipoEvento" Width="1.5" PointX="9" PointY="33.875" IsExpanded="true" />
         <EntityTypeShape EntityType="DVPModel.TipoFalla" Width="1.5" PointX="9.75" PointY="37.25" IsExpanded="true" />
         <EntityTypeShape EntityType="DVPModel.TipoMovimientoSAP" Width="1.5" PointX="6" PointY="10.625" IsExpanded="true" />
@@ -62,12 +61,10 @@
         <AssociationConnector Association="DVPModel.FK_Pais_Equipo" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_Planta_Equipo" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_Proceso_Equipo" ManuallyRouted="false" />
-        <AssociationConnector Association="DVPModel.FK_TagEquipo_Equipo" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_UnidadOperativa_Equipo" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_Gerencia_Usuario" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_Material_Planta" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_Material_UnidadMedida" ManuallyRouted="false" />
-        <AssociationConnector Association="DVPModel.FK_TagEquipo_Material" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_Pais_Usuario" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_SubEquipo_Paros" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_TipoEvento_Paros" ManuallyRouted="false" />
@@ -77,10 +74,14 @@
         <AssociationConnector Association="DVPModel.FK_PlantaAsignada_Planta" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_PlantaAsignada_Usuario" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK__UsuarioRo__RolID__6477ECF3" ManuallyRouted="false" />
-        <AssociationConnector Association="DVPModel.FK_TagEquipo_TipoOperacion" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK__TokenRegi__Usuar__6754599E" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK_UnidadOperativa_Usuario" ManuallyRouted="false" />
         <AssociationConnector Association="DVPModel.FK__UsuarioRo__Usuar__6383C8BA" ManuallyRouted="false" />
+        <EntityTypeShape EntityType="DVPModel.TagEquipo" Width="1.5" PointX="14.25" PointY="13.125" />
+        <AssociationConnector Association="DVPModel.FK_TagEquipo_Equipo" />
+        <AssociationConnector Association="DVPModel.FK_TagEquipo_Material" />
+        <AssociationConnector Association="DVPModel.FK_TagEquipo_MaterialProducidoID_Material" />
+        <AssociationConnector Association="DVPModel.FK_TagEquipo_TipoOperacion" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

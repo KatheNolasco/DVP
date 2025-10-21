@@ -109,7 +109,8 @@ namespace DVP.Controllers
                     Activo = true,
                     TipoOperacionID = data._tipoOperacionId.Value,
                     EquipoID = data._equipoId.Value,
-                    MaterialID = data._materialId 
+                    MaterialID = data._materialId,
+                    MaterialProducidoID = data._materialProducidoId
                 };
 
                 _dvpEntities.TagEquipo.Add(nuevo);
@@ -147,9 +148,6 @@ namespace DVP.Controllers
                               t.TagName == data._tagName &&
                               t.TipoOperacionID == data._tipoOperacionId &&
                               t.MaterialID == data._materialId)
-                             ||
-                             (t.EquipoID == data._equipoId &&
-                              t.TipoOperacionID == data._tipoOperacionId)
                          )
                        );
 
@@ -163,6 +161,7 @@ namespace DVP.Controllers
                 existente.TipoOperacionID = data._tipoOperacionId;
                 existente.EquipoID = data._equipoId;
                 existente.MaterialID = data._materialId;
+                existente.MaterialProducidoID = data._materialProducidoId;
 
                 _dvpEntities.SaveChanges();
 
@@ -191,7 +190,9 @@ namespace DVP.Controllers
                     _equipoId = p.EquipoID,
                     _equipoDescripcion = p.Equipo.Descripcion,
                     _materialId = p.MaterialID,
-                    _materialDescripcion = p.Material.Descripcion
+                    _materialDescripcion = p.Material.Descripcion,
+                    _materialProducidoId = p.MaterialProducidoID,
+                    _materialPProducidoDescripcion = p.Material1.Descripcion
                 })
                 .FirstOrDefault();
 
@@ -204,37 +205,8 @@ namespace DVP.Controllers
         }
 
         [HttpGet]
-        public JsonResult GetTags()
-        {
-            var tagsQuery = _dvpEntities.TagEquipo
-                .Select(p => new
-                {
-                    _tagEquipoId = p.TagEquipoID,
-                    _descripcion = p.Descripcion,
-                    _tagName = p.TagName,
-                    _tagCode = p.TagCode,
-                    _activo = p.Activo,
-                    _tipoOperacionId = p.TipoOperacionID,
-                    _tipoOperacionDescripcion = p.TipoOperacion.Descripcion,
-                    _equipoId = p.EquipoID,
-                    _equipoDescripcion = p.Equipo.Descripcion,
-                    _materialDescripcion = p.Material.Descripcion 
-                });
-
-            var equipos = tagsQuery.Distinct().ToList();
-
-            if (equipos == null || equipos.Count == 0) 
-
-            {
-                return Json(new { success = false, message = "No encontrado" }, JsonRequestBehavior.AllowGet);
-            }
-
-            return Json(new { success = true, data = equipos }, JsonRequestBehavior.AllowGet);
-        }
-
-        [HttpGet]
-        public JsonResult GetTagsByPlantAndEquipment()
-        {
+        public JsonResult GetTagsByPlantAndEquipment(string equipoId = null, string tipoOperacionId = null, string materialProducidoId = null)
+        { 
             try
             {
                 var tokenEnSession = Session["token"] as string;
@@ -251,9 +223,18 @@ namespace DVP.Controllers
                 if (usuario.PlantaID == null)
                     return Json(new { success = false, message = "El usuario no tiene planta asignada" }, JsonRequestBehavior.AllowGet);
 
+                int? targetEquipoId = string.IsNullOrEmpty(equipoId) ? null : (int?)int.Parse(equipoId);
+                int? targetTipoOperacionId = string.IsNullOrEmpty(tipoOperacionId) ? null : (int?)int.Parse(tipoOperacionId);
+                int? targetMaterialProducidoId = string.IsNullOrEmpty(materialProducidoId) ? null : (int?)int.Parse(materialProducidoId);
+
+
                 var projectedTags = _dvpEntities.TagEquipo
                     .AsNoTracking()
                     .Where(t => t.Equipo != null && t.Equipo.PlantaID == usuario.PlantaID)
+                    .Where(t => targetEquipoId == null || t.EquipoID == targetEquipoId)
+                    .Where(t => targetTipoOperacionId == null || t.TipoOperacionID == targetTipoOperacionId)
+                    .Where(t => targetMaterialProducidoId == null || t.MaterialProducidoID == targetMaterialProducidoId)
+
                     .Select(p => new
                     {
                         _tagEquipoId = p.TagEquipoID,
@@ -265,10 +246,12 @@ namespace DVP.Controllers
                         _tipoOperacionDescripcion = p.TipoOperacion != null ? p.TipoOperacion.Descripcion : null,
                         _equipoId = p.EquipoID,
                         _equipoDescripcion = p.Equipo != null ? p.Equipo.Descripcion : null,
-                        _materialDescripcion = p.Material != null ? p.Material.Descripcion : null
+                        _materialDescripcion = p.Material != null ? p.Material.Descripcion : null,
+                        _materialProducidoDescripcion = p.Material1 != null ? p.Material1.Descripcion : null,
+                        _materialProducidoId = p.MaterialProducidoID
                     });
 
-                // 🌟 APLICAMOS DISTINCT PARA ELIMINAR CUALQUIER DUPLICADO PROVENIENTE DE JOINS
+
                 var tags = projectedTags
                     .Distinct()
                     .OrderBy(x => x._equipoDescripcion)
@@ -276,7 +259,7 @@ namespace DVP.Controllers
                     .ToList();
 
                 if (tags.Count == 0)
-                    return Json(new { success = false, message = "No se encontraron tags para la planta del usuario." }, JsonRequestBehavior.AllowGet);
+                    return Json(new { success = false, message = "No se encontraron tags para los filtros aplicados." }, JsonRequestBehavior.AllowGet);
 
                 return Json(new { success = true, data = tags }, JsonRequestBehavior.AllowGet);
             }

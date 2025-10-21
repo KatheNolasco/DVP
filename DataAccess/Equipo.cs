@@ -37,6 +37,7 @@ namespace DataAccess
         public Nullable<bool> EnviarASAP { get; set; }
         public Nullable<System.DateTime> FechaCreación { get; set; }
         public string CodigoDet { get; set; }
+        public Nullable<int> PersonasAsignadas { get; set; }
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<BillOfMaterial> BillOfMaterial { get; set; }
@@ -49,8 +50,8 @@ namespace DataAccess
         public virtual Pais Pais { get; set; }
         public virtual Planta Planta { get; set; }
         public virtual Proceso Proceso { get; set; }
+        public virtual UnidadOperativa UnidadOperativa { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<TagEquipo> TagEquipo { get; set; }
-        public virtual UnidadOperativa UnidadOperativa { get; set; }
     }
 }
