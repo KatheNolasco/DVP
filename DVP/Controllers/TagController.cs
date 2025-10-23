@@ -86,7 +86,8 @@ namespace DVP.Controllers
                     yaExiste = _dvpEntities.TagEquipo.Any(t =>
                         t.EquipoID == data._equipoId.Value &&
                         t.TipoOperacionID == data._tipoOperacionId.Value &&
-                        t.MaterialID == materialId
+                        t.MaterialID == materialId &&
+                        t.MaterialProducidoID == data._materialProducidoId
                     );
                 }
                 else
@@ -94,12 +95,13 @@ namespace DVP.Controllers
                     yaExiste = _dvpEntities.TagEquipo.Any(t =>
                         t.EquipoID == data._equipoId.Value &&
                         t.TipoOperacionID == data._tipoOperacionId.Value &&
-                        t.MaterialID == null
+                        t.MaterialID == null &&
+                        t.MaterialProducidoID == data._materialProducidoId
                     );
                 }
 
                 if (yaExiste)
-                    return Json(new { success = false, message = "Ya existe un tag con esa combinación (Equipo, Tipo, Material)." });
+                    return Json(new { success = false, message = "Ya existe un tag con esa combinación (Equipo, Tipo, Material Consumido y Material Producido)." });
 
                 var nuevo = new TagEquipo
                 {
@@ -147,7 +149,8 @@ namespace DVP.Controllers
                               t.TagCode == data._tagCode &&
                               t.TagName == data._tagName &&
                               t.TipoOperacionID == data._tipoOperacionId &&
-                              t.MaterialID == data._materialId)
+                              t.MaterialID == data._materialId &&
+                              t.MaterialProducidoID == data._materialProducidoId)
                          )
                        );
 
