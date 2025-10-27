@@ -187,21 +187,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Referencias a los elementos del DOM
     const contenedorListado = document.getElementById('contenedorListado');
-    const inputFecha        = document.getElementById('fechaReporte');
-    const selectEquipoList  = document.getElementById('selectEquipoList');
-    const selectTipoOperacion = document.getElementById('selectTipoOperacion');
+    const inputFecha        = document.getElementById('fechaReporte');
+    const selectEquipoList  = document.getElementById('selectEquipoList');
+    // ❌ ELIMINAMOS la referencia a selectTipoOperacion
+    // const selectTipoOperacion = document.getElementById('selectTipoOperacion');
     const totalKwhPimsEl = document.getElementById('countkwhpims');
     const totalKwhValidadoEl = document.getElementById('countkwhvalidado');
 
-    // URLS DE ACCIÓN: Asegúrate de que los nombres de controlador y acción sean correctos
+    // URLS DE ACCIÓN:
     const URL_GET_OPERATION = '@Url.Action("GetOperation", "OperationDataToReport")';
-    const URL_EQUIPOS       = '@Url.Action("GetEquiposporPaislogguedUser", "Equipo")';
+    const URL_EQUIPOS       = '@Url.Action("GetEquiposporPaislogguedUser", "Equipo")';
     const URL_SAVE_VALIDATED_QTY = '@Url.Action("UpdateEnergy", "OperationDataToReport")';
-    // Asumiendo un nuevo endpoint para guardar la orden SAP, o se reutiliza el de la cantidad.
     const URL_SAVE_SAP_ORDER = '@Url.Action("UpdateSapOrder", "OperationDataToReport")';
 
     // ------------------------------------------
     // === FUNCIÓN DE FORMATO DE FECHA: YYYY-MM-DD HH:MI ===
+    // (Sin cambios)
     // ------------------------------------------
     function fmtFechaHora(d){
       if(!d) return '';
@@ -273,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let totalValidado = 0;
         (Array.isArray(rows) ? rows : []).forEach(r => {
             const pimsRaw = getPimsRaw(r);
-            const valRaw  = (r.CantidadValidada !== undefined && r.CantidadValidada !== null) ? Number(r.CantidadValidada) : null;
+            const valRaw  = (r.CantidadValidada !== undefined && r.CantidadValidada !== null) ? Number(r.CantidadValidada) : null;
             if (pimsRaw !== null && Number.isFinite(pimsRaw)) totalPims += Number(pimsRaw);
             if (valRaw !== null && Number.isFinite(valRaw)) totalValidado += Number(valRaw);
         });
@@ -281,29 +282,30 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     // ------------------------------------------
 
-    // --- FUNCIÓN DE PARÁMETROS ---
+    // --- FUNCIÓN DE PARÁMETROS (ACTUALIZADA) ---
     window.getCurrentParams = function(){
-      const fechaISO  = (inputFecha && inputFecha.value) ? inputFecha.value : defaultAyerISO();
-      const equipoId  = selectEquipoList && selectEquipoList.value ? Number(selectEquipoList.value) : null;
-      const tipoOperacionId = selectTipoOperacion && selectTipoOperacion.value ? Number(selectTipoOperacion.value) : null;
+      const fechaISO  = (inputFecha && inputFecha.value) ? inputFecha.value : defaultAyerISO();
+      const equipoId  = selectEquipoList && selectEquipoList.value ? Number(selectEquipoList.value) : null;
+      // ❌ ELIMINAMOS tipoOperacionId
+      // const tipoOperacionId = selectTipoOperacion && selectTipoOperacion.value ? Number(selectTipoOperacion.value) : null;
 
-      return { fechaISO, equipoId, tipoOperacionId };
+      return { fechaISO, equipoId }; // Retorna solo fechaISO y equipoId
     };
     // -----------------------------
 
-    // --- ENCABEZADO DE TABLA (AGREGANDO ORDEN SAP) ---
+    // --- ENCABEZADO DE TABLA (ACTUALIZADO A MATERIAL) ---
     function buildTheadHtml(){
       return `<thead><tr>
         <th class="text-center">Fecha/Hora</th><th class="text-center">Equipo</th>
-        <th class="text-center">Material</th><th class="text-center">Tipo Operación</th>
+        <th class="text-center">Material Consumido</th><th class="text-center">Tipo Mov. SAP</th>
         <th class="text-center">Cant PIMS</th><th class="text-center">Cant Validada</th>
-        <th class="text-center">Unidad</th><th class="text-center">Tipo Mov SAP</th>
+        <th class="text-center">Unidad</th><th class="text-center">Tipo Mov SAP ID</th>
         <th class="text-center">Orden Proceso SAP</th> <th class="text-center">Close</th><th class="text-center">Validate</th>
       </tr></thead>`;
     }
 
     // ------------------------------------------
-    // === FUNCIÓN RENDER CON AGRUPACIÓN VISUAL ===
+    // === FUNCIÓN RENDER CON AGRUPACIÓN VISUAL (AJUSTADA PARA MATERIAL) ===
     // ------------------------------------------
     function renderTabla(rows){
       const data = Array.isArray(rows) ? rows : [];
@@ -321,20 +323,22 @@ document.addEventListener('DOMContentLoaded', function () {
       data.forEach(r=>{
         const pimsRaw = getPimsRaw(r);
         const isEditable = !!r.DataOperacionID;
-        const valRaw  = r.DataOperacionID !== null ? (r.CantidadValidada !== undefined ? r.CantidadValidada : null) : null;
+        const valRaw  = r.DataOperacionID !== null ? (r.CantidadValidada !== undefined ? r.CantidadValidada : null) : null;
 
         const pimsToDisplay = (r.DataOperacionID === null && (pimsRaw === 0 || pimsRaw === null)) ? null : pimsRaw;
 
-        const unidad = r.UnidadMedida || 'KWH';
-        const pimsTxt = (pimsToDisplay === null || pimsToDisplay === undefined) ? '—' : `${fmtNumero(pimsToDisplay, 3)} ${unidad}`;
-        const valTxt  = (valRaw  === null || valRaw  === undefined) ? '—' : `${fmtNumero(valRaw, 3)} ${unidad}`;
+        const pimsTxt = (pimsToDisplay === null || pimsToDisplay === undefined) ? '—' : fmtNumero(pimsToDisplay, 3);
+        const valTxt  = (valRaw  === null || valRaw  === undefined) ? '—' : fmtNumero(valRaw, 3);
 
-        const materialDesc = r.DataOperacionID === null ? '—' : (r.Material ?? 'SIN REGISTRO');
+        // El campo 'Material' del backend ahora es la descripción del material de BillOfMaterial
+        const materialDesc = r.Material ?? '—';
 
-        const sapMovShown = r.TipoMovimientoSAP || (r.TipoMovimientoSAPID ?? '');
-        const tipoOpDesc = r.TipoOperacionDescripcion ?? '—';
+        // El campo 'TipoMovimientoSAP' del backend ahora ocupa la columna que antes era TipoOperacion
+        const sapMovShown = r.TipoMovimientoSAP || (r.TipoMovimientoSAPID ?? '—');
+        // Usamos el TipoMovimientoSAPID para la columna que estaba cerca de Unidad, si es necesario, si no, se puede dejar MaterialConsumidoDescripcion como un campo de material extra.
+        const sapMovIdShown = r.TipoMovimientoSAPID ?? '—';
 
-        // OBTENEMOS ORDEN SAP
+
         const ordenSap = r.OrdenProcesoSAP ?? '';
 
         let fechaData = '';
@@ -351,11 +355,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Clases de editabilidad
         const editableValidadaClass = isEditable ? 'editable-validada' : '';
-        const editableSapClass = isEditable ? 'editable-sap' : ''; // Clase para Orden SAP
+        const editableSapClass = isEditable ? 'editable-sap' : '';
 
         const dataValue = valRaw ?? '';
 
-        // *** LÓGICA DE AGRUPACIÓN (SUPRESIÓN DE REPETICIÓN) ***
+        // *** LÓGICA DE AGRUPACIÓN ***
         let fechaCellContent = escapeHtml(fechaHoraDisplay);
         let equipoCellContent = escapeHtml(equipoNombre);
 
@@ -366,7 +370,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (fechaCellContent === '' && previousEquipo === equipoNombre) {
-             equipoCellContent = '';
+              equipoCellContent = '';
         } else {
             previousEquipo = equipoNombre;
             if(fechaCellContent !== '') equipoCellContent = escapeHtml(equipoNombre);
@@ -377,13 +381,11 @@ document.addEventListener('DOMContentLoaded', function () {
         tbody += `<tr>
           <td class="text-center" data-col="fecha" data-value="${escapeHtml(fechaData)}">${fechaCellContent}</td>
           <td class="text-center" data-col="equipo" data-id="${equipoIdFila}">${equipoCellContent}</td>
-          <td class="text-center">${escapeHtml(materialDesc)}</td>
-          <td class="text-center">${escapeHtml(tipoOpDesc)}</td>
-          <td class="text-end" data-col="pims" data-value="${pimsToDisplay ?? ''}">${pimsTxt}</td>
+          <td class="text-center">${escapeHtml(materialDesc)}</td> <td class="text-center">${escapeHtml(sapMovShown)}</td> <td class="text-end" data-col="pims" data-value="${pimsToDisplay ?? ''}">${pimsTxt}</td>
           <td class="text-end ${editableValidadaClass}" data-col="validada" data-id="${dataOpId}" data-value="${dataValue}">${valTxt}</td>
           <td class="text-center" data-col="unidad">${escapeHtml(r.UnidadMedida || 'N/A')}</td>
-          <td class="text-center">${escapeHtml(sapMovShown || '—')}</td>
-          <td class="text-center ${editableSapClass}" data-col="orden-sap" data-id="${dataOpId}" data-value="${escapeHtml(ordenSap)}">${escapeHtml(ordenSap || '—')}</td> <td class="text-center">${renderCloseStatus(!!r.StatusClose)}</td>
+          <td class="text-center">${escapeHtml(sapMovIdShown)}</td> <td class="text-center ${editableSapClass}" data-col="orden-sap" data-id="${dataOpId}" data-value="${escapeHtml(ordenSap)}">${escapeHtml(ordenSap || '—')}</td>
+          <td class="text-center">${renderCloseStatus(!!r.StatusClose)}</td>
           <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>
         </tr>`;
       });
@@ -399,22 +401,17 @@ document.addEventListener('DOMContentLoaded', function () {
     // ------------------------------------------
 
     // --- Lógica de Edición en Línea ---
-
-    // Función para restaurar el contenido original de la celda
+    // (Esta lógica se mantiene, ya que se basa en data-id/data-col, que siguen existiendo)
     const restoreCellContent = function(cell, val, type = 'number') {
         cell.classList.remove('editing');
-
         if (type === 'number') {
-            const unityEl = cell.closest('tr').querySelector('[data-col="unidad"]');
-            const unity = unityEl ? unityEl.textContent.trim() : 'KWH';
-            const txt = (val === null || val === undefined || val === '') ? '—' : `${fmtNumero(val, 3)} ${unity}`;
+            const txt = (val === null || val === undefined || val === '') ? '—' : fmtNumero(val, 3);
             cell.textContent = txt;
         } else if (type === 'text') {
             cell.textContent = val || '—';
         }
     };
 
-    // Función que inicia el modo de edición
     function startInlineEdit(tdCell) {
         const dataOpId = tdCell.dataset.id;
         const col = tdCell.dataset.col;
@@ -448,8 +445,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (isQuantity) {
                 const numericValue = Number(newValue) || 0.0;
                 if (numericValue < 0 || numericValue > MAX_QUANTITY) {
-                     restoreCellContent(tdCell, originalValue, 'number');
-                     return;
+                    restoreCellContent(tdCell, originalValue, 'number');
+                    return;
                 }
                 saveValidatedQuantity(dataOpId, numericValue, tdCell);
             } else if (isSapOrder) {
@@ -461,7 +458,6 @@ document.addEventListener('DOMContentLoaded', function () {
             restoreCellContent(tdCell, originalValue, isQuantity ? 'number' : 'text');
         };
 
-        // Eventos para guardar o cancelar la edición
         input.addEventListener('blur', handleSave);
         input.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
@@ -474,31 +470,25 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-
-    // --- FUNCIÓN DE GUARDADO DE CANTIDAD VALIDADA (Simulación) ---
+    // --- FUNCIONES DE GUARDADO (Mantienen la simulación) ---
     function saveValidatedQuantity(dataOpId, newQuantity, tdCell) {
         // Lógica AJAX/FETCH para URL_SAVE_VALIDATED_QTY
         // ...
-
-        // Simulación de éxito:
         tdCell.dataset.value = newQuantity;
         restoreCellContent(tdCell, newQuantity, 'number');
     }
 
-    // --- FUNCIÓN DE GUARDADO DE ORDEN SAP (Simulación) ---
     function saveSapOrder(dataOpId, newSapOrder, tdCell) {
         // Lógica AJAX/FETCH para URL_SAVE_SAP_ORDER
         // ...
-
-        // Simulación de éxito:
         tdCell.dataset.value = newSapOrder;
         restoreCellContent(tdCell, newSapOrder, 'text');
     }
     // ------------------------------------------
 
-    // --- FUNCIÓN FETCH PRINCIPAL ---
+    // --- FUNCIÓN FETCH PRINCIPAL (ACTUALIZADA) ---
     function cargarCapturas(params){
-      const { fechaISO, equipoId, tipoOperacionId } = params;
+      const { fechaISO, equipoId } = params;
 
       showMsg('Cargando datos...', 'secondary');
 
@@ -507,10 +497,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if(equipoId !== null && equipoId > 0){
           url += `&_equipoId=${encodeURIComponent(equipoId)}`;
       }
-
-      if(tipoOperacionId !== null && tipoOperacionId > 0){
-          url += `&_tipoOperacionId=${encodeURIComponent(tipoOperacionId)}`;
-      }
+      // ❌ Ya no se incluye _tipoOperacionId en la URL
 
       fetch(url, { headers:{'Accept':'application/json'} })
         .then(r=>{
@@ -541,9 +528,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if(selectEquipoList){
       selectEquipoList.addEventListener('change', window.filtrarPorFecha);
     }
+    // ❌ ELIMINAMOS el listener para selectTipoOperacion
+    /*
     if(selectTipoOperacion){
         selectTipoOperacion.addEventListener('change', window.filtrarPorFecha);
     }
+    */
 
     // Inicialización
     loadEquiposList();
@@ -551,12 +541,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- LISTENER GLOBAL PARA EDICIÓN EN LÍNEA ---
     contenedorListado.addEventListener('click', function(e) {
-        // Buscamos si el clic fue en una celda editable (validada o sap)
-        const targetCell = e.target.closest('td.editable-validada, td.editable-sap');
+      const targetCell = e.target.closest('td.editable-validada, td.editable-sap');
 
-        if (targetCell && !targetCell.classList.contains('editing')) {
-            startInlineEdit(targetCell);
-        }
+      if (targetCell && !targetCell.classList.contains('editing')) {
+          startInlineEdit(targetCell);
+      }
     });
 
 });
