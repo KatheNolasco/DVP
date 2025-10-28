@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- ENCABEZADO DE TABLA (ACTUALIZADO A MATERIAL) ---
     function buildTheadHtml(){
       return `<thead><tr>
-        <th class="text-center">Fecha/Hora</th><th class="text-center">Equipo</th>
+        <th class="text-center">Equipo</th>
         <th class="text-center">Material Consumido</th><th class="text-center">Tipo Mov. SAP</th>
         <th class="text-center">Cant PIMS</th><th class="text-center">Cant Validada</th>
         <th class="text-center">Unidad</th><th class="text-center">Tipo Mov SAP ID</th>
@@ -379,7 +379,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
         tbody += `<tr>
-          <td class="text-center" data-col="fecha" data-value="${escapeHtml(fechaData)}">${fechaCellContent}</td>
           <td class="text-center" data-col="equipo" data-id="${equipoIdFila}">${equipoCellContent}</td>
           <td class="text-center">${escapeHtml(materialDesc)}</td> <td class="text-center">${escapeHtml(sapMovShown)}</td> <td class="text-end" data-col="pims" data-value="${pimsToDisplay ?? ''}">${pimsTxt}</td>
           <td class="text-end ${editableValidadaClass}" data-col="validada" data-id="${dataOpId}" data-value="${dataValue}">${valTxt}</td>
