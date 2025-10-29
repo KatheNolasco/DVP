@@ -734,112 +734,121 @@ namespace DVP.Controllers
 
 
         [HttpGet]
-        public JsonResult GetOperation(DateTime? _fecha, int? _equipoId = null) // Se elimina _tipoOperacionId
+        public JsonResult GetOperation(DateTime? _fecha, int? _equipoId = null)
         {
             // Obtener la fecha de inicio del día
             var day = (_fecha ?? DateTime.Today).Date;
 
-            // 1. Obtener la lista filtrada de equipos (Asumo que esta base es 'GetEquiposporPaislogguedUser')
+            // 1. Obtener la lista filtrada de equipos
             var queryEquipos = _dvpEntities.Equipo
                 .Where(e => e.PlantaID == 1);
 
-            // ******* Aplica el filtro SOLO si se proporciona _equipoId *******
             if (_equipoId.HasValue && _equipoId.Value > 0)
             {
                 queryEquipos = queryEquipos.Where(e => e.EquipoID == _equipoId.Value);
             }
-            // *****************************************************************
 
-            // Materializar los equipos seleccionados (filtrados o todos)
             var equiposSeleccionados = queryEquipos.Select(e => new { e.EquipoID, EquipoDescripcion = e.Descripcion }).ToList();
-
-            // Obtener una lista de IDs de Equipo seleccionados para el filtro de materiales.
             var equipoIdsSeleccionados = equiposSeleccionados.Select(e => e.EquipoID).ToList();
 
-            // 2. Obtener la lista de Materiales para *todos* los equipos seleccionados (JOIN con BillOfMaterial)
-            // ESTO INCLUYE LOS MATERIALES DE TODOS LOS EQUIPOS DE 'equiposSeleccionados'
-            var queryMaterialesConsumo = _dvpEntities.BillOfMaterial
-                .Where(b => b.MaterialConsumoID.HasValue) // Asegurar que tiene material asociado
-                .Where(b => equipoIdsSeleccionados.Contains(b.EquipoID.Value)) // Filtra los materiales SOLO de los equipos seleccionados
-                .GroupBy(b => new { b.EquipoID, MaterialID = b.MaterialConsumoID.Value, MaterialDescripcion = b.Material.Descripcion })
+            // 2. Obtener la lista de relaciones BillOfMaterial
+            var queryBillOfMaterial = _dvpEntities.BillOfMaterial
+                .Where(b => equipoIdsSeleccionados.Contains(b.EquipoID.Value));
+
+            // --- Extracción de Materiales de Producción y Consumo con su relación ---
+
+            // Materiales de Producción (son la 'cabeza' del grupo)
+            var produccionHeaders = queryBillOfMaterial
+                .Where(b => b.MaterialProduccionID.HasValue)
+                .GroupBy(b => new { b.EquipoID, b.MaterialProduccionID, b.Material1.Descripcion }) // Material1 es Producción
                 .Select(g => new
                 {
-                    g.Key.EquipoID,
-                    MaterialID = g.Key.MaterialID,
-                    MaterialDescripcion = g.Key.MaterialDescripcion
-                })
-                .ToList(); // Materializar la lista de materiales
+                    EquipoID = g.Key.EquipoID.Value,
+                    MaterialID = g.Key.MaterialProduccionID.Value,
+                    MaterialDescripcion = g.Key.Descripcion,
+                    TipoMaterial = "PRODUCCION",
+                    // Un Material de Producción no tiene Material de Producción Padre
+                    MaterialProduccionPadreID = (int?)null
+                });
 
-            // 3. Generar la Combinación (Equipo x Material) usando sintaxis de consulta (JOIN en memoria)
-            // Esto crea la matriz de Equipo y sus Materiales
+            // Materiales de Consumo (son el 'detalle' bajo Producción)
+            var consumoDetails = queryBillOfMaterial
+                .Where(b => b.MaterialConsumoID.HasValue && b.MaterialProduccionID.HasValue)
+                .Select(b => new
+                {
+                    EquipoID = b.EquipoID.Value,
+                    MaterialID = b.MaterialConsumoID.Value,
+                    MaterialDescripcion = b.Material.Descripcion, // Material es Consumo
+                    TipoMaterial = "CONSUMO",
+                    MaterialProduccionPadreID = b.MaterialProduccionID // Relación clave
+                });
+
+            // c) Combinar ambas listas de materiales únicos por Equipo (Producción + Consumo)
+            var combinacionesMaterialesUnicas = produccionHeaders
+                .Union(consumoDetails) // Une ambas listas
+                .ToList(); // Materializa la lista de materiales únicos por Equipo, incluyendo el tipo y la relación.
+
+            // 3. Generar la Combinación (Equipo x Material)
             var combinacionesRequeridas = (
                 from equipo in equiposSeleccionados
-                join material in queryMaterialesConsumo on equipo.EquipoID equals material.EquipoID
+                join material in combinacionesMaterialesUnicas on equipo.EquipoID equals material.EquipoID
                 select new
                 {
                     equipo.EquipoID,
                     EquipoDescripcion = equipo.EquipoDescripcion,
-                    MaterialID = material.MaterialID,
-                    MaterialDescripcion = material.MaterialDescripcion
+                    material.MaterialID,
+                    material.MaterialDescripcion,
+                    material.TipoMaterial, // ¡Nuevo campo clave!
+                    material.MaterialProduccionPadreID // ¡Nuevo campo clave!
                 }
             ).ToList();
 
             // Extraer MaterialIDs requeridos para el filtro de DataOperacion
             var materialIdsRequeridos = combinacionesRequeridas.Select(c => c.MaterialID).ToList();
 
-            // 4. Obtener la data de operación real para el día con Carga Anticipada (Eager Loading)
+            // 4. Obtener la data de operación real (Sin cambios)
             var datosOperacionReales = _dvpEntities.DataOperacion
                 .Include("Material")
                 .Include("UnidadMedida")
+                .Include("TipoMovimientoSAP")
                 .Where(d => DbFunctions.TruncateTime(d.FechaReporte) == day)
-                // Solo necesitamos dataoperacion que coincida con los equipos/materiales seleccionados
-                .Where(d => equipoIdsSeleccionados.Contains(d.EquipoID.Value))
+                .Where(d => d.EquipoID.HasValue && equipoIdsSeleccionados.Contains(d.EquipoID.Value))
                 .Where(d => d.MaterialID.HasValue && materialIdsRequeridos.Contains(d.MaterialID.Value))
-                .ToList(); // Materializar la lista de datos reales
+                .ToList();
 
             // 5. Simular el LEFT JOIN: Iterar la combinación y buscar el dato real
             var resultados = combinacionesRequeridas
                 .Select(comb => new
                 {
-                    // Buscar el registro de DataOperacion que coincida con la combinación (Equipo y Material)
                     Data = datosOperacionReales.FirstOrDefault(d =>
-                            d.EquipoID == comb.EquipoID &&
-                            d.MaterialID == comb.MaterialID), // Comparar con MaterialID (int)
-
+                                d.EquipoID == comb.EquipoID &&
+                                d.MaterialID == comb.MaterialID),
                     Combinacion = comb
                 })
-                .OrderBy(x => x.Combinacion.EquipoDescripcion)
-                .ThenBy(x => x.Combinacion.MaterialDescripcion)
                 .Select(x => new
                 {
-                    // Campos de DataOperacion (NULL o 0 si no existe)
-                    DataOperacionID = x.Data?.DataOperacionID,
-
                     // Campos de la Combinación (siempre llenos)
                     EquipoID = x.Combinacion.EquipoID,
                     Equipo = x.Combinacion.EquipoDescripcion,
                     MaterialID = x.Combinacion.MaterialID,
                     Material = x.Combinacion.MaterialDescripcion,
+                    TipoMaterial = x.Combinacion.TipoMaterial, // Exportar el tipo para JS
+                    MaterialProduccionPadreID = x.Combinacion.MaterialProduccionPadreID, // Exportar la relación para JS
 
-                    // Campos detallados (NULL o valor por defecto si no existe data)
-                    // Usamos Material de la combinación como base
-                    MaterialConsumidoDescripcion = x.Data?.Material?.Descripcion ?? x.Combinacion.MaterialDescripcion,
-
+                    // Campos de DataOperacion (NULL o valor por defecto si no existe data)
+                    DataOperacionID = x.Data?.DataOperacionID,
                     CantidadPIMS = x.Data?.CantidadPIMS ?? 0.0m,
                     CantidadPims = x.Data?.CantidadPIMS ?? 0.0m,
                     CantidadValidada = x.Data?.CantidadValidada ?? 0.0m,
-
-                    UnidadMedidaID = x.Data?.UnidadMedidaID,
                     UnidadMedida = x.Data?.UnidadMedida?.Descripcion ?? "N/A",
                     TipoMovimientoSAPID = x.Data?.TipoMovimientoSAPID,
-                    TipoMovimientoSAP = x.Data?.TipoMovimientoSAP?.Descripcion, // Mantenemos TipoMovimientoSAP como columna
-
-                    // Usamos la fecha del filtro si no hay data real
+                    TipoMovimientoSAP = x.Data?.TipoMovimientoSAP?.Descripcion,
                     FechaReporte = x.Data?.FechaReporte ?? day,
                     StatusClose = x.Data?.StatusClose ?? false,
                     StatusValidate = x.Data?.StatusValidate ?? false,
                     OrdenProcesoSAP = x.Data?.OrdenProcesoSAP
                 })
+                // IMPORTANTE: El ORDEN FINAL se hace en el frontend (JS)
                 .ToList();
 
             return Json(resultados, JsonRequestBehavior.AllowGet);

@@ -90,19 +90,7 @@
                 border-radius: 50%;
             }
 
-        .switch input:checked + .slider {
-            background-color: #13DEB9; /* Verde menta */
-        }
-
-            .switch input:checked + .slider:before {
-                transform: translateX(21px);
-            }
-
-    .switch-label {
-        font-size: 14px;
-        color: #555;
-        vertical-align: middle;
-    }
+       
 </style>
 
 
@@ -187,23 +175,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Referencias a los elementos del DOM
     const contenedorListado = document.getElementById('contenedorListado');
-    const inputFecha        = document.getElementById('fechaReporte');
-    const selectEquipoList  = document.getElementById('selectEquipoList');
-    // ❌ ELIMINAMOS la referencia a selectTipoOperacion
-    // const selectTipoOperacion = document.getElementById('selectTipoOperacion');
+    const inputFecha        = document.getElementById('fechaReporte');
+    const selectEquipoList  = document.getElementById('selectEquipoList');
     const totalKwhPimsEl = document.getElementById('countkwhpims');
     const totalKwhValidadoEl = document.getElementById('countkwhvalidado');
 
     // URLS DE ACCIÓN:
+    // Asegúrate de que estas URLs sean correctas para tu proyecto MVC
     const URL_GET_OPERATION = '@Url.Action("GetOperation", "OperationDataToReport")';
-    const URL_EQUIPOS       = '@Url.Action("GetEquiposporPaislogguedUser", "Equipo")';
+    const URL_EQUIPOS       = '@Url.Action("GetEquiposporPaislogguedUser", "Equipo")';
     const URL_SAVE_VALIDATED_QTY = '@Url.Action("UpdateEnergy", "OperationDataToReport")';
     const URL_SAVE_SAP_ORDER = '@Url.Action("UpdateSapOrder", "OperationDataToReport")';
 
     // ------------------------------------------
     // === FUNCIÓN DE FORMATO DE FECHA: YYYY-MM-DD HH:MI ===
-    // (Sin cambios)
-    // ------------------------------------------
     function fmtFechaHora(d){
       if(!d) return '';
       const m=/\/Date\((\d+)\)\//.exec(String(d));
@@ -237,19 +222,21 @@ document.addEventListener('DOMContentLoaded', function () {
         if(v!==undefined && t!==undefined) option(selectEl,String(v),String(t));
       });
     }
-    function escapeHtml(str){ return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    function escapeHtml(str){
+        return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
     function showMsg(msg,type='info'){
-      if (!msg || msg.includes('Cargando datos') || type === 'secondary' || type === 'success') {
-          contenedorListado.innerHTML = '';
-          updateTotals(0, 0);
-          return;
-      }
-      if (type === 'danger' || type === 'warning') {
-          contenedorListado.innerHTML = `<div class="alert alert-${type}" role="alert" style="margin-top:8px;">${escapeHtml(msg)}</div>`;
-      }
-      if (type === 'danger') {
-          setTimeout(() => { window.location.reload(); }, 2000);
-      }
+        if (!msg || msg.includes('Cargando datos') || type === 'secondary' || type === 'success') {
+            contenedorListado.innerHTML = '';
+            updateTotals(0, 0);
+            return;
+        }
+        if (type === 'danger' || type === 'warning') {
+            contenedorListado.innerHTML = `<div class="alert alert-${type}" role="alert" style="margin-top:8px;">${escapeHtml(msg)}</div>`;
+        }
+        if (type === 'danger') {
+            setTimeout(() => { window.location.reload(); }, 2000);
+        }
     }
     function renderCheck(v){ return v ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'; }
     function renderCloseStatus(v){ return v ? '<i class="bi bi-lock-fill text-warning"></i>' : '<i class="bi bi-unlock-fill text-warning"></i>'; }
@@ -274,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let totalValidado = 0;
         (Array.isArray(rows) ? rows : []).forEach(r => {
             const pimsRaw = getPimsRaw(r);
-            const valRaw  = (r.CantidadValidada !== undefined && r.CantidadValidada !== null) ? Number(r.CantidadValidada) : null;
+            const valRaw  = (r.CantidadValidada !== undefined && r.CantidadValidada !== null) ? Number(r.CantidadValidada) : null;
             if (pimsRaw !== null && Number.isFinite(pimsRaw)) totalPims += Number(pimsRaw);
             if (valRaw !== null && Number.isFinite(valRaw)) totalValidado += Number(valRaw);
         });
@@ -282,125 +269,156 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     // ------------------------------------------
 
-    // --- FUNCIÓN DE PARÁMETROS (ACTUALIZADA) ---
-    window.getCurrentParams = function(){
-      const fechaISO  = (inputFecha && inputFecha.value) ? inputFecha.value : defaultAyerISO();
-      const equipoId  = selectEquipoList && selectEquipoList.value ? Number(selectEquipoList.value) : null;
-      // ❌ ELIMINAMOS tipoOperacionId
-      // const tipoOperacionId = selectTipoOperacion && selectTipoOperacion.value ? Number(selectTipoOperacion.value) : null;
+    // --- FUNCIÓN DE AGRUPACIÓN CLAVE (AJUSTADA: Agrupación por Equipo y Orden Producción/Consumo) ---
+    function groupDataByEquipo(rows) {
+        if (!Array.isArray(rows) || rows.length === 0) return [];
 
-      return { fechaISO, equipoId }; // Retorna solo fechaISO y equipoId
+        const groups = new Map();
+        const finalRows = [];
+
+        // 1. Agrupación inicial por Equipo
+        rows.forEach(r => {
+            const key = `${r.EquipoID}`;
+
+            if (!groups.has(key)) {
+                groups.set(key, {
+                    EquipoID: r.EquipoID,
+                    Equipo: r.Equipo,
+                    Detalles: [r]
+                });
+            } else {
+                groups.get(key).Detalles.push(r);
+            }
+        });
+
+        // 2. Ordenamiento interno (Producción -> Consumo relacionado) y aplanamiento
+        Array.from(groups.values()).forEach(group => {
+
+            const detalles = group.Detalles;
+
+            // Identificar los materiales de producción (TipoMaterial === "PRODUCCION")
+            const produccion = detalles.filter(r => r.TipoMaterial === "PRODUCCION")
+                                       .sort((a, b) => a.Material.localeCompare(b.Material)); // Ordenar Producción alfabéticamente
+
+            // Identificar los materiales de consumo (TipoMaterial === "CONSUMO")
+            const consumo = detalles.filter(r => r.TipoMaterial === "CONSUMO");
+
+            const orderedDetails = [];
+
+            // Construir la lista ordenada: Producción, seguido de sus Consumos
+            produccion.forEach(prodItem => {
+                // A. Agregar el Material de Producción (el "padre")
+                orderedDetails.push(prodItem);
+
+                // B. Agregar los Materiales de Consumo relacionados (los "hijos")
+                const relatedConsumo = consumo
+                    .filter(c => c.MaterialProduccionPadreID === prodItem.MaterialID)
+                    .sort((a, b) => a.Material.localeCompare(b.Material));
+
+                orderedDetails.push(...relatedConsumo);
+            });
+
+            // Si hay materiales de Consumo que no están asociados a una Producción (debería ser raro, pero es un fallback)
+            // Esto se puede omitir si se asume que todos los consumos tienen un padre.
+            /*
+            const unassignedConsumo = consumo.filter(c => !orderedDetails.includes(c));
+            orderedDetails.push(...unassignedConsumo.sort((a, b) => a.Material.localeCompare(b.Material)));
+            */
+
+            const rowCount = orderedDetails.length;
+            orderedDetails.forEach((detail, index) => {
+                finalRows.push({
+                    ...detail,
+                    RowCount: rowCount,
+                    IsFirstRow: index === 0,
+                });
+            });
+        });
+
+        return finalRows;
+    }
+    // ------------------------------------------
+
+
+    // --- FUNCIÓN DE PARÁMETROS ---
+    const getCurrentParams = function(){
+      const fechaISO  = (inputFecha && inputFecha.value) ? inputFecha.value : defaultAyerISO();
+      const equipoId  = selectEquipoList && selectEquipoList.value ? Number(selectEquipoList.value) : null;
+      return { fechaISO, equipoId };
     };
     // -----------------------------
 
-    // --- ENCABEZADO DE TABLA (ACTUALIZADO A MATERIAL) ---
+    // --- ENCABEZADO DE TABLA (ORDEN MANTENIDO) ---
     function buildTheadHtml(){
-      return `<thead><tr>
-        <th class="text-center">Equipo</th>
-        <th class="text-center">Material Consumido</th><th class="text-center">Tipo Mov. SAP</th>
-        <th class="text-center">Cant PIMS</th><th class="text-center">Cant Validada</th>
-        <th class="text-center">Unidad</th><th class="text-center">Tipo Mov SAP ID</th>
-        <th class="text-center">Orden Proceso SAP</th> <th class="text-center">Close</th><th class="text-center">Validate</th>
-      </tr></thead>`;
+        return `<thead><tr>
+          <th class="text-center">Equipo</th>
+          <th class="text-center">Close</th>
+          <th class="text-center">Validate</th>
+          <th class="text-center">Material Consumido</th>
+          <th class="text-center">Cant PIMS</th>
+          <th class="text-center">Cant Validada</th>
+          <th class="text-center">Tipo Mov. SAP</th>
+          <th class="text-center">Unidad</th>
+          <th class="text-center">Tipo Mov SAP ID</th>
+          <th class="text-center">Orden Proceso SAP</th>
+        </tr></thead>`;
     }
 
-    // ------------------------------------------
-    // === FUNCIÓN RENDER CON AGRUPACIÓN VISUAL (AJUSTADA PARA MATERIAL) ===
-    // ------------------------------------------
+    // === FUNCIÓN RENDER (MANTENIENDO ORDEN Y SIN ROWSPAN en Status) ===
     function renderTabla(rows){
-      const data = Array.isArray(rows) ? rows : [];
-      calculateAndRenderTotals(data);
+        const data = Array.isArray(rows) ? rows : [];
+        calculateAndRenderTotals(data);
 
-      if(!data.length){ showMsg('No hay registros para los filtros aplicados','warning'); return; }
+        if(!data.length){ showMsg('No hay registros para los filtros aplicados','warning'); return; }
 
-      contenedorListado.innerHTML = '';
+        contenedorListado.innerHTML = '';
+        let tbody = '<tbody>';
 
-      let tbody = '<tbody>';
+        data.forEach(r => {
+            const pimsRaw = getPimsRaw(r);
+            const isEditable = !!r.DataOperacionID;
+            const valRaw  = r.DataOperacionID !== null ? (r.CantidadValidada !== undefined ? r.CantidadValidada : null) : null;
 
-      let previousFechaHora = null;
-      let previousEquipo = null;
+            // Valores de detalle
+            const pimsTxt = (pimsRaw === null || pimsRaw === undefined) ? '—' : fmtNumero(pimsRaw, 3);
+            const valTxt  = (valRaw  === null || valRaw  === undefined) ? '—' : fmtNumero(valRaw, 3);
 
-      data.forEach(r=>{
-        const pimsRaw = getPimsRaw(r);
-        const isEditable = !!r.DataOperacionID;
-        const valRaw  = r.DataOperacionID !== null ? (r.CantidadValidada !== undefined ? r.CantidadValidada : null) : null;
+            const materialDesc = r.Material ?? '—';
+            const sapMovShown = r.TipoMovimientoSAP || (r.TipoMovimientoSAPID ?? '—');
+            const sapMovIdShown = r.TipoMovimientoSAPID ?? '—';
+            const ordenSap = r.OrdenProcesoSAP ?? '';
 
-        const pimsToDisplay = (r.DataOperacionID === null && (pimsRaw === 0 || pimsRaw === null)) ? null : pimsRaw;
+            const dataOpId = r.DataOperacionID ?? null;
 
-        const pimsTxt = (pimsToDisplay === null || pimsToDisplay === undefined) ? '—' : fmtNumero(pimsToDisplay, 3);
-        const valTxt  = (valRaw  === null || valRaw  === undefined) ? '—' : fmtNumero(valRaw, 3);
+            const editableValidadaClass = isEditable ? 'editable-validada' : '';
+            const editableSapClass = isEditable ? 'editable-sap' : '';
+            const dataValue = valRaw ?? '';
 
-        // El campo 'Material' del backend ahora es la descripción del material de BillOfMaterial
-        const materialDesc = r.Material ?? '—';
+            let rowHtml = '<tr>';
 
-        // El campo 'TipoMovimientoSAP' del backend ahora ocupa la columna que antes era TipoOperacion
-        const sapMovShown = r.TipoMovimientoSAP || (r.TipoMovimientoSAPID ?? '—');
-        // Usamos el TipoMovimientoSAPID para la columna que estaba cerca de Unidad, si es necesario, si no, se puede dejar MaterialConsumidoDescripcion como un campo de material extra.
-        const sapMovIdShown = r.TipoMovimientoSAPID ?? '—';
+            // 1. Equipo (ROWSPAN, solo en la primera fila del grupo)
+            if (r.IsFirstRow) {
+                rowHtml += `<td class="text-center" data-col="equipo" data-id="${r.EquipoID}" rowspan="${r.RowCount}">${escapeHtml(r.Equipo || '—')}</td>`;
+            }
 
+            // Celdas de Detalle (Se renderizan en cada fila, siguiendo el orden)
+            rowHtml += `
+              <td class="text-center">${renderCloseStatus(!!r.StatusClose)}</td>                                  <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>                                     <td class="text-center">${escapeHtml(materialDesc)}</td>                                   <td class="text-end" data-col="pims" data-value="${pimsRaw ?? ''}">${pimsTxt}</td>               <td class="text-end ${editableValidadaClass}" data-col="validada" data-id="${dataOpId}" data-value="${dataValue}">${valTxt}</td> <td class="text-center">${escapeHtml(sapMovShown)}</td>                                    <td class="text-center" data-col="unidad">${escapeHtml(r.UnidadMedida || 'N/A')}</td>          <td class="text-center">${escapeHtml(sapMovIdShown)}</td>                                    <td class="text-center ${editableSapClass}" data-col="orden-sap" data-id="${dataOpId}" data-value="${escapeHtml(ordenSap)}">${escapeHtml(ordenSap || '—')}</td> </tr>`;
 
-        const ordenSap = r.OrdenProcesoSAP ?? '';
+            tbody += rowHtml;
+        });
+        tbody += '</tbody>';
 
-        let fechaData = '';
-        let fechaHoraDisplay = '—';
-
-        if (r.FechaReporte){
-          fechaHoraDisplay = fmtFechaHora(r.FechaReporte);
-          fechaData = fechaHoraDisplay.split(' ')[0];
-        }
-
-        const dataOpId = r.DataOperacionID ?? null;
-        const equipoIdFila = r.EquipoID ?? null;
-        const equipoNombre = r.Equipo || '';
-
-        // Clases de editabilidad
-        const editableValidadaClass = isEditable ? 'editable-validada' : '';
-        const editableSapClass = isEditable ? 'editable-sap' : '';
-
-        const dataValue = valRaw ?? '';
-
-        // *** LÓGICA DE AGRUPACIÓN ***
-        let fechaCellContent = escapeHtml(fechaHoraDisplay);
-        let equipoCellContent = escapeHtml(equipoNombre);
-
-        if (previousFechaHora === fechaHoraDisplay) {
-            fechaCellContent = '';
-        } else {
-            previousFechaHora = fechaHoraDisplay;
-        }
-
-        if (fechaCellContent === '' && previousEquipo === equipoNombre) {
-              equipoCellContent = '';
-        } else {
-            previousEquipo = equipoNombre;
-            if(fechaCellContent !== '') equipoCellContent = escapeHtml(equipoNombre);
-        }
-        // *******************************************************
-
-
-        tbody += `<tr>
-          <td class="text-center" data-col="equipo" data-id="${equipoIdFila}">${equipoCellContent}</td>
-          <td class="text-center">${escapeHtml(materialDesc)}</td> <td class="text-center">${escapeHtml(sapMovShown)}</td> <td class="text-end" data-col="pims" data-value="${pimsToDisplay ?? ''}">${pimsTxt}</td>
-          <td class="text-end ${editableValidadaClass}" data-col="validada" data-id="${dataOpId}" data-value="${dataValue}">${valTxt}</td>
-          <td class="text-center" data-col="unidad">${escapeHtml(r.UnidadMedida || 'N/A')}</td>
-          <td class="text-center">${escapeHtml(sapMovIdShown)}</td> <td class="text-center ${editableSapClass}" data-col="orden-sap" data-id="${dataOpId}" data-value="${escapeHtml(ordenSap)}">${escapeHtml(ordenSap || '—')}</td>
-          <td class="text-center">${renderCloseStatus(!!r.StatusClose)}</td>
-          <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>
-        </tr>`;
-      });
-      tbody += '</tbody>';
-
-      contenedorListado.innerHTML = `
-        <div class="table-responsive w-100" style="max-height:420px; overflow-y:auto; background-color:#fff; padding:10px; border-radius:10px;">
-          <table class="table table-bordered table-sm table-striped mb-0" style="background-color:#fff;">
-            ${buildTheadHtml()}${tbody}
-          </table>
-        </div>`;
+        contenedorListado.innerHTML = `
+          <div class="table-responsive w-100" style="max-height:420px; overflow-y:auto; background-color:#fff; padding:10px; border-radius:10px;">
+            <table class="table table-bordered table-sm table-striped mb-0" style="background-color:#fff;">
+              ${buildTheadHtml()}${tbody}
+            </table>
+          </div>`;
     }
     // ------------------------------------------
 
     // --- Lógica de Edición en Línea ---
-    // (Esta lógica se mantiene, ya que se basa en data-id/data-col, que siguen existiendo)
     const restoreCellContent = function(cell, val, type = 'number') {
         cell.classList.remove('editing');
         if (type === 'number') {
@@ -410,7 +428,6 @@ document.addEventListener('DOMContentLoaded', function () {
             cell.textContent = val || '—';
         }
     };
-
     function startInlineEdit(tdCell) {
         const dataOpId = tdCell.dataset.id;
         const col = tdCell.dataset.col;
@@ -469,34 +486,79 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // --- FUNCIONES DE GUARDADO (Mantienen la simulación) ---
+    // --- FUNCIONES DE GUARDADO ---
     function saveValidatedQuantity(dataOpId, newQuantity, tdCell) {
-        // Lógica AJAX/FETCH para URL_SAVE_VALIDATED_QTY
-        // ...
-        tdCell.dataset.value = newQuantity;
-        restoreCellContent(tdCell, newQuantity, 'number');
+        if (window.showLoading) window.showLoading();
+        fetch(URL_SAVE_VALIDATED_QTY, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ DataOperacionID: dataOpId, CantidadValidada: newQuantity })
+        })
+        .then(r => {
+            if (!r.ok) throw new Error('Error al guardar la cantidad validada.');
+            return r.json();
+        })
+        .then(response => {
+            if (response.success) {
+                filtrarPorFecha();
+            } else {
+                showMsg('Error al actualizar: ' + (response.message || 'Desconocido'), 'danger');
+                restoreCellContent(tdCell, tdCell.dataset.value, 'number');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showMsg('Fallo en la comunicación con el servidor al guardar la cantidad. ' + err.message, 'danger');
+            restoreCellContent(tdCell, tdCell.dataset.value, 'number');
+        })
+        .finally(() => {
+            if (window.hideLoading) window.hideLoading();
+        });
     }
 
     function saveSapOrder(dataOpId, newSapOrder, tdCell) {
-        // Lógica AJAX/FETCH para URL_SAVE_SAP_ORDER
-        // ...
-        tdCell.dataset.value = newSapOrder;
-        restoreCellContent(tdCell, newSapOrder, 'text');
+        if (window.showLoading) window.showLoading();
+        fetch(URL_SAVE_SAP_ORDER, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ DataOperacionID: dataOpId, OrdenProcesoSAP: newSapOrder })
+        })
+        .then(r => {
+            if (!r.ok) throw new Error('Error al guardar la orden SAP.');
+            return r.json();
+        })
+        .then(response => {
+            if (response.success) {
+                filtrarPorFecha();
+            } else {
+                showMsg('Error al actualizar: ' + (response.message || 'Desconocido'), 'danger');
+                restoreCellContent(tdCell, tdCell.dataset.value, 'text');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showMsg('Fallo en la comunicación con el servidor al guardar la Orden SAP. ' + err.message, 'danger');
+            restoreCellContent(tdCell, tdCell.dataset.value, 'text');
+        })
+        .finally(() => {
+            if (window.hideLoading) window.hideLoading();
+        });
     }
     // ------------------------------------------
 
-    // --- FUNCIÓN FETCH PRINCIPAL (ACTUALIZADA) ---
+    // --- FUNCIÓN FETCH PRINCIPAL ---
     function cargarCapturas(params){
       const { fechaISO, equipoId } = params;
 
       showMsg('Cargando datos...', 'secondary');
+
+      if (window.showLoading) window.showLoading();
 
       let url = `${URL_GET_OPERATION}?_fecha=${encodeURIComponent(fechaISO)}`;
 
       if(equipoId !== null && equipoId > 0){
           url += `&_equipoId=${encodeURIComponent(equipoId)}`;
       }
-      // ❌ Ya no se incluye _tipoOperacionId en la URL
 
       fetch(url, { headers:{'Accept':'application/json'} })
         .then(r=>{
@@ -505,38 +567,49 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             return r.json();
         })
-        .then(arr=> renderTabla(arr))
+        .then(arr => {
+            // Aquí se aplica la agrupación y el ordenamiento Producción/Consumo
+            const groupedAndFlattenedData = groupDataByEquipo(arr);
+            renderTabla(groupedAndFlattenedData);
+        })
         .catch(err=>{
             console.error(err);
             showMsg('No se pudo cargar la data de Operación. ' + err.message,'danger');
+        })
+        .finally(() => {
+            if (window.hideLoading) window.hideLoading();
         });
     }
     // ---------------------------------
 
-    function loadEquiposList() { /* ... Lógica de carga de selectEquipoList ... */ }
-
-    window.filtrarPorFecha = function(){
-      cargarCapturas(window.getCurrentParams());
+    // --- FUNCIONES DE FILTRO E INICIALIZACIÓN ---
+    const filtrarPorFecha = function(){
+      cargarCapturas(getCurrentParams());
     };
+    function loadEquiposList() {
+        fetch(URL_EQUIPOS, { headers:{'Accept':'application/json'} })
+            .then(r => r.json())
+            .then(list => {
+                fillSelect(selectEquipoList, list, 'EquipoID', 'Descripcion', 'Todos los Equipos');
+                filtrarPorFecha();
+            })
+            .catch(err => {
+                 console.error("Error al cargar equipos:", err);
+                 filtrarPorFecha();
+            });
+    }
 
     // Listeners de filtro
     if(inputFecha){
       if(!inputFecha.value) inputFecha.value = defaultAyerISO();
-      inputFecha.addEventListener('change', window.filtrarPorFecha);
+      inputFecha.addEventListener('change', filtrarPorFecha);
     }
     if(selectEquipoList){
-      selectEquipoList.addEventListener('change', window.filtrarPorFecha);
+      selectEquipoList.addEventListener('change', filtrarPorFecha);
     }
-    // ❌ ELIMINAMOS el listener para selectTipoOperacion
-    /*
-    if(selectTipoOperacion){
-        selectTipoOperacion.addEventListener('change', window.filtrarPorFecha);
-    }
-    */
 
     // Inicialización
     loadEquiposList();
-    window.filtrarPorFecha();
 
     // --- LISTENER GLOBAL PARA EDICIÓN EN LÍNEA ---
     contenedorListado.addEventListener('click', function(e) {
