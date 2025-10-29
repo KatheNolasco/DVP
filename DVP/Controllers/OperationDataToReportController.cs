@@ -739,7 +739,7 @@ namespace DVP.Controllers
             // Obtener la fecha de inicio del día
             var day = (_fecha ?? DateTime.Today).Date;
 
-            // 1. Obtener la lista filtrada de equipos
+            // 1. Obtener la lista filtrada de equipos (SIN CAMBIOS)
             var queryEquipos = _dvpEntities.Equipo
                 .Where(e => e.PlantaID == 1);
 
@@ -751,23 +751,22 @@ namespace DVP.Controllers
             var equiposSeleccionados = queryEquipos.Select(e => new { e.EquipoID, EquipoDescripcion = e.Descripcion }).ToList();
             var equipoIdsSeleccionados = equiposSeleccionados.Select(e => e.EquipoID).ToList();
 
-            // 2. Obtener la lista de relaciones BillOfMaterial
+            // 2. Obtener la lista de relaciones BillOfMaterial (SIN CAMBIOS)
             var queryBillOfMaterial = _dvpEntities.BillOfMaterial
                 .Where(b => equipoIdsSeleccionados.Contains(b.EquipoID.Value));
 
             // --- Extracción de Materiales de Producción y Consumo con su relación ---
 
-            // Materiales de Producción (son la 'cabeza' del grupo)
+            // Materiales de Producción (son la 'cabeza' del grupo) (SIN CAMBIOS)
             var produccionHeaders = queryBillOfMaterial
                 .Where(b => b.MaterialProduccionID.HasValue)
-                .GroupBy(b => new { b.EquipoID, b.MaterialProduccionID, b.Material1.Descripcion }) // Material1 es Producción
+                .GroupBy(b => new { b.EquipoID, b.MaterialProduccionID, b.Material1.Descripcion })
                 .Select(g => new
                 {
                     EquipoID = g.Key.EquipoID.Value,
                     MaterialID = g.Key.MaterialProduccionID.Value,
                     MaterialDescripcion = g.Key.Descripcion,
                     TipoMaterial = "PRODUCCION",
-                    // Un Material de Producción no tiene Material de Producción Padre
                     MaterialProduccionPadreID = (int?)null
                 });
 
@@ -778,15 +777,16 @@ namespace DVP.Controllers
                 {
                     EquipoID = b.EquipoID.Value,
                     MaterialID = b.MaterialConsumoID.Value,
-                    MaterialDescripcion = b.Material.Descripcion, // Material es Consumo
+                    MaterialDescripcion = b.Material.Descripcion,
                     TipoMaterial = "CONSUMO",
-                    MaterialProduccionPadreID = b.MaterialProduccionID // Relación clave
+                    // CLAVE: ESTE CAMPO identifica al material de PRODUCCION al que pertenece el consumo
+                    MaterialProduccionPadreID = b.MaterialProduccionID
                 });
 
-            // c) Combinar ambas listas de materiales únicos por Equipo (Producción + Consumo)
+            // c) Combinar ambas listas de materiales únicos por Equipo (Producción + Consumo) (SIN CAMBIOS)
             var combinacionesMaterialesUnicas = produccionHeaders
-                .Union(consumoDetails) // Une ambas listas
-                .ToList(); // Materializa la lista de materiales únicos por Equipo, incluyendo el tipo y la relación.
+                .Union(consumoDetails)
+                .ToList();
 
             // 3. Generar la Combinación (Equipo x Material)
             var combinacionesRequeridas = (
@@ -798,15 +798,16 @@ namespace DVP.Controllers
                     EquipoDescripcion = equipo.EquipoDescripcion,
                     material.MaterialID,
                     material.MaterialDescripcion,
-                    material.TipoMaterial, // ¡Nuevo campo clave!
-                    material.MaterialProduccionPadreID // ¡Nuevo campo clave!
+                    material.TipoMaterial,
+                    // IMPORTANTE: Este campo permite la agrupación que solicitas.
+                    material.MaterialProduccionPadreID
                 }
             ).ToList();
 
-            // Extraer MaterialIDs requeridos para el filtro de DataOperacion
+            // Extraer MaterialIDs requeridos para el filtro de DataOperacion (SIN CAMBIOS)
             var materialIdsRequeridos = combinacionesRequeridas.Select(c => c.MaterialID).ToList();
 
-            // 4. Obtener la data de operación real (Sin cambios)
+            // 4. Obtener la data de operación real (SIN CAMBIOS)
             var datosOperacionReales = _dvpEntities.DataOperacion
                 .Include("Material")
                 .Include("UnidadMedida")
@@ -816,7 +817,7 @@ namespace DVP.Controllers
                 .Where(d => d.MaterialID.HasValue && materialIdsRequeridos.Contains(d.MaterialID.Value))
                 .ToList();
 
-            // 5. Simular el LEFT JOIN: Iterar la combinación y buscar el dato real
+            // 5. Simular el LEFT JOIN: Iterar la combinación y buscar el dato real (SIN CAMBIOS)
             var resultados = combinacionesRequeridas
                 .Select(comb => new
                 {
@@ -832,10 +833,11 @@ namespace DVP.Controllers
                     Equipo = x.Combinacion.EquipoDescripcion,
                     MaterialID = x.Combinacion.MaterialID,
                     Material = x.Combinacion.MaterialDescripcion,
-                    TipoMaterial = x.Combinacion.TipoMaterial, // Exportar el tipo para JS
-                    MaterialProduccionPadreID = x.Combinacion.MaterialProduccionPadreID, // Exportar la relación para JS
+                    TipoMaterial = x.Combinacion.TipoMaterial,
+                    // CLAVE: Exportar este campo para agrupar los CONSUMOS por su padre de PRODUCCIÓN en el frontend (JS)
+                    MaterialProduccionPadreID = x.Combinacion.MaterialProduccionPadreID,
 
-                    // Campos de DataOperacion (NULL o valor por defecto si no existe data)
+                    // Campos de DataOperacion (NULL o valor por defecto si no existe data) (SIN CAMBIOS)
                     DataOperacionID = x.Data?.DataOperacionID,
                     CantidadPIMS = x.Data?.CantidadPIMS ?? 0.0m,
                     CantidadPims = x.Data?.CantidadPIMS ?? 0.0m,
@@ -848,7 +850,6 @@ namespace DVP.Controllers
                     StatusValidate = x.Data?.StatusValidate ?? false,
                     OrdenProcesoSAP = x.Data?.OrdenProcesoSAP
                 })
-                // IMPORTANTE: El ORDEN FINAL se hace en el frontend (JS)
                 .ToList();
 
             return Json(resultados, JsonRequestBehavior.AllowGet);

@@ -173,46 +173,36 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const MAX_QUANTITY = 100000;
 
-    // Referencias a los elementos del DOM
+    // Referencias a los elementos del DOM (SIN CAMBIOS)
     const contenedorListado = document.getElementById('contenedorListado');
     const inputFecha        = document.getElementById('fechaReporte');
     const selectEquipoList  = document.getElementById('selectEquipoList');
     const totalKwhPimsEl = document.getElementById('countkwhpims');
     const totalKwhValidadoEl = document.getElementById('countkwhvalidado');
 
-    // URLS DE ACCIÓN:
-    // Asegúrate de que estas URLs sean correctas para tu proyecto MVC
+    // URLS DE ACCIÓN: (SIN CAMBIOS)
     const URL_GET_OPERATION = '@Url.Action("GetOperation", "OperationDataToReport")';
     const URL_EQUIPOS       = '@Url.Action("GetEquiposporPaislogguedUser", "Equipo")';
     const URL_SAVE_VALIDATED_QTY = '@Url.Action("UpdateEnergy", "OperationDataToReport")';
     const URL_SAVE_SAP_ORDER = '@Url.Action("UpdateSapOrder", "OperationDataToReport")';
 
-    // ------------------------------------------
-    // === FUNCIÓN DE FORMATO DE FECHA: YYYY-MM-DD HH:MI ===
+    // ... [Todas las funciones de formato y utilidad (fmtFechaHora, option, fillSelect, etc.) VAN AQUÍ SIN CAMBIOS] ...
+    // Para brevedad, el código omitido (las funciones utilitarias) se asume que sigue igual.
+
     function fmtFechaHora(d){
-      if(!d) return '';
-      const m=/\/Date\((\d+)\)\//.exec(String(d));
-      let dt=null;
-
-      if(m){
-          const ms=parseInt(m[1],10);
-          if(!Number.isNaN(ms)) dt=new Date(ms);
-      }
-      else dt=new Date(d);
-
-      if(!dt || Number.isNaN(dt.getTime())) return '';
-
-      const yyyy=dt.getFullYear();
-      const mm=String(dt.getMonth()+1).padStart(2,'0');
-      const dd=String(dt.getDate()).padStart(2,'0');
-      const hh=String(dt.getHours()).padStart(2,'0');
-      const mi=String(dt.getMinutes()).padStart(2,'0');
-
-      return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+        if(!d) return '';
+        const m=/\/Date\((\d+)\)\//.exec(String(d));
+        let dt=null;
+        if(m){ const ms=parseInt(m[1],10); if(!Number.isNaN(ms)) dt=new Date(ms); }
+        else dt=new Date(d);
+        if(!dt || Number.isNaN(dt.getTime())) return '';
+        const yyyy=dt.getFullYear();
+        const mm=String(dt.getMonth()+1).padStart(2,'0');
+        const dd=String(dt.getDate()).padStart(2,'0');
+        const hh=String(dt.getHours()).padStart(2,'0');
+        const mi=String(dt.getMinutes()).padStart(2,'0');
+        return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
     }
-    // ------------------------------------------
-
-    // --- Funciones de Utilidad ---
     function option(el, value, text){ const o=document.createElement('option'); o.value=value; o.textContent=text; el.appendChild(o); }
     function fillSelect(selectEl, list, valueKey, textKey, placeholder){
       if(!selectEl) return;
@@ -267,9 +257,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         updateTotals(totalPims, totalValidado);
     }
-    // ------------------------------------------
 
-    // --- FUNCIÓN DE AGRUPACIÓN CLAVE (AJUSTADA: Agrupación por Equipo y Orden Producción/Consumo) ---
+
+    // --- FUNCIÓN DE AGRUPACIÓN CLAVE (SIN CAMBIOS FUNCIONALES) ---
+    // Esta función ya prepara los datos con la relación Producción/Consumo
     function groupDataByEquipo(rows) {
         if (!Array.isArray(rows) || rows.length === 0) return [];
 
@@ -298,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Identificar los materiales de producción (TipoMaterial === "PRODUCCION")
             const produccion = detalles.filter(r => r.TipoMaterial === "PRODUCCION")
-                                       .sort((a, b) => a.Material.localeCompare(b.Material)); // Ordenar Producción alfabéticamente
+                                     .sort((a, b) => a.Material.localeCompare(b.Material));
 
             // Identificar los materiales de consumo (TipoMaterial === "CONSUMO")
             const consumo = detalles.filter(r => r.TipoMaterial === "CONSUMO");
@@ -318,12 +309,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 orderedDetails.push(...relatedConsumo);
             });
 
-            // Si hay materiales de Consumo que no están asociados a una Producción (debería ser raro, pero es un fallback)
-            // Esto se puede omitir si se asume que todos los consumos tienen un padre.
-            /*
-            const unassignedConsumo = consumo.filter(c => !orderedDetails.includes(c));
-            orderedDetails.push(...unassignedConsumo.sort((a, b) => a.Material.localeCompare(b.Material)));
-            */
+            // ... [Lógica de fallback omitida por brevedad] ...
 
             const rowCount = orderedDetails.length;
             orderedDetails.forEach((detail, index) => {
@@ -339,16 +325,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     // ------------------------------------------
 
-
-    // --- FUNCIÓN DE PARÁMETROS ---
+    // ... [Las funciones getCurrentParams y buildTheadHtml VAN AQUÍ SIN CAMBIOS] ...
     const getCurrentParams = function(){
       const fechaISO  = (inputFecha && inputFecha.value) ? inputFecha.value : defaultAyerISO();
       const equipoId  = selectEquipoList && selectEquipoList.value ? Number(selectEquipoList.value) : null;
       return { fechaISO, equipoId };
     };
-    // -----------------------------
-
-    // --- ENCABEZADO DE TABLA (ORDEN MANTENIDO) ---
     function buildTheadHtml(){
         return `<thead><tr>
           <th class="text-center">Equipo</th>
@@ -363,8 +345,9 @@ document.addEventListener('DOMContentLoaded', function () {
           <th class="text-center">Orden Proceso SAP</th>
         </tr></thead>`;
     }
+    // -----------------------------
 
-    // === FUNCIÓN RENDER (MANTENIENDO ORDEN Y SIN ROWSPAN en Status) ===
+    // === FUNCIÓN RENDER MODIFICADA (Incorpora la diferenciación visual) ===
     function renderTabla(rows){
         const data = Array.isArray(rows) ? rows : [];
         calculateAndRenderTotals(data);
@@ -394,16 +377,37 @@ document.addEventListener('DOMContentLoaded', function () {
             const editableSapClass = isEditable ? 'editable-sap' : '';
             const dataValue = valRaw ?? '';
 
-            let rowHtml = '<tr>';
+            // 🌟 NUEVA LÓGICA DE ESTILO/IDENTIFICACIÓN 🌟
+            let rowClass = '';
+            let materialDisplay = escapeHtml(materialDesc);
+
+            if (r.TipoMaterial === "PRODUCCION") {
+                // Resalta la fila de Producción (el "Padre")
+                rowClass = 'table-primary font-weight-bold';
+            } else if (r.TipoMaterial === "CONSUMO") {
+                // Identación visual para el Consumo (el "Hijo")
+                rowClass = 'table-light';
+                materialDisplay = `<span style="padding-left: 20px;">↳ ${materialDisplay}</span>`;
+            }
+
+            let rowHtml = `<tr class="${rowClass}">`;
 
             // 1. Equipo (ROWSPAN, solo en la primera fila del grupo)
             if (r.IsFirstRow) {
                 rowHtml += `<td class="text-center" data-col="equipo" data-id="${r.EquipoID}" rowspan="${r.RowCount}">${escapeHtml(r.Equipo || '—')}</td>`;
             }
 
-            // Celdas de Detalle (Se renderizan en cada fila, siguiendo el orden)
+            // Celdas de Detalle
             rowHtml += `
-              <td class="text-center">${renderCloseStatus(!!r.StatusClose)}</td>                                  <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>                                     <td class="text-center">${escapeHtml(materialDesc)}</td>                                   <td class="text-end" data-col="pims" data-value="${pimsRaw ?? ''}">${pimsTxt}</td>               <td class="text-end ${editableValidadaClass}" data-col="validada" data-id="${dataOpId}" data-value="${dataValue}">${valTxt}</td> <td class="text-center">${escapeHtml(sapMovShown)}</td>                                    <td class="text-center" data-col="unidad">${escapeHtml(r.UnidadMedida || 'N/A')}</td>          <td class="text-center">${escapeHtml(sapMovIdShown)}</td>                                    <td class="text-center ${editableSapClass}" data-col="orden-sap" data-id="${dataOpId}" data-value="${escapeHtml(ordenSap)}">${escapeHtml(ordenSap || '—')}</td> </tr>`;
+              <td class="text-center">${renderCloseStatus(!!r.StatusClose)}</td>
+              <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>
+              <td class="text-start" data-col="material">${materialDisplay}</td> <td class="text-end" data-col="pims" data-value="${pimsRaw ?? ''}">${pimsTxt}</td>
+              <td class="text-end ${editableValidadaClass}" data-col="validada" data-id="${dataOpId}" data-value="${dataValue}">${valTxt}</td>
+              <td class="text-center">${escapeHtml(sapMovShown)}</td>
+              <td class="text-center" data-col="unidad">${escapeHtml(r.UnidadMedida || 'N/A')}</td>
+              <td class="text-center">${escapeHtml(sapMovIdShown)}</td>
+              <td class="text-center ${editableSapClass}" data-col="orden-sap" data-id="${dataOpId}" data-value="${escapeHtml(ordenSap)}">${escapeHtml(ordenSap || '—')}</td>
+            </tr>`;
 
             tbody += rowHtml;
         });
@@ -418,7 +422,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     // ------------------------------------------
 
-    // --- Lógica de Edición en Línea ---
+    // ... [Las funciones de Edición en Línea (restoreCellContent, startInlineEdit) VAN AQUÍ SIN CAMBIOS] ...
+    // ... [Las funciones de Guardado (saveValidatedQuantity, saveSapOrder) VAN AQUÍ SIN CAMBIOS] ...
+    // ... [Las funciones de Fetch Principal (cargarCapturas), Filtro e Inicialización (filtrarPorFecha, loadEquiposList) VAN AQUÍ SIN CAMBIOS] ...
+    // ... [Los Listeners y la inicialización VAN AQUÍ SIN CAMBIOS] ...
+
     const restoreCellContent = function(cell, val, type = 'number') {
         cell.classList.remove('editing');
         if (type === 'number') {
@@ -486,7 +494,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // --- FUNCIONES DE GUARDADO ---
     function saveValidatedQuantity(dataOpId, newQuantity, tdCell) {
         if (window.showLoading) window.showLoading();
         fetch(URL_SAVE_VALIDATED_QTY, {
@@ -544,9 +551,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (window.hideLoading) window.hideLoading();
         });
     }
-    // ------------------------------------------
 
-    // --- FUNCIÓN FETCH PRINCIPAL ---
     function cargarCapturas(params){
       const { fechaISO, equipoId } = params;
 
@@ -580,9 +585,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (window.hideLoading) window.hideLoading();
         });
     }
-    // ---------------------------------
 
-    // --- FUNCIONES DE FILTRO E INICIALIZACIÓN ---
     const filtrarPorFecha = function(){
       cargarCapturas(getCurrentParams());
     };
