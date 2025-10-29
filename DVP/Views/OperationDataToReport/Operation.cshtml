@@ -345,7 +345,6 @@ document.addEventListener('DOMContentLoaded', function () {
           <th class="text-center">Cant Validada</th>
           <th class="text-center">Unidad</th>
           <th class="text-center">Tipo Mov. SAP</th>
-          <th class="text-center">Tipo Mov SAP ID</th>
           <th class="text-center">Orden Proceso SAP</th>
         </tr></thead>`;
     }
@@ -424,7 +423,6 @@ document.addEventListener('DOMContentLoaded', function () {
           <td class="text-end ${editableValidadaClass}" data-col="validada" data-id="${dataOpId}" data-value="${dataValue}">${valTxt}</td>
           <td class="text-center" data-col="unidad">${escapeHtml(r.UnidadMedida || 'N/A')}</td>
           <td class="text-center">${escapeHtml(sapMovShown)}</td>
-          <td class="text-center">${escapeHtml(sapMovIdShown)}</td>
           <td class="text-center ${editableSapClass}" data-col="orden-sap" data-id="${dataOpId}" data-value="${escapeHtml(ordenSap)}">${escapeHtml(ordenSap || '—')}</td>
         </tr>`;
 
