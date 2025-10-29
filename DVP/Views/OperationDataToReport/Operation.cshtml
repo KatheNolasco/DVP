@@ -90,6 +90,10 @@
                 border-radius: 50%;
             }
 
+    .table-success-light {
+        --bs-table-bg: #e6ffec; /* Un verde muy claro, casi blanco verdoso */
+        --bs-table-accent-bg: var(--bs-table-bg);
+    }
        
 </style>
 
@@ -339,32 +343,36 @@ document.addEventListener('DOMContentLoaded', function () {
           <th class="text-center">Material Consumido</th>
           <th class="text-center">Cant PIMS</th>
           <th class="text-center">Cant Validada</th>
-          <th class="text-center">Tipo Mov. SAP</th>
           <th class="text-center">Unidad</th>
+          <th class="text-center">Tipo Mov. SAP</th>
           <th class="text-center">Tipo Mov SAP ID</th>
           <th class="text-center">Orden Proceso SAP</th>
         </tr></thead>`;
     }
     // -----------------------------
 
-    // === FUNCIÓN RENDER MODIFICADA (Incorpora la diferenciación visual) ===
-    function renderTabla(rows){
+    // === FUNCIÓN RENDER MODIFICADA (Negrita Asegurada para Producción y Sin Color para Consumo) ===
+    function renderTabla(rows) {
         const data = Array.isArray(rows) ? rows : [];
         calculateAndRenderTotals(data);
 
-        if(!data.length){ showMsg('No hay registros para los filtros aplicados','warning'); return; }
+        if (!data.length) { showMsg('No hay registros para los filtros aplicados', 'warning'); return; }
 
         contenedorListado.innerHTML = '';
         let tbody = '<tbody>';
 
+        // VARIABLES PARA EL CAMBIO DE COLOR POR EQUIPO (Tonos de VERDE)
+        let currentEquipoID = null;
+        const colorClasses = ['table-success', 'table-success-light'];
+        let alternateColorIndex = 0;
+
         data.forEach(r => {
             const pimsRaw = getPimsRaw(r);
             const isEditable = !!r.DataOperacionID;
-            const valRaw  = r.DataOperacionID !== null ? (r.CantidadValidada !== undefined ? r.CantidadValidada : null) : null;
+            const valRaw = r.DataOperacionID !== null ? (r.CantidadValidada !== undefined ? r.CantidadValidada : null) : null;
 
-            // Valores de detalle
             const pimsTxt = (pimsRaw === null || pimsRaw === undefined) ? '—' : fmtNumero(pimsRaw, 3);
-            const valTxt  = (valRaw  === null || valRaw  === undefined) ? '—' : fmtNumero(valRaw, 3);
+            const valTxt = (valRaw === null || valRaw === undefined) ? '—' : fmtNumero(valRaw, 3);
 
             const materialDesc = r.Material ?? '—';
             const sapMovShown = r.TipoMovimientoSAP || (r.TipoMovimientoSAPID ?? '—');
@@ -377,16 +385,25 @@ document.addEventListener('DOMContentLoaded', function () {
             const editableSapClass = isEditable ? 'editable-sap' : '';
             const dataValue = valRaw ?? '';
 
-            // 🌟 NUEVA LÓGICA DE ESTILO/IDENTIFICACIÓN 🌟
-            let rowClass = '';
+
+            // LÓGICA DE CAMBIO DE COLOR POR EQUIPO (Alternancia)
+            if (r.EquipoID !== currentEquipoID) {
+                alternateColorIndex = (alternateColorIndex + 1) % colorClasses.length;
+                currentEquipoID = r.EquipoID;
+            }
+            const equipoColorClass = colorClasses[alternateColorIndex];
+
+            // 🚨 LÓGICA DE ESTILO MODIFICADA 🚨
+            let rowClass = ''; // Fila sin color de fondo
             let materialDisplay = escapeHtml(materialDesc);
 
             if (r.TipoMaterial === "PRODUCCION") {
-                // Resalta la fila de Producción (el "Padre")
-                rowClass = 'table-primary font-weight-bold';
+                // Material de Producción (Padre) -> ¡Aplicar negrita directamente al texto!
+                rowClass = ''; // Se asegura que la fila NO tenga color de fondo
+                materialDisplay = `<span style="font-weight: bold;">${materialDisplay}</span>`;
             } else if (r.TipoMaterial === "CONSUMO") {
-                // Identación visual para el Consumo (el "Hijo")
-                rowClass = 'table-light';
+                // Material de Consumo (Hijo) -> Sin color de fondo ni negrita, solo indentación
+                rowClass = '';
                 materialDisplay = `<span style="padding-left: 20px;">↳ ${materialDisplay}</span>`;
             }
 
@@ -394,31 +411,33 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // 1. Equipo (ROWSPAN, solo en la primera fila del grupo)
             if (r.IsFirstRow) {
-                rowHtml += `<td class="text-center" data-col="equipo" data-id="${r.EquipoID}" rowspan="${r.RowCount}">${escapeHtml(r.Equipo || '—')}</td>`;
+                // La celda del equipo mantiene el color alternado y la negrita.
+                rowHtml += `<td class="text-center ${equipoColorClass} font-weight-bold" data-col="equipo" data-id="${r.EquipoID}" rowspan="${r.RowCount}">${escapeHtml(r.Equipo || '—')}</td>`;
             }
 
             // Celdas de Detalle
             rowHtml += `
-              <td class="text-center">${renderCloseStatus(!!r.StatusClose)}</td>
-              <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>
-              <td class="text-start" data-col="material">${materialDisplay}</td> <td class="text-end" data-col="pims" data-value="${pimsRaw ?? ''}">${pimsTxt}</td>
-              <td class="text-end ${editableValidadaClass}" data-col="validada" data-id="${dataOpId}" data-value="${dataValue}">${valTxt}</td>
-              <td class="text-center">${escapeHtml(sapMovShown)}</td>
-              <td class="text-center" data-col="unidad">${escapeHtml(r.UnidadMedida || 'N/A')}</td>
-              <td class="text-center">${escapeHtml(sapMovIdShown)}</td>
-              <td class="text-center ${editableSapClass}" data-col="orden-sap" data-id="${dataOpId}" data-value="${escapeHtml(ordenSap)}">${escapeHtml(ordenSap || '—')}</td>
-            </tr>`;
+          <td class="text-center">${renderCloseStatus(!!r.StatusClose)}</td>
+          <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>
+          <td class="text-start" data-col="material">${materialDisplay}</td>
+          <td class="text-end" data-col="pims" data-value="${pimsRaw ?? ''}">${pimsTxt}</td>
+          <td class="text-end ${editableValidadaClass}" data-col="validada" data-id="${dataOpId}" data-value="${dataValue}">${valTxt}</td>
+          <td class="text-center" data-col="unidad">${escapeHtml(r.UnidadMedida || 'N/A')}</td>
+          <td class="text-center">${escapeHtml(sapMovShown)}</td>
+          <td class="text-center">${escapeHtml(sapMovIdShown)}</td>
+          <td class="text-center ${editableSapClass}" data-col="orden-sap" data-id="${dataOpId}" data-value="${escapeHtml(ordenSap)}">${escapeHtml(ordenSap || '—')}</td>
+        </tr>`;
 
             tbody += rowHtml;
         });
         tbody += '</tbody>';
 
         contenedorListado.innerHTML = `
-          <div class="table-responsive w-100" style="max-height:420px; overflow-y:auto; background-color:#fff; padding:10px; border-radius:10px;">
-            <table class="table table-bordered table-sm table-striped mb-0" style="background-color:#fff;">
-              ${buildTheadHtml()}${tbody}
-            </table>
-          </div>`;
+      <div class="table-responsive w-100" style="max-height:420px; overflow-y:auto; background-color:#fff; padding:10px; border-radius:10px;">
+        <table class="table table-bordered table-sm table-striped mb-0" style="background-color:#fff;">
+          ${buildTheadHtml()}${tbody}
+        </table>
+      </div>`;
     }
     // ------------------------------------------
 
