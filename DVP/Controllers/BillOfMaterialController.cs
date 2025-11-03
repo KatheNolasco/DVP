@@ -134,155 +134,6 @@ namespace DVP.Controllers
         }
 
 
-        [HttpPost]
-        public JsonResult CreateBOMmaterialparaEquipo(BillOfMaterialViewModel data)
-        {
-            try
-            {
-                if (data == null)
-                    return Json(new { success = false, message = "Payload invalido." });
-
-                var cons = (data._materialConsumoIDs ?? new List<int>()).Where(x => x > 0).Distinct().ToList();
-                var equipos = (data._equipoIDs ?? new List<int>()).Where(x => x > 0).Distinct().ToList();
-
-                if (!equipos.Any())
-                {
-                    if (data._equipoID == null || data._equipoID <= 0)
-                        return Json(new { success = false, message = "Equipo es requerido." });
-                    equipos.Add(data._equipoID.Value);
-                }
-
-                if (cons.Count == 0)
-                    return Json(new { success = false, message = "Debe indicar al menos un material de consumo." });
-
-                if (data._consumoSeco && data._consumoHumedo)
-                    return Json(new { success = false, message = "Consumo Seco y Consumo Humedo no pueden estar ambos activos." });
-
-                if (data._produccionSeca && data._produccionHumeda)
-                    return Json(new { success = false, message = "Producción Seca y Producción Humeda no pueden estar ambos activos." });
-
-                int? materialProduccionID = null;
-                var factor = data._factorConsumo ?? 0m;
-                var tipoOperacionProduccion = 2;
-                var tipoMovimientoSAP = 1;
-
-                var nuevasFilas = new List<BillOfMaterial>();
-
-                foreach (var equipoID in equipos)
-                {
-                    foreach (var materialConsumoID in cons)
-                    {
-                        var fila = new BillOfMaterial
-                        {
-                            MaterialProduccionID = materialProduccionID,
-                            MaterialConsumoID = materialConsumoID,
-                            TipoOperacionID = tipoOperacionProduccion,
-                            TipoMovimientoSAPID = tipoMovimientoSAP,
-                            EquipoID = equipoID,
-                            FactorConsumo = factor,
-                            ConsumoSeco = data._consumoSeco,
-                            ConsumoHumedo = data._consumoHumedo,
-                            FechaBOM = DateTime.Now,
-                            Active = true,
-                            ProduccionSeca = data._produccionSeca,
-                            ProduccionHumeda = data._produccionHumeda
-                        };
-
-                        if (!ExisteDuplicado(fila))
-                            nuevasFilas.Add(fila);
-                    }
-                }
-
-                if (nuevasFilas.Count == 0)
-                    return Json(new { success = false, message = "No se generaron filas nuevas (posibles duplicados)." });
-
-                _dvpEntities.BillOfMaterial.AddRange(nuevasFilas);
-                _dvpEntities.SaveChanges();
-
-                return Json(new
-                {
-                    success = true,
-                    created = nuevasFilas.Count,
-                    message = $"Creado exitosamente ({nuevasFilas.Count}) fila(s)."
-                });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = "Error al crear BOM: " + ex.Message });
-            }
-        }
-
-
-        [HttpPost]
-        public JsonResult CreateBOMparaEquipo(BillOfMaterialViewModel data)
-        {
-            try
-            {
-                if (data == null)
-                    return Json(new { success = false, message = "Payload invalido." });
-
-                var equipos = (data._equipoIDs ?? new List<int>()).Where(x => x > 0).Distinct().ToList();
-
-                if (!equipos.Any())
-                {
-                    if (data._equipoID == null || data._equipoID <= 0)
-                        return Json(new { success = false, message = "Equipo es requerido." });
-                    equipos.Add(data._equipoID.Value);
-                }
-
-                if (data._consumoSeco && data._consumoHumedo)
-                    return Json(new { success = false, message = "Consumo Seco y Consumo Humedo no pueden estar ambos activos." });
-
-                if (data._produccionSeca && data._produccionHumeda)
-                    return Json(new { success = false, message = "Producción Seca y Producción Humeda no pueden estar ambos activos." });
-
-                int? materialProduccionID = null;
-                var factor = data._factorConsumo ?? 0m;
-                var tipoOperacionProduccion = 2;
-                var tipoMovimientoSAP = 1;
-
-                var nuevasFilas = new List<BillOfMaterial>();
-
-                foreach (var equipoID in equipos)
-                {
-                    var fila = new BillOfMaterial
-                    {
-                        MaterialProduccionID = materialProduccionID,
-                        TipoOperacionID = tipoOperacionProduccion,
-                        TipoMovimientoSAPID = tipoMovimientoSAP,
-                        EquipoID = equipoID,
-                        FactorConsumo = factor,
-                        ConsumoSeco = data._consumoSeco,
-                        ConsumoHumedo = data._consumoHumedo,
-                        FechaBOM = DateTime.Now,
-                        Active = true,
-                        ProduccionSeca = data._produccionSeca,
-                        ProduccionHumeda = data._produccionHumeda
-                    };
-
-                    if (!ExisteDuplicado(fila))
-                        nuevasFilas.Add(fila);
-                }
-
-                if (nuevasFilas.Count == 0)
-                    return Json(new { success = false, message = "No se generaron filas nuevas (posibles duplicados)." });
-
-                _dvpEntities.BillOfMaterial.AddRange(nuevasFilas);
-                _dvpEntities.SaveChanges();
-
-                return Json(new
-                {
-                    success = true,
-                    created = nuevasFilas.Count,
-                    message = $"Creado exitosamente ({nuevasFilas.Count}) fila(s)."
-                });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = "Error al crear BOM: " + ex.Message });
-            }
-        }
-
         private bool ExisteDuplicado(BillOfMaterial m)
         {
             return _dvpEntities.BillOfMaterial.Any(x =>
@@ -476,20 +327,12 @@ namespace DVP.Controllers
         }
 
         [HttpGet]
-        public JsonResult GetBOMsByMaterialProducido(int materialProduccionId, int? equipoId) 
+        public JsonResult GetBOMsByMaterial(int materialProduccionId)
         {
             try
             {
-                var query = _dvpEntities.BillOfMaterial
-                    .Where(b => b.MaterialProduccionID == materialProduccionId);
-
-
-                if (equipoId.HasValue && equipoId.Value > 0)
-                {
-                    query = query.Where(b => b.EquipoID == equipoId.Value);
-                }
-
-                var lista = query
+                var lista = _dvpEntities.BillOfMaterial
+                    .Where(b => b.MaterialProduccionID == materialProduccionId)
                     .Select(b => new
                     {
                         _billOfMaterialID = b.BillOfMaterialID,
@@ -569,45 +412,6 @@ namespace DVP.Controllers
                     .Select(b => new
                     {
                         _billOfMaterialID = b.BillOfMaterialID,
-                        _materialProduccionID = b.MaterialProduccionID,
-                        _materialProduccionDescripcion = b.Material1.Descripcion,
-                        _tipoOperacionID = b.TipoOperacionID,
-                        _tipoOperacionDescripcion = b.TipoOperacion.Descripcion,
-                        _tipoMovimientoSAPID = b.TipoMovimientoSAPID,
-                        _tipoMovimientoSAPDescripcion = b.TipoMovimientoSAP.Descripcion,
-                        _factorConsumo = b.FactorConsumo,
-                        _equipoID = b.EquipoID,
-                        _equipoDescripcion = b.Equipo.Descripcion,
-                        _consumoSeco = b.ConsumoSeco,
-                        _consumoHumedo = b.ConsumoHumedo,
-                        _produccionSeca = b.ProduccionSeca,
-                        _produccionHumeda = b.ProduccionHumeda,
-                        _fechaBOM = b.FechaBOM,
-                        _active = b.Active
-                    })
-                    .ToList();
-
-                return Json(new { success = true, data = lista }, JsonRequestBehavior.AllowGet);
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = "Error: " + ex.Message }, JsonRequestBehavior.AllowGet);
-            }
-        }
-
-
-        [HttpGet]
-        public JsonResult GetBOMsByEquipo(int equipoId)
-        {
-            try
-            {
-                var lista = _dvpEntities.BillOfMaterial
-                    .Where(b => b.EquipoID == equipoId)
-                    .Select(b => new
-                    {
-                        _billOfMaterialID = b.BillOfMaterialID,
-                        _materialConsumoID = b.MaterialConsumoID,
-                        _materialConsumoDescripcion = b.Material.Descripcion,
                         _materialProduccionID = b.MaterialProduccionID,
                         _materialProduccionDescripcion = b.Material1.Descripcion,
                         _tipoOperacionID = b.TipoOperacionID,
