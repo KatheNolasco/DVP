@@ -127,6 +127,7 @@
                         <div class="d-flex">
                             <select class="form-select" id="selectListado"></select>
                             <button id="agregar" class="btn btn-sm btn-primary ms-2">Agregar</button>
+                            <button id="agregarparaequipo" class="btn btn-sm btn-primary ms-2">Agregar para Equipo</button>
                         </div>
                     </div>
                     <div id="filtrosListado" class="row g-3 mb-2"></div>
@@ -1100,6 +1101,326 @@ document.addEventListener('DOMContentLoaded', function () {
     cargarMateriales();
 });
 </script>
+
+
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    'use strict';
+
+    const btnAgregarEquipo = document.getElementById('agregarparaequipo');
+    if (!btnAgregarEquipo) return;
+
+    const URL_EQUIPOS_USER       = '@Url.Action("GetEquiposporPaislogguedUser","Equipo")';
+    const URL_MATERIAL_CONSUMIDO = '@Url.Action("GetMaterialConsumido","Material")';
+    const URL_CREATE_BOM         = '@Url.Action("CreateBOM","BillOfMaterial")';
+
+    // ================== COMPONENTE REUTILIZABLE: MULTI-DROPDOWN CON BUSCADOR ==================
+    function montarDropdownMulti(contenedor, selectHidden, placeholder, urlData, fieldId = 'ID', fieldText = 'Descripcion') {
+        if (!contenedor || !selectHidden) return;
+
+        contenedor.innerHTML = `
+            <div class="dvpmulti w-100">
+                <button type="button" class="form-control d-flex justify-content-between align-items-center dvpmulti-toggle">
+                    <span class="dvpmulti-label">${placeholder || 'Seleccione'}</span>
+                    <span class="ms-2">▾</span>
+                </button>
+                <div class="dvpmulti-panel card shadow" style="display:none; position:absolute; z-index:1060; width:100%;">
+                    <div class="card-body p-2">
+                        <input type="text" class="form-control form-control-sm mb-2 dvpmulti-search" placeholder="Buscar...">
+                        <div class="small text-muted mb-2 dvpmulti-count">0 resultado(s)</div>
+                        <div class="dvpmulti-list" style="max-height:260px; overflow:auto;"></div>
+                        <div class="d-flex justify-content-end gap-2 mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dvpmulti-cancelar">Cancelar</button>
+                            <button type="button" class="btn btn-sm btn-primary dvpmulti-aplicar">Aplicar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const wrap = contenedor.querySelector('.dvpmulti');
+        wrap.style.position = 'relative';
+        const toggleBtn = contenedor.querySelector('.dvpmulti-toggle');
+        const panel = contenedor.querySelector('.dvpmulti-panel');
+        const inputBus = contenedor.querySelector('.dvpmulti-search');
+        const listBox = contenedor.querySelector('.dvpmulti-list');
+        const countLbl = contenedor.querySelector('.dvpmulti-count');
+        const aplicarBtn = contenedor.querySelector('.dvpmulti-aplicar');
+        const cancelarBtn = contenedor.querySelector('.dvpmulti-cancelar');
+        const labelSpan = contenedor.querySelector('.dvpmulti-label');
+
+        let data = [], filtro = '', abiertos = false;
+
+        const setOpen = v => { abiertos = v; panel.style.display = v ? 'block' : 'none'; };
+        const normalizar = s => (s || '').toString().toLowerCase();
+
+        function render() {
+            listBox.innerHTML = '';
+            const items = data.filter(x => normalizar(x.text).includes(normalizar(filtro)));
+            countLbl.textContent = `${items.length} resultado(s)`;
+
+            items.forEach(x => {
+                const id = String(x.id);
+                const optHidden = Array.from(selectHidden.options).find(o => String(o.value) === id);
+                const selected = !!(optHidden && optHidden.selected);
+                const row = document.createElement('div');
+                row.className = 'form-check d-flex align-items-center';
+                row.innerHTML = `
+                    <input class="form-check-input me-2" type="checkbox" value="${id}">
+                    <label class="form-check-label flex-grow-1" style="user-select:none;">${x.text}</label>
+                `;
+                const chk = row.querySelector('input[type="checkbox"]');
+                chk.checked = selected;
+                chk.addEventListener('change', () => {
+                    if (!optHidden) return;
+                    optHidden.selected = chk.checked;
+                    actualizarEtiqueta();
+                });
+                listBox.appendChild(row);
+            });
+            actualizarEtiqueta();
+        }
+
+        function actualizarEtiqueta() {
+            const sel = Array.from(selectHidden.options).filter(o => o.selected);
+            labelSpan.textContent = sel.length === 0
+                ? placeholder
+                : (sel.length === 1 ? sel[0].textContent : `${sel.length} seleccionados`);
+        }
+
+        function poblarHidden(lista) {
+            selectHidden.innerHTML = '';
+            (lista || []).forEach(item => {
+                const id = item[fieldId];
+                const text = item[fieldText];
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = text;
+                selectHidden.appendChild(opt);
+                data.push({ id, text });
+            });
+        }
+
+        toggleBtn.addEventListener('click', () => setOpen(!abiertos));
+        cancelarBtn.addEventListener('click', () => setOpen(false));
+        aplicarBtn.addEventListener('click', () => setOpen(false));
+        inputBus.addEventListener('input', () => { filtro = inputBus.value; render(); });
+        document.addEventListener('click', e => { if (!contenedor.contains(e.target)) setOpen(false); });
+
+        fetch(urlData, { headers: { 'Accept': 'application/json' } })
+            .then(r => r.json())
+            .then(lista => {
+                const arr = Array.isArray(lista) ? lista : (lista.data || []);
+                poblarHidden(arr);
+                render();
+            })
+            .catch(() => { listBox.innerHTML = '<div class="text-muted small">Error al cargar</div>'; });
+    }
+
+    // ================== MODAL: CREAR POR EQUIPO ==================
+    let createBgEq = null, createElEq = null;
+
+    btnAgregarEquipo.addEventListener('click', function (e) {
+        e.preventDefault();
+        showCreateOverlayEquipo();
+    });
+
+    function ensureCreateOverlayEquipo() {
+        if (createElEq && createBgEq) return;
+
+        createBgEq = document.createElement('div');
+        createBgEq.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1050;display:none;';
+        createElEq = document.createElement('div');
+        createElEq.style.cssText = 'position:fixed;left:50%;top:8vh;transform:translateX(-50%);z-index:1051;display:none;max-width:950px;width:calc(100% - 32px);background:#fff;border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,.2);';
+
+        createElEq.innerHTML = `
+            <div style="padding:.75rem 1rem;border-bottom:1px solid #e9ecef;" class="d-flex align-items-center justify-content-between">
+                <strong>Nuevo BOM por Equipo</strong>
+                <button type="button" id="crEq_close_top" class="btn btn-sm btn-outline-secondary">Cerrar</button>
+            </div>
+
+            <div style="padding:1rem;">
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <label class="form-label">Tipo Operacion</label>
+                        <div><span class="badge bg-secondary">Produccion</span></div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Tipo Mov SAP</label>
+                        <div><span class="badge bg-secondary">131</span></div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Factor</label>
+                        <input id="crEq_factor" type="number" step="0.000001" class="form-control text-end" placeholder="0">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Equipo(s)</label>
+                        <select id="crEq_equipoSel" multiple class="d-none"></select>
+                        <div id="crEq_equipoDD"></div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Material(es) Consumo</label>
+                        <select id="crEq_matConsSel" multiple class="d-none"></select>
+                        <div id="crEq_matConsDD"></div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Fecha BOM</label>
+                        <input id="crEq_fecha" type="date" class="form-control" disabled>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Produccion</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="form-check form-switch m-0">
+                                <input class="form-check-input" type="checkbox" id="crEq_prodSeca">
+                                <label class="form-check-label" for="crEq_prodSeca">Seca</label>
+                            </div>
+                            <div class="form-check form-switch m-0">
+                                <input class="form-check-input" type="checkbox" id="crEq_prodHum">
+                                <label class="form-check-label" for="crEq_prodHum">Humeda</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Consumo</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="form-check form-switch m-0">
+                                <input class="form-check-input" type="checkbox" id="crEq_conSeco">
+                                <label class="form-check-label" for="crEq_conSeco">Seco</label>
+                            </div>
+                            <div class="form-check form-switch m-0">
+                                <input class="form-check-input" type="checkbox" id="crEq_conHum">
+                                <label class="form-check-label" for="crEq_conHum">Humedo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Status</label>
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" id="crEq_activo" checked disabled>
+                            <label class="form-check-label" for="crEq_activo">Activo</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="padding:.75rem 1rem;border-top:1px solid #e9ecef;" class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-secondary" id="crEq_cancel">Cancelar</button>
+                <button type="button" class="btn btn-success" id="crEq_guardar">Guardar</button>
+            </div>
+        `;
+
+        document.body.appendChild(createBgEq);
+        document.body.appendChild(createElEq);
+
+        // Eventos de cierre
+        createBgEq.addEventListener('click', hideCreateOverlayEquipo);
+        createElEq.querySelector('#crEq_close_top').addEventListener('click', hideCreateOverlayEquipo);
+        createElEq.querySelector('#crEq_cancel').addEventListener('click', hideCreateOverlayEquipo);
+
+        // Exclusión mutua de switches
+        const chkPSe = createElEq.querySelector('#crEq_prodSeca');
+        const chkPHu = createElEq.querySelector('#crEq_prodHum');
+        chkPSe.addEventListener('change',()=>{ if(chkPSe.checked) chkPHu.checked=false; });
+        chkPHu.addEventListener('change',()=>{ if(chkPHu.checked) chkPSe.checked=false; });
+
+        const chkSeco = createElEq.querySelector('#crEq_conSeco');
+        const chkHum  = createElEq.querySelector('#crEq_conHum');
+        chkSeco.addEventListener('change',()=>{ if(chkSeco.checked) chkHum.checked=false; });
+        chkHum.addEventListener('change',()=>{ if(chkHum.checked) chkSeco.checked=false; });
+
+        // Fecha actual
+        createElEq.querySelector('#crEq_fecha').value = new Date().toISOString().split('T')[0];
+
+        // Montar dropdowns
+        montarDropdownMulti(createElEq.querySelector('#crEq_equipoDD'), createElEq.querySelector('#crEq_equipoSel'), 'Seleccione equipo(s)', URL_EQUIPOS_USER, 'EquipoID', 'Descripcion');
+        montarDropdownMulti(createElEq.querySelector('#crEq_matConsDD'), createElEq.querySelector('#crEq_matConsSel'), 'Seleccione material(es)', URL_MATERIAL_CONSUMIDO, 'MaterialID', 'Descripcion');
+
+        createElEq.querySelector('#crEq_guardar').addEventListener('click', guardarDesdeCreateOverlayEquipo);
+    }
+
+    function showCreateOverlayEquipo() {
+        ensureCreateOverlayEquipo();
+        createBgEq.style.display = 'block';
+        createElEq.style.display = 'block';
+    }
+
+    function hideCreateOverlayEquipo() {
+        if (!createElEq || !createBgEq) return;
+        createElEq.style.display = 'none';
+        createBgEq.style.display = 'none';
+    }
+
+    async function guardarDesdeCreateOverlayEquipo() {
+        const btn = createElEq.querySelector('#crEq_guardar');
+        btn.disabled = true;
+
+        try {
+            const equipoSel = createElEq.querySelector('#crEq_equipoSel');
+            const matSel = createElEq.querySelector('#crEq_matConsSel');
+            const equipoIds = Array.from(equipoSel.options).filter(o=>o.selected && o.value).map(o=>Number(o.value));
+            const matConsIds = Array.from(matSel.options).filter(o=>o.selected && o.value).map(o=>Number(o.value));
+
+            const factor = Number(createElEq.querySelector('#crEq_factor').value || 0);
+            const prodSeca = createElEq.querySelector('#crEq_prodSeca').checked;
+            const prodHum  = createElEq.querySelector('#crEq_prodHum').checked;
+            const conSeco  = createElEq.querySelector('#crEq_conSeco').checked;
+            const conHum   = createElEq.querySelector('#crEq_conHum').checked;
+
+            if (!equipoIds.length || !matConsIds.length) {
+                alert('Selecciona al menos un equipo y un material de consumo.');
+                return;
+            }
+
+            const calls = equipoIds.map(eqId => {
+                const payload = {
+                    _equipoID: eqId,
+                    _materialConsumoIDs: matConsIds,
+                    _factorConsumo: factor,
+                    _produccionSeca: prodSeca,
+                    _produccionHumeda: prodHum,
+                    _consumoSeco: conSeco,
+                    _consumoHumedo: conHum
+                };
+                return fetch(URL_CREATE_BOM, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).then(r => r.json());
+            });
+
+            const results = await Promise.allSettled(calls);
+            const oks = results.filter(x => x.status === 'fulfilled' && x.value?.success);
+            const fails = results.filter(x => !x.value?.success);
+
+            if (oks.length) alert(`Guardado exitosamente (${oks.length})`);
+            if (fails.length) alert(`Fallaron ${fails.length} registros.`);
+            hideCreateOverlayEquipo();
+        } catch (err) {
+            console.error(err);
+            alert('Error al guardar.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+});
+</script>
+
+
+
+
+
+
 
 
 
