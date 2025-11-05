@@ -115,6 +115,87 @@ namespace DVP.Controllers
                 }
 
                 if (nuevasFilas.Count == 0)
+                    return Json(new { success = false, message = "No se agrego la el material a la BOMs (posibles duplicados)." });
+
+                _dvpEntities.BillOfMaterial.AddRange(nuevasFilas);
+                _dvpEntities.SaveChanges();
+
+                return Json(new
+                {
+                    success = true,
+                    created = nuevasFilas.Count,
+                    message = $"Creado exitosamente ({nuevasFilas.Count}) fila(s) a la BOMs."
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error al crear BOM: " + ex.Message });
+            }
+        }
+
+
+        [HttpPost]
+        public JsonResult CreateBOMparaEquipo(BillOfMaterialViewModel data)
+        {
+            try
+            {
+                if (data == null)
+                    return Json(new { success = false, message = "Payload invalido." });
+
+
+                var cons = (data._materialConsumoIDs ?? new List<int>()).Where(x => x > 0).Distinct().ToList();
+                var equipos = (data._equipoIDs ?? new List<int>()).Where(x => x > 0).Distinct().ToList();
+
+                // retrocompatibilidad: si no viene _equipoIDs, usar _equipoID
+                if (!equipos.Any())
+                {
+                    if (data._equipoID == null || data._equipoID <= 0)
+                        return Json(new { success = false, message = "Equipo es requerido." });
+                    equipos.Add(data._equipoID.Value);
+                }
+
+                if (cons.Count == 0)
+                    return Json(new { success = false, message = "Debe indicar al menos un material de consumo." });
+
+
+                if (data._consumoSeco && data._consumoHumedo)
+                    return Json(new { success = false, message = "Consumo Seco y Consumo Humedo no pueden estar ambos activos." });
+
+                if (data._produccionSeca && data._produccionHumeda)
+                    return Json(new { success = false, message = "Producción Seca y Producción Humeda no pueden estar ambos activos." });
+
+                var factor = data._factorConsumo ?? 0m;
+                var tipoOperacionProduccion = 2;
+                var tipoMovimientoSAP = 1;
+
+                var nuevasFilas = new List<BillOfMaterial>();
+
+                foreach (var equipoID in equipos)
+                {
+                    foreach (var materialConsumoID in cons)
+                    {
+                        var fila = new BillOfMaterial
+                        {
+                            MaterialProduccionID = null,
+                            MaterialConsumoID = materialConsumoID,
+                            TipoOperacionID = tipoOperacionProduccion,
+                            TipoMovimientoSAPID = tipoMovimientoSAP,
+                            EquipoID = equipoID,
+                            FactorConsumo = factor,
+                            ConsumoSeco = data._consumoSeco,
+                            ConsumoHumedo = data._consumoHumedo,
+                            FechaBOM = DateTime.Now,
+                            Active = true,
+                            ProduccionSeca = data._produccionSeca,
+                            ProduccionHumeda = data._produccionHumeda
+                        };
+
+                        if (!ExisteDuplicado(fila))
+                            nuevasFilas.Add(fila);
+                    }
+                }
+
+                if (nuevasFilas.Count == 0)
                     return Json(new { success = false, message = "No se generaron filas nuevas (posibles duplicados)." });
 
                 _dvpEntities.BillOfMaterial.AddRange(nuevasFilas);
@@ -124,7 +205,8 @@ namespace DVP.Controllers
                 {
                     success = true,
                     created = nuevasFilas.Count,
-                    message = $"Creado exitosamente ({nuevasFilas.Count}) fila(s)."
+                    message = $"Creado exitosamente ({nuevasFilas.Count}) fila(s).",
+                    redirect = Url.Action("Index", "BillOfMaterial")
                 });
             }
             catch (Exception ex)
@@ -163,8 +245,8 @@ namespace DVP.Controllers
                 if (data._equipoID <= 0)
                     return Json(new { success = false, message = "Equipo es requerido." });
 
-                // no permitir el mismo material como produccion y consumo
-                if (data._materialProduccionID == data._materialConsumoID)
+                // ✅ si hay material de producción y consumo iguales, validar
+                if (data._materialProduccionID.HasValue && data._materialProduccionID == data._materialConsumoID)
                     return Json(new { success = false, message = "Un material no puede ser simultaneamente de produccion y consumo." });
 
                 // buscar fila
@@ -172,30 +254,31 @@ namespace DVP.Controllers
                 if (row == null)
                     return Json(new { success = false, message = "BOM no encontrado." });
 
-                // regla fija
+                // reglas fijas
                 var tipoOperacionProduccion = 2;
                 var tipoMovimientoSAP = 1;
                 var nuevoFactor = data._factorConsumo ?? 0m;
 
-                // validar duplicado con la nueva combinacion (excluyendose a si mismo)
-                if (ExisteDuplicadoEdit(
+                // ✅ duplicado: si el material de producción es null, comparar también con null
+                bool existeDuplicado = ExisteDuplicadoEdit(
                     excludeId: row.BillOfMaterialID,
-                    materialProduccionID: data._materialProduccionID.Value,
-                    materialConsumoID: data._materialConsumoID.Value,
+                    materialProduccionID: data._materialProduccionID,
+                    materialConsumoID: data._materialConsumoID,
                     tipoOperacionID: tipoOperacionProduccion,
                     tipoMovimientoSAPID: tipoMovimientoSAP,
                     equipoID: data._equipoID.Value,
                     consumoSeco: data._consumoSeco,
                     consumoHumedo: data._consumoHumedo,
                     produccionSeca: data._produccionSeca,
-                    produccionHumeda: data._produccionHumeda))
-                {
-                    return Json(new { success = false, message = "Ya existe una BOM con la misma combinacion." });
-                }
+                    produccionHumeda: data._produccionHumeda
+                );
 
-                // actualizar
-                row.MaterialProduccionID = data._materialProduccionID;
-                row.MaterialConsumoID = data._materialConsumoID;  
+                if (existeDuplicado)
+                    return Json(new { success = false, message = "Ya existe una BOM con la misma combinacion." });
+
+                // ✅ actualizar sin forzar .Value
+                row.MaterialProduccionID = row.MaterialProduccionID;  // puede ser null
+                row.MaterialConsumoID = data._materialConsumoID;
                 row.EquipoID = data._equipoID;
                 row.FactorConsumo = nuevoFactor;
                 row.ConsumoSeco = data._consumoSeco;
@@ -203,6 +286,7 @@ namespace DVP.Controllers
                 row.Active = data._active;
                 row.ProduccionSeca = data._produccionSeca;
                 row.ProduccionHumeda = data._produccionHumeda;
+
                 _dvpEntities.SaveChanges();
 
                 return Json(new { success = true, message = "Actualizado exitosamente." });
@@ -215,8 +299,8 @@ namespace DVP.Controllers
 
         private bool ExisteDuplicadoEdit(
             int excludeId,
-            int materialProduccionID,
-            int materialConsumoID,
+            int? materialProduccionID,
+            int? materialConsumoID,
             int? tipoOperacionID,
             int? tipoMovimientoSAPID,
             int equipoID,
@@ -227,8 +311,9 @@ namespace DVP.Controllers
         {
             return _dvpEntities.BillOfMaterial.Any(x =>
                 x.BillOfMaterialID != excludeId &&
-                x.MaterialProduccionID == materialProduccionID &&
-                x.MaterialConsumoID == materialConsumoID &&
+                // ✅ si ambos son null, los considera iguales
+                ((x.MaterialProduccionID ?? 0) == (materialProduccionID ?? 0)) &&
+                (x.MaterialConsumoID == materialConsumoID) &&
                 (x.TipoOperacionID ?? 0) == (tipoOperacionID ?? 0) &&
                 (x.TipoMovimientoSAPID ?? 0) == (tipoMovimientoSAPID ?? 0) &&
                 x.EquipoID == equipoID &&
@@ -238,6 +323,7 @@ namespace DVP.Controllers
                 x.ProduccionHumeda == produccionHumeda
             );
         }
+
 
 
         [HttpGet]
@@ -327,31 +413,51 @@ namespace DVP.Controllers
         }
 
         [HttpGet]
-        public JsonResult GetBOMsByMaterial(int materialProduccionId)
+        public JsonResult GetBOMsByMaterial(int? materialProduccionId)
         {
             try
             {
+                List<int?> equiposRelacionados = new List<int?>();
+
+                // 🔹 Si materialProduccionId es 0, lo tratamos como null (para poder reutilizar la misma lógica)
+                if (materialProduccionId == 0)
+                    materialProduccionId = null;
+
+                if (materialProduccionId.HasValue)
+                {
+                    equiposRelacionados = _dvpEntities.BillOfMaterial
+                        .Where(b => b.MaterialProduccionID == materialProduccionId.Value)
+                        .Select(b => (int?)b.EquipoID)
+                        .Distinct()
+                        .ToList();
+                }
+
                 var lista = _dvpEntities.BillOfMaterial
-                    .Where(b => b.MaterialProduccionID == materialProduccionId)
+                    .Where(b =>
+                        (materialProduccionId == null)
+                            ? b.MaterialProduccionID == null
+                            : (b.MaterialProduccionID == materialProduccionId.Value
+                               || (b.MaterialProduccionID == null && equiposRelacionados.Contains(b.EquipoID)))
+                    )
                     .Select(b => new
                     {
                         _billOfMaterialID = b.BillOfMaterialID,
                         _materialProduccionID = b.MaterialProduccionID,
-                        _materialProduccionDescripcion = b.Material1.Descripcion,
+                        _materialProduccionDescripcion = b.Material1 != null ? b.Material1.Descripcion : null,
                         _tipoOperacionID = b.TipoOperacionID,
-                        _tipoOperacionDescripcion = b.TipoOperacion.Descripcion,
+                        _tipoOperacionDescripcion = b.TipoOperacion != null ? b.TipoOperacion.Descripcion : null,
                         _tipoMovimientoSAPID = b.TipoMovimientoSAPID,
-                        _tipoMovimientoSAPDescripcion = b.TipoMovimientoSAP.Descripcion,
+                        _tipoMovimientoSAPDescripcion = b.TipoMovimientoSAP != null ? b.TipoMovimientoSAP.Descripcion : null,
                         _factorConsumo = b.FactorConsumo,
                         _equipoID = b.EquipoID,
-                        _equipoDescripcion = b.Equipo.Descripcion,
+                        _equipoDescripcion = b.Equipo != null ? b.Equipo.Descripcion : null,
                         _consumoSeco = b.ConsumoSeco,
                         _consumoHumedo = b.ConsumoHumedo,
                         _produccionSeca = b.ProduccionSeca,
                         _produccionHumeda = b.ProduccionHumeda,
                         _fechaBOM = b.FechaBOM,
                         _materialConsumoID = b.MaterialConsumoID,
-                        _materialConsumoDescripcion = b.Material.Descripcion,
+                        _materialConsumoDescripcion = b.Material != null ? b.Material.Descripcion : null,
                         _active = b.Active
                     })
                     .ToList();
@@ -414,6 +520,44 @@ namespace DVP.Controllers
                         _billOfMaterialID = b.BillOfMaterialID,
                         _materialProduccionID = b.MaterialProduccionID,
                         _materialProduccionDescripcion = b.Material1.Descripcion,
+                        _tipoOperacionID = b.TipoOperacionID,
+                        _tipoOperacionDescripcion = b.TipoOperacion.Descripcion,
+                        _tipoMovimientoSAPID = b.TipoMovimientoSAPID,
+                        _tipoMovimientoSAPDescripcion = b.TipoMovimientoSAP.Descripcion,
+                        _factorConsumo = b.FactorConsumo,
+                        _equipoID = b.EquipoID,
+                        _equipoDescripcion = b.Equipo.Descripcion,
+                        _consumoSeco = b.ConsumoSeco,
+                        _consumoHumedo = b.ConsumoHumedo,
+                        _produccionSeca = b.ProduccionSeca,
+                        _produccionHumeda = b.ProduccionHumeda,
+                        _fechaBOM = b.FechaBOM,
+                        _active = b.Active
+                    })
+                    .ToList();
+
+                return Json(new { success = true, data = lista }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: " + ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        [HttpGet]
+        public JsonResult GetBOMsByEquipo(int equipoId)
+        {
+            try
+            {
+                var lista = _dvpEntities.BillOfMaterial
+                    .Where(b => b.EquipoID == equipoId)
+                    .Select(b => new
+                    {
+                        _billOfMaterialID = b.BillOfMaterialID,
+                        _materialProduccionID = b.MaterialProduccionID,
+                        _materialProduccionDescripcion = b.Material1.Descripcion,
+                        _materialConsumoID = b.MaterialConsumoID,
+                        _materialConsumoDescripcion = b.Material.Descripcion,
                         _tipoOperacionID = b.TipoOperacionID,
                         _tipoOperacionDescripcion = b.TipoOperacion.Descripcion,
                         _tipoMovimientoSAPID = b.TipoMovimientoSAPID,

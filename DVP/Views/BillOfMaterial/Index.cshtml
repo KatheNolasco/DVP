@@ -381,7 +381,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 data-conshum="${hum?1:0}"
                 data-fecha="${fmtFechaISO(r._fechaBOM)}"
                 data-active="${r._active?1:0}">
-                <td class="text-center">${escapeHtml(r._materialProduccionDescripcion ?? '')}</td>
+                <td class="text-center">${
+                r._materialProduccionDescripcion
+                    ? escapeHtml(r._materialProduccionDescripcion)
+                    : '<span class="text-primary fw-semibold">PARA EL EQUIPO COMPLETO</span>'}</td>
                 <td class="text-center">${escapeHtml(r._tipoOperacionDescripcion ?? '')}</td>
                 <td class="text-center">${r._tipoMovimientoSAPDescripcion?escapeHtml(r._tipoMovimientoSAPDescripcion):'-'}</td>
                 <td class="text-center">${r._factorConsumo ?? ''}</td>
@@ -463,19 +466,51 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function recargarTablaActual(materialIdOverride){ const matId=materialIdOverride||selectListado.value; if(matId) cargarBOMPorMaterial(matId); }
-    function cargarBOMPorMaterial(materialProduccionId){
-        if(!materialProduccionId){ contenedorListado.innerHTML=''; return; }
-        showMsg('Cargando...','secondary');
-        fetch(`${URL_BOMS_MATERIAL}?materialProduccionId=${encodeURIComponent(materialProduccionId)}`,{headers:{'Accept':'application/json'}})
-        .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-        .then(res=>{
-            const rows = Array.isArray(res)?res:(res && res.success && Array.isArray(res.data)?res.data:[]);
-            currentRows = rows;             // guardamos para filtros
-            renderTablaBOM(currentRows);    // dibuja respetando filtro de equipo
-        })
-        .catch(err=>{console.error(err);showMsg('No se pudo cargar los datos','danger');});
+    function recargarTablaActual(materialIdOverride) {
+        let matId = materialIdOverride;
+
+        // Si no se pasó parámetro, usa el valor actual del select
+        if (matId == null || matId === '' || matId === undefined)
+            matId = selectListado?.value || '';
+
+        // 🔹 Si el material sigue vacío o nulo, significa BOM para equipo completo → usar 'NULL'
+        if (matId === '' || matId === null || matId === undefined)
+            matId = 'NULL';
+
+        // Mostrar mensaje temporal mientras recarga
+        showMsg('Actualizando datos...', 'secondary');
+
+        // 🔹 Forzar recarga
+        cargarBOMPorMaterial(matId);
     }
+
+    function cargarBOMPorMaterial(materialProduccionId) {
+        showMsg('Cargando...', 'secondary');
+
+        return new Promise((resolve, reject) => {
+            const param = (materialProduccionId === 'NULL') ? 0 : materialProduccionId;
+
+            fetch(`${URL_BOMS_MATERIAL}?materialProduccionId=${encodeURIComponent(param)}`, {
+                headers: { 'Accept': 'application/json' }
+            })
+                .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+                .then(res => {
+                    const rows = Array.isArray(res)
+                        ? res
+                        : (res && res.success && Array.isArray(res.data) ? res.data : []);
+                    currentRows = rows;
+                    renderTablaBOM(currentRows);
+                    resolve(rows);
+                })
+                .catch(err => {
+                    console.error(err);
+                    showMsg('No se pudo cargar los datos', 'danger');
+                    reject(err);
+                });
+        });
+    }
+
+
 
     // ========== Dropdown multiple generico (para CREAR)
     function montarDropdownMultiple(wrapperEl, hiddenSelectEl, placeholder, fetcher){
@@ -750,79 +785,104 @@ document.addEventListener('DOMContentLoaded', function () {
         createEl.style.display = 'none';
         createBg.style.display = 'none';
     }
-    async function guardarDesdeCreateOverlay(keepOpen){
-        const btn      = createEl.querySelector('#cr_guardar');
-        const btnKeep  = createEl.querySelector('#cr_guardar_keep');
-        btn.disabled = true; btnKeep.disabled = true;
+    async function guardarDesdeCreateOverlay(keepOpen) {
+        const btn = createEl.querySelector('#cr_guardar');
+        const btnKeep = createEl.querySelector('#cr_guardar_keep');
+        btn.disabled = true;
+        btnKeep.disabled = true;
 
-        try{
-            const matProdId = Number(createEl.querySelector('#cr_matProd')?.value||0);
+        try {
+            // ✅ leer valor real del material producido
+            const matProdSelect = createEl.querySelector('#cr_matProd');
+            let matProdVal = (matProdSelect?.value ?? '').trim();
+            // si está vacío, NULL o 0 => lo tratamos como null
+            const matProdId = (!matProdVal || matProdVal === 'NULL' || matProdVal === '0') ? null : Number(matProdVal);
+
             const factorVal = createEl.querySelector('#cr_factor')?.value;
-            const factor = (factorVal==='')?0:Number(factorVal);
+            const factor = (factorVal === '') ? 0 : Number(factorVal);
 
             const equipoSel = createEl.querySelector('#cr_equipoSel');
-            const equipoIds = Array.from((equipoSel?.options||[])).filter(o=>o.selected && o.value).map(o=>Number(o.value));
+            const equipoIds = Array.from((equipoSel?.options || []))
+                .filter(o => o.selected && o.value)
+                .map(o => Number(o.value));
 
             const matSel = createEl.querySelector('#cr_matConsSel');
-            const matConsIds = Array.from((matSel?.options||[])).filter(o=>o.selected && o.value).map(o=>Number(o.value));
+            const matConsIds = Array.from((matSel?.options || []))
+                .filter(o => o.selected && o.value)
+                .map(o => Number(o.value));
 
             const prodSeca = !!createEl.querySelector('#cr_prodSeca')?.checked;
-            const prodHum  = !!createEl.querySelector('#cr_prodHum')?.checked;
-
+            const prodHum = !!createEl.querySelector('#cr_prodHum')?.checked;
             const conSeco = !!createEl.querySelector('#cr_conSeco')?.checked;
-            const conHum  = !!createEl.querySelector('#cr_conHum')?.checked;
+            const conHum = !!createEl.querySelector('#cr_conHum')?.checked;
 
-            if(!matProdId || !equipoIds.length || !matConsIds.length){
-                alert('Completa: Material Producción, al menos un Equipo y al menos un Material de Consumo.');
+            // ✅ ahora validamos solo equipo + material consumo (ya no material producido)
+            if (equipoIds.length === 0 || matConsIds.length === 0) {
+                alert('Completa: al menos un Equipo y un Material de Consumo.');
                 return;
             }
-            if(prodSeca && prodHum){
+
+            if (prodSeca && prodHum) {
                 alert('Prod Seca y Prod Húmeda no pueden estar ambos activos.');
                 return;
             }
-            if(conSeco && conHum){
+            if (conSeco && conHum) {
                 alert('Cons Seco y Cons Húmedo no pueden estar ambos activos.');
                 return;
             }
 
-            // Importante: NO enviar _tipoMovimientoSAPID
-            const calls = equipoIds.map(eqId=>{
-                const payload={
-                    _materialProduccionIDs:[matProdId],
-                    _materialConsumoIDs:   matConsIds,
-                    _equipoID:             eqId,
-                    _factorConsumo:        Number.isFinite(factor)?factor:0,
-                    _produccionSeca:       prodSeca,
-                    _produccionHumeda:     prodHum,
-                    _consumoSeco:          conSeco,
-                    _consumoHumedo:        conHum
+            // ✅ construcción dinámica del payload
+            const calls = equipoIds.map(eqId => {
+                const payload = {
+                    _materialConsumoIDs: matConsIds,
+                    _equipoID: eqId,
+                    _factorConsumo: Number.isFinite(factor) ? factor : 0,
+                    _produccionSeca: prodSeca,
+                    _produccionHumeda: prodHum,
+                    _consumoSeco: conSeco,
+                    _consumoHumedo: conHum
                 };
+                // solo incluir si realmente hay material producido
+                if (matProdId !== null && !Number.isNaN(matProdId)) {
+                    payload._materialProduccionIDs = [matProdId];
+                }
                 return fetch(URL_CREATE_BOM, {
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
-                    body:JSON.stringify(payload)
-                }).then(r=>r.json());
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).then(r => r.json());
             });
 
             const results = await Promise.allSettled(calls);
-            const oks   = results.filter(x=>x.status==='fulfilled' && x.value && x.value.success);
-            const fails = results.filter(x=>x.status!=='fulfilled' || !x.value || !x.value.success);
+            const oks = results.filter(x => x.status === 'fulfilled' && x.value && x.value.success);
+            const fails = results.filter(x => x.status !== 'fulfilled' || !x.value || !x.value.success);
 
-            if(oks.length){
-                recargarTablaActual(matProdId);
-                if(!keepOpen) hideCreateOverlay();
+            if (oks.length) {
+                showMsg('Actualizando datos...', 'secondary');
+
+                // 🔹 Recargar tabla y esperar su finalización real
+                await cargarBOMPorMaterial(matProdId ?? 'NULL');
+
+                // 🔹 Cerrar overlay solo si no se pidió mantenerlo abierto
+                if (!keepOpen) hideCreateOverlay();
             }
-            if(fails.length){
-                const msg = fails.map(x=> (x.value && x.value.message) ? x.value.message : 'Fallo al crear').join('\n');
+
+
+            if (fails.length) {
+                const msg = fails.map(x => (x.value && x.value.message) ? x.value.message : 'Fallo al crear').join('\n');
                 alert(`Algunas inserciones fallaron (${fails.length}/${results.length}).\n${msg}`);
             }
-        }catch(e){
+        } catch (e) {
             console.error(e);
             alert('Error al crear BOM.');
-        }finally{
-            btn.disabled = false; btnKeep.disabled = false;
+        } finally {
+            btn.disabled = false;
+            btnKeep.disabled = false;
         }
     }
+
+
+
 
     // ========== OVERLAY: EDIT ==========
     let editBg = null, editEl = null;
@@ -942,140 +1002,188 @@ document.addEventListener('DOMContentLoaded', function () {
         editEl.querySelector('#ed_guardar').addEventListener('click', guardarEdicionOverlay);
         document.addEventListener('keydown', (e)=>{ if (editEl.style.display==='block' && e.key==='Escape') hideEditOverlay(); });
     }
-    function openEditOverlayFromRow(tr){
-        if(!tr) return;
+    function openEditOverlayFromRow(tr) {
+        if (!tr) return;
         ensureEditOverlay();
 
         editEl.querySelector('#ed_bomid').value = tr.dataset.bomid || '';
 
         // Material producción (bloqueado)
+        const prodSelWrapper = editEl.querySelector('#ed_matProd')?.closest('.col-md-4');
         const prodSel = editEl.querySelector('#ed_matProd');
-        const matId   = tr.dataset.materialprodid || '';
-        prodSel.innerHTML = '';
-        const fillProd = () => {
-            (cacheMateriales||[]).forEach(x=>option(prodSel,x.MaterialID,x.Descripcion));
-            if (matId) prodSel.value = String(matId);
-        };
-        if (Array.isArray(cacheMateriales) && cacheMateriales.length) fillProd();
-        else {
-            fetch(URL_MATERIALES,{headers:{'Accept':'application/json'}})
-            .then(r=>r.json()).then(lista=>{
-                cacheMateriales = Array.isArray(lista)?lista:(lista && Array.isArray(lista.data)?lista.data:[]);
-                fillProd();
-            }).catch(()=>{ option(prodSel,'','(error)'); });
+        const matId = tr.dataset.materialprodid || '';
+
+        // 🔹 Si no tiene material de producción (null o vacío) => ocultar el campo
+        if (!matId || matId === '0') {
+            if (prodSelWrapper) prodSelWrapper.style.display = 'none';
+        } else {
+            if (prodSelWrapper) prodSelWrapper.style.display = '';
+            prodSel.innerHTML = '';
+            const fillProd = () => {
+                (cacheMateriales || []).forEach(x => option(prodSel, x.MaterialID, x.Descripcion));
+                if (matId) prodSel.value = String(matId);
+            };
+            if (Array.isArray(cacheMateriales) && cacheMateriales.length) fillProd();
+            else {
+                fetch(URL_MATERIALES, { headers: { 'Accept': 'application/json' } })
+                    .then(r => r.json()).then(lista => {
+                        cacheMateriales = Array.isArray(lista) ? lista : (lista && Array.isArray(lista.data) ? lista.data : []);
+                        fillProd();
+                    }).catch(() => { option(prodSel, '', '(error)'); });
+            }
         }
 
         // Equipo (select simple)
         const eqSel = editEl.querySelector('#ed_equipo');
         fetchEquiposUserInto(eqSel);
         const desiredEq = tr.dataset.equipoid || '';
-        const eqObs = new MutationObserver(()=>{
+        const eqObs = new MutationObserver(() => {
             if (desiredEq && eqSel.options.length) eqSel.value = desiredEq;
         });
-        eqObs.observe(eqSel, { childList:true }); setTimeout(()=>eqObs.disconnect(), 1200);
+        eqObs.observe(eqSel, { childList: true }); setTimeout(() => eqObs.disconnect(), 1200);
 
         // Material Consumo (select simple)
         const mcSel = editEl.querySelector('#ed_matCons');
         fetchMaterialConsumidoInto(mcSel);
         const desiredMc = tr.dataset.matconsid || '';
-        const mcObs = new MutationObserver(()=>{
+        const mcObs = new MutationObserver(() => {
             if (desiredMc && mcSel.options.length) mcSel.value = desiredMc;
         });
-        mcObs.observe(mcSel, { childList:true }); setTimeout(()=>mcObs.disconnect(), 1200);
+        mcObs.observe(mcSel, { childList: true }); setTimeout(() => mcObs.disconnect(), 1200);
 
         // Factor, producción, consumos, fecha, activo
         editEl.querySelector('#ed_factor').value = tr.dataset.factor || '';
         editEl.querySelector('#ed_prodSeca').checked = tr.dataset.prosec === '1';
-        editEl.querySelector('#ed_prodHum').checked  = tr.dataset.prohum === '1';
-        editEl.querySelector('#ed_conSeco').checked  = tr.dataset.conssec === '1';
-        editEl.querySelector('#ed_conHum').checked   = tr.dataset.conshum === '1';
+        editEl.querySelector('#ed_prodHum').checked = tr.dataset.prohum === '1';
+        editEl.querySelector('#ed_conSeco').checked = tr.dataset.conssec === '1';
+        editEl.querySelector('#ed_conHum').checked = tr.dataset.conshum === '1';
         editEl.querySelector('#ed_fecha').value = tr.dataset.fecha || new Date().toISOString().split('T')[0];
         editEl.querySelector('#ed_activo').checked = tr.dataset.active === '1';
 
         editBg.style.display = 'block';
         editEl.style.display = 'block';
     }
+
     function hideEditOverlay(){
         if(!editBg || !editEl) return;
         editBg.style.display = 'none';
         editEl.style.display = 'none';
     }
-    function guardarEdicionOverlay(){
+    function guardarEdicionOverlay() {
         const btn = editEl.querySelector('#ed_guardar');
         btn.disabled = true;
 
-        const bomId   = Number(editEl.querySelector('#ed_bomid')?.value||0);
-        const matProd = Number(editEl.querySelector('#ed_matProd')?.value||0);
-        const equipo  = Number(editEl.querySelector('#ed_equipo')?.value||0);
-        const matCons = Number(editEl.querySelector('#ed_matCons')?.value||0);
-        const factorV = editEl.querySelector('#ed_factor')?.value||'';
-        const factor  = factorV===''?0:Number(factorV);
+        const bomId = Number(editEl.querySelector('#ed_bomid')?.value || 0);
+        let matProdRaw = (editEl.querySelector('#ed_matProd')?.value || '').trim();
+        const matProd = (matProdRaw === '' || matProdRaw === '0' || matProdRaw === 'NULL') ? null : Number(matProdRaw);
+
+        const equipo = Number(editEl.querySelector('#ed_equipo')?.value || 0);
+        const matCons = Number(editEl.querySelector('#ed_matCons')?.value || 0);
+        const factorV = editEl.querySelector('#ed_factor')?.value || '';
+        const factor = factorV === '' ? 0 : Number(factorV);
         const prodSec = !!editEl.querySelector('#ed_prodSeca')?.checked;
         const prodHum = !!editEl.querySelector('#ed_prodHum')?.checked;
         const conSeco = !!editEl.querySelector('#ed_conSeco')?.checked;
-        const conHum  = !!editEl.querySelector('#ed_conHum')?.checked;
-        const activo  = !!editEl.querySelector('#ed_activo')?.checked;
+        const conHum = !!editEl.querySelector('#ed_conHum')?.checked;
+        const activo = !!editEl.querySelector('#ed_activo')?.checked;
 
-        if(!bomId || !matProd || !equipo || !matCons){
-            alert('Complete: Material Prod, Equipo y Material Consumo.');
-            btn.disabled = false; return;
+        // ✅ Validaciones
+        if (!bomId || !equipo || !matCons) {
+            alert('Completa: Equipo y Material Consumo (Material Prod es opcional para BOM de equipo completo).');
+            btn.disabled = false;
+            return;
         }
-        if(prodSec && prodHum){
+
+        if (prodSec && prodHum) {
             alert('Prod Seca y Prod Húmeda no pueden estar ambos activos.');
-            btn.disabled = false; return;
+            btn.disabled = false;
+            return;
         }
-        if(conSeco && conHum){
+        if (conSeco && conHum) {
             alert('Cons Seco y Cons Húmedo no pueden estar ambos activos.');
-            btn.disabled = false; return;
+            btn.disabled = false;
+            return;
         }
 
-        // Importante: NO enviar _tipoMovimientoSAPID
+        // ✅ Payload flexible
         const payload = {
-            _billOfMaterialID:      bomId,
-            _materialProduccionID:  matProd,
-            _materialConsumoID:     matCons,
-            _equipoID:              equipo,
-            _factorConsumo:         Number.isFinite(factor)?factor:0,
-            _produccionSeca:        prodSec,
-            _produccionHumeda:      prodHum,
-            _consumoSeco:           conSeco,
-            _consumoHumedo:         conHum,
-            _active:                activo
+            _billOfMaterialID: bomId,
+            _materialConsumoID: matCons,
+            _equipoID: equipo,
+            _factorConsumo: Number.isFinite(factor) ? factor : 0,
+            _produccionSeca: prodSec,
+            _produccionHumeda: prodHum,
+            _consumoSeco: conSeco,
+            _consumoHumedo: conHum,
+            _active: activo
         };
 
+        // Solo incluir material de producción si existe
+        if (matProd !== null && !Number.isNaN(matProd)) {
+            payload._materialProduccionID = matProd;
+        }
+
         fetch(URL_UPDATE_BOM, {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
-        .then(r=>r.json())
-        .then(res=>{
-            if(res && res.success){
-                recargarTablaActual(matProd);
-                hideEditOverlay();
-            } else {
-                alert('No se pudo actualizar: '+(res?.message||''));
-            }
-        })
-        .catch(err=>{
-            console.error(err);
-            alert('Error al actualizar BOM.');
-        })
-        .finally(()=>{ btn.disabled=false; });
+            .then(r => r.json())
+            .then(res => {
+                if (res && res.success) {
+                    // 🔹 Mostrar mensaje igual que en el flujo "Agregar"
+                    showMsg('Actualizando datos...', 'secondary');
+
+                    // 🔹 Determinar ID para recargar
+                    let recargaId;
+                    if (matProd === null || matProd === 0 || isNaN(matProd)) {
+                        recargaId = selectListado?.value || 'NULL';
+                    } else {
+                        recargaId = matProd;
+                    }
+
+                    // 🔹 Recargar tabla igual que "Agregar"
+                    recargarTablaActual(recargaId);
+
+                    // 🔹 Cerrar modal después de lanzar la recarga
+                    hideEditOverlay();
+                } else {
+                    alert('No se pudo actualizar: ' + (res?.message || ''));
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Error al actualizar BOM.');
+            })
+            .finally(() => { btn.disabled = false; });
     }
 
+
+
     // ========== Carga de datos inicial ==========
-    function cargarMateriales(){
-        fetch(URL_MATERIALES,{headers:{'Accept':'application/json'}})
-        .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-        .then(lista=>{
-            cacheMateriales = Array.isArray(lista)?lista:(lista && Array.isArray(lista.data)?lista.data:[]);
-            selectListado.innerHTML = '<option value="">Filtrar por material producido</option>';
-            (cacheMateriales||[]).forEach(x=>option(selectListado,x.MaterialID,x.Descripcion));
-            updateAgregarState(); // estado inicial del botón Agregar
-        })
-        .catch(err=>{console.error(err);showMsg('No se pudieron cargar los materiales producidos','danger');});
+    function cargarMateriales() {
+        fetch(URL_MATERIALES, { headers: { 'Accept': 'application/json' } })
+            .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(lista => {
+                cacheMateriales = Array.isArray(lista)
+                    ? lista
+                    : (lista && Array.isArray(lista.data) ? lista.data : []);
+
+                selectListado.innerHTML = '';
+                // 🔹 Opción especial para los BOM sin MaterialProduccionID
+                option(selectListado, '', 'Filtrar por material producido');
+                (cacheMateriales || []).forEach(x =>
+                    option(selectListado, x.MaterialID, x.Descripcion)
+                );
+
+                updateAgregarState();
+            })
+            .catch(err => {
+                console.error(err);
+                showMsg('No se pudieron cargar los materiales producidos', 'danger');
+            });
     }
+
 
     // Botón Agregar -> valida y abre overlay de CREAR
     if(btnAgregar){
@@ -1111,13 +1219,28 @@ document.addEventListener('DOMContentLoaded', function () {
     'use strict';
 
     const btnAgregarEquipo = document.getElementById('agregarparaequipo');
+    const alertSuccess = document.getElementById('alertsuccesclose'); // ✅ referencia al div del alert
     if (!btnAgregarEquipo) return;
 
     const URL_EQUIPOS_USER       = '@Url.Action("GetEquiposporPaislogguedUser","Equipo")';
     const URL_MATERIAL_CONSUMIDO = '@Url.Action("GetMaterialConsumido","Material")';
-    const URL_CREATE_BOM         = '@Url.Action("CreateBOM","BillOfMaterial")';
+    const URL_CREATE_BOM         = '@Url.Action("CreateBOMparaEquipo","BillOfMaterial")'; // ✅ nuevo endpoint
 
-    // ================== COMPONENTE REUTILIZABLE: MULTI-DROPDOWN CON BUSCADOR ==================
+    // ================== FUNCIÓN PARA MOSTRAR ALERT SUCCESS ==================
+    function showAlertSuccess(msg) {
+        if (!alertSuccess) return;
+        alertSuccess.textContent = msg || 'Agregado correctamente!';
+        alertSuccess.style.display = 'block';
+        alertSuccess.classList.add('show');
+        alertSuccess.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        setTimeout(() => {
+            alertSuccess.classList.remove('show');
+            alertSuccess.style.display = 'none';
+        }, 3500);
+    }
+
+    // ================== COMPONENTE REUTILIZABLE: MULTI-DROPDOWN ==================
     function montarDropdownMulti(contenedor, selectHidden, placeholder, urlData, fieldId = 'ID', fieldText = 'Descripcion') {
         if (!contenedor || !selectHidden) return;
 
@@ -1223,7 +1346,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // ================== MODAL: CREAR POR EQUIPO ==================
     let createBgEq = null, createElEq = null;
 
-    btnAgregarEquipo.addEventListener('click', function (e) {
+    btnAgregarEquipo.addEventListener('click', e => {
         e.preventDefault();
         showCreateOverlayEquipo();
     });
@@ -1241,41 +1364,34 @@ document.addEventListener('DOMContentLoaded', function () {
                 <strong>Nuevo BOM por Equipo</strong>
                 <button type="button" id="crEq_close_top" class="btn btn-sm btn-outline-secondary">Cerrar</button>
             </div>
-
             <div style="padding:1rem;">
                 <div class="row g-2">
                     <div class="col-md-4">
                         <label class="form-label">Tipo Operacion</label>
                         <div><span class="badge bg-secondary">Produccion</span></div>
                     </div>
-
                     <div class="col-md-4">
                         <label class="form-label">Tipo Mov SAP</label>
                         <div><span class="badge bg-secondary">131</span></div>
                     </div>
-
                     <div class="col-md-4">
                         <label class="form-label">Factor</label>
                         <input id="crEq_factor" type="number" step="0.000001" class="form-control text-end" placeholder="0">
                     </div>
-
                     <div class="col-md-6">
                         <label class="form-label">Equipo(s)</label>
                         <select id="crEq_equipoSel" multiple class="d-none"></select>
                         <div id="crEq_equipoDD"></div>
                     </div>
-
                     <div class="col-md-6">
                         <label class="form-label">Material(es) Consumo</label>
                         <select id="crEq_matConsSel" multiple class="d-none"></select>
                         <div id="crEq_matConsDD"></div>
                     </div>
-
                     <div class="col-md-4">
                         <label class="form-label">Fecha BOM</label>
                         <input id="crEq_fecha" type="date" class="form-control" disabled>
                     </div>
-
                     <div class="col-md-4">
                         <label class="form-label">Produccion</label>
                         <div class="d-flex align-items-center gap-3">
@@ -1289,7 +1405,6 @@ document.addEventListener('DOMContentLoaded', function () {
                             </div>
                         </div>
                     </div>
-
                     <div class="col-md-4">
                         <label class="form-label">Consumo</label>
                         <div class="d-flex align-items-center gap-3">
@@ -1303,7 +1418,6 @@ document.addEventListener('DOMContentLoaded', function () {
                             </div>
                         </div>
                     </div>
-
                     <div class="col-md-4">
                         <label class="form-label">Status</label>
                         <div class="form-check form-switch m-0">
@@ -1313,7 +1427,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                 </div>
             </div>
-
             <div style="padding:.75rem 1rem;border-top:1px solid #e9ecef;" class="d-flex justify-content-end gap-2">
                 <button type="button" class="btn btn-secondary" id="crEq_cancel">Cancelar</button>
                 <button type="button" class="btn btn-success" id="crEq_guardar">Guardar</button>
@@ -1323,12 +1436,10 @@ document.addEventListener('DOMContentLoaded', function () {
         document.body.appendChild(createBgEq);
         document.body.appendChild(createElEq);
 
-        // Eventos de cierre
         createBgEq.addEventListener('click', hideCreateOverlayEquipo);
         createElEq.querySelector('#crEq_close_top').addEventListener('click', hideCreateOverlayEquipo);
         createElEq.querySelector('#crEq_cancel').addEventListener('click', hideCreateOverlayEquipo);
 
-        // Exclusión mutua de switches
         const chkPSe = createElEq.querySelector('#crEq_prodSeca');
         const chkPHu = createElEq.querySelector('#crEq_prodHum');
         chkPSe.addEventListener('change',()=>{ if(chkPSe.checked) chkPHu.checked=false; });
@@ -1339,10 +1450,8 @@ document.addEventListener('DOMContentLoaded', function () {
         chkSeco.addEventListener('change',()=>{ if(chkSeco.checked) chkHum.checked=false; });
         chkHum.addEventListener('change',()=>{ if(chkHum.checked) chkSeco.checked=false; });
 
-        // Fecha actual
         createElEq.querySelector('#crEq_fecha').value = new Date().toISOString().split('T')[0];
 
-        // Montar dropdowns
         montarDropdownMulti(createElEq.querySelector('#crEq_equipoDD'), createElEq.querySelector('#crEq_equipoSel'), 'Seleccione equipo(s)', URL_EQUIPOS_USER, 'EquipoID', 'Descripcion');
         montarDropdownMulti(createElEq.querySelector('#crEq_matConsDD'), createElEq.querySelector('#crEq_matConsSel'), 'Seleccione material(es)', URL_MATERIAL_CONSUMIDO, 'MaterialID', 'Descripcion');
 
@@ -1382,30 +1491,36 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            const calls = equipoIds.map(eqId => {
-                const payload = {
-                    _equipoID: eqId,
-                    _materialConsumoIDs: matConsIds,
-                    _factorConsumo: factor,
-                    _produccionSeca: prodSeca,
-                    _produccionHumeda: prodHum,
-                    _consumoSeco: conSeco,
-                    _consumoHumedo: conHum
-                };
-                return fetch(URL_CREATE_BOM, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                }).then(r => r.json());
+            const payload = {
+                _equipoIDs: equipoIds,
+                _materialConsumoIDs: matConsIds,
+                _factorConsumo: factor,
+                _produccionSeca: prodSeca,
+                _produccionHumeda: prodHum,
+                _consumoSeco: conSeco,
+                _consumoHumedo: conHum
+            };
+
+            const response = await fetch(URL_CREATE_BOM, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
 
-            const results = await Promise.allSettled(calls);
-            const oks = results.filter(x => x.status === 'fulfilled' && x.value?.success);
-            const fails = results.filter(x => !x.value?.success);
+            const result = await response.json();
 
-            if (oks.length) alert(`Guardado exitosamente (${oks.length})`);
-            if (fails.length) alert(`Fallaron ${fails.length} registros.`);
-            hideCreateOverlayEquipo();
+            if (result.success) {
+                hideCreateOverlayEquipo();
+                showAlertSuccess(result.message || 'Agregado correctamente!');
+
+             
+               setTimeout(() => {
+                   window.location.href = '@Url.Action("Index", "BillOfMaterial")';
+               }, 1500);
+            }
+             else {
+                alert(result.message || 'Error al crear BOM.');
+            }
         } catch (err) {
             console.error(err);
             alert('Error al guardar.');
@@ -1415,6 +1530,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 </script>
+
+
+
 
 
 
