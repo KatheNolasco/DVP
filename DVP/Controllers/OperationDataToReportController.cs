@@ -736,10 +736,8 @@ namespace DVP.Controllers
         [HttpGet]
         public JsonResult GetOperation(DateTime? _fecha, int? _equipoId = null)
         {
-            // Obtener la fecha de inicio del día
             var day = (_fecha ?? DateTime.Today).Date;
 
-            // 1. Obtener la lista filtrada de equipos (SIN CAMBIOS)
             var queryEquipos = _dvpEntities.Equipo
                 .Where(e => e.PlantaID == 1);
 
@@ -748,16 +746,17 @@ namespace DVP.Controllers
                 queryEquipos = queryEquipos.Where(e => e.EquipoID == _equipoId.Value);
             }
 
-            var equiposSeleccionados = queryEquipos.Select(e => new { e.EquipoID, EquipoDescripcion = e.Descripcion }).ToList();
-            var equipoIdsSeleccionados = equiposSeleccionados.Select(e => e.EquipoID).ToList();
+            var equiposSeleccionados = queryEquipos
+                .Select(e => new { e.EquipoID, EquipoDescripcion = e.Descripcion })
+                .ToList();
 
-            // 2. Obtener la lista de relaciones BillOfMaterial (SIN CAMBIOS)
+            var equipoIdsSeleccionados = equiposSeleccionados
+                .Select(e => e.EquipoID)
+                .ToList();
+
             var queryBillOfMaterial = _dvpEntities.BillOfMaterial
                 .Where(b => equipoIdsSeleccionados.Contains(b.EquipoID.Value));
 
-            // --- Extracción de Materiales de Producción y Consumo con su relación ---
-
-            // Materiales de Producción (son la 'cabeza' del grupo) (SIN CAMBIOS)
             var produccionHeaders = queryBillOfMaterial
                 .Where(b => b.MaterialProduccionID.HasValue)
                 .GroupBy(b => new { b.EquipoID, b.MaterialProduccionID, b.Material1.Descripcion })
@@ -770,7 +769,6 @@ namespace DVP.Controllers
                     MaterialProduccionPadreID = (int?)null
                 });
 
-            // Materiales de Consumo (son el 'detalle' bajo Producción)
             var consumoDetails = queryBillOfMaterial
                 .Where(b => b.MaterialConsumoID.HasValue && b.MaterialProduccionID.HasValue)
                 .Select(b => new
@@ -779,16 +777,13 @@ namespace DVP.Controllers
                     MaterialID = b.MaterialConsumoID.Value,
                     MaterialDescripcion = b.Material.Descripcion,
                     TipoMaterial = "CONSUMO",
-                    // CLAVE: ESTE CAMPO identifica al material de PRODUCCION al que pertenece el consumo
                     MaterialProduccionPadreID = b.MaterialProduccionID
                 });
 
-            // c) Combinar ambas listas de materiales únicos por Equipo (Producción + Consumo) (SIN CAMBIOS)
             var combinacionesMaterialesUnicas = produccionHeaders
                 .Union(consumoDetails)
                 .ToList();
 
-            // 3. Generar la Combinación (Equipo x Material)
             var combinacionesRequeridas = (
                 from equipo in equiposSeleccionados
                 join material in combinacionesMaterialesUnicas on equipo.EquipoID equals material.EquipoID
@@ -799,17 +794,14 @@ namespace DVP.Controllers
                     material.MaterialID,
                     material.MaterialDescripcion,
                     material.TipoMaterial,
-                    // IMPORTANTE: Este campo permite la agrupación que solicitas.
                     material.MaterialProduccionPadreID
                 }
             ).ToList();
 
-            // Extraer MaterialIDs requeridos para el filtro de DataOperacion (SIN CAMBIOS)
             var materialIdsRequeridos = combinacionesRequeridas.Select(c => c.MaterialID).ToList();
 
-            // 4. Obtener la data de operación real (SIN CAMBIOS)
             var datosOperacionReales = _dvpEntities.DataOperacion
-                .Include("Material")
+                .Include("Material.ClasificacionMaterial") 
                 .Include("UnidadMedida")
                 .Include("TipoMovimientoSAP")
                 .Where(d => DbFunctions.TruncateTime(d.FechaReporte) == day)
@@ -817,7 +809,6 @@ namespace DVP.Controllers
                 .Where(d => d.MaterialID.HasValue && materialIdsRequeridos.Contains(d.MaterialID.Value))
                 .ToList();
 
-            // 5. Simular el LEFT JOIN: Iterar la combinación y buscar el dato real (SIN CAMBIOS)
             var resultados = combinacionesRequeridas
                 .Select(comb => new
                 {
@@ -828,16 +819,12 @@ namespace DVP.Controllers
                 })
                 .Select(x => new
                 {
-                    // Campos de la Combinación (siempre llenos)
                     EquipoID = x.Combinacion.EquipoID,
                     Equipo = x.Combinacion.EquipoDescripcion,
                     MaterialID = x.Combinacion.MaterialID,
                     Material = x.Combinacion.MaterialDescripcion,
                     TipoMaterial = x.Combinacion.TipoMaterial,
-                    // CLAVE: Exportar este campo para agrupar los CONSUMOS por su padre de PRODUCCIÓN en el frontend (JS)
                     MaterialProduccionPadreID = x.Combinacion.MaterialProduccionPadreID,
-
-                    // Campos de DataOperacion (NULL o valor por defecto si no existe data) (SIN CAMBIOS)
                     DataOperacionID = x.Data?.DataOperacionID,
                     CantidadPIMS = x.Data?.CantidadPIMS ?? 0.0m,
                     CantidadPims = x.Data?.CantidadPIMS ?? 0.0m,
@@ -848,12 +835,24 @@ namespace DVP.Controllers
                     FechaReporte = x.Data?.FechaReporte ?? day,
                     StatusClose = x.Data?.StatusClose ?? false,
                     StatusValidate = x.Data?.StatusValidate ?? false,
-                    OrdenProcesoSAP = x.Data?.OrdenProcesoSAP
+                    OrdenProcesoSAP = x.Data?.OrdenProcesoSAP,
+                    Clasificacion = x.Data?.Material?.ClasificacionMaterial?.Descripcion ?? "N/A"
                 })
+                // ✅ ORDEN PERSONALIZADO AQUÍ
+                .OrderBy(x =>
+                    x.Clasificacion == "MATERIAL" ? 1 :
+                    x.Clasificacion == "COMBUSTIBLE" ? 2 :
+                    x.Clasificacion == "HORAS" ? 3 :
+                    x.Clasificacion == "KWH" ? 4 :
+                    x.Clasificacion == "SACOS" ? 5 : 6
+                )
+                .ThenBy(x => x.Equipo)
+                .ThenBy(x => x.Material)
                 .ToList();
 
             return Json(resultados, JsonRequestBehavior.AllowGet);
         }
+
 
 
         public static string RunPythonScriptKWH(string fecha = null)

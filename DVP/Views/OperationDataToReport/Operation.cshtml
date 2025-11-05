@@ -308,7 +308,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 // B. Agregar los Materiales de Consumo relacionados (los "hijos")
                 const relatedConsumo = consumo
                     .filter(c => c.MaterialProduccionPadreID === prodItem.MaterialID)
-                    .sort((a, b) => a.Material.localeCompare(b.Material));
+                    .sort((a, b) => {
+                        // Orden personalizado por Clasificacion
+                        const orderMap = {
+                            'MATERIAL': 1,
+                            'COMBUSTIBLE': 2,
+                            'HORAS': 3,
+                            'KWH': 4,
+                            'SACOS': 5
+                        };
+                        const aOrder = orderMap[a.Clasificacion?.toUpperCase?.()] || 999;
+                        const bOrder = orderMap[b.Clasificacion?.toUpperCase?.()] || 999;
+
+                        if (aOrder !== bOrder) return aOrder - bOrder;
+                        return a.Material.localeCompare(b.Material);
+                    });
+
 
                 orderedDetails.push(...relatedConsumo);
             });
