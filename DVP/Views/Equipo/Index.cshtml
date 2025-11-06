@@ -118,6 +118,7 @@
                                                     <th class="text-center">New detail code </th>
                                                     <th class="text-center">Send to SAP</th>
                                                     <th class="text-center">Search in PI</th>
+                                                    <th class="text-center">Personas Asignadas</th>
                                                     <th class="text-center">Actions</th>
                                                 </tr>
                                             </thead>
@@ -178,6 +179,10 @@
                                             <div class="mb-3">
                                                 <label class="form-label">Código SAP</label>
                                                 <input type="text" class="form-control" id="_codigoSAP" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Personas Asignadas</label>
+                                                <input type="number" class="form-control" id="_personasAsignadas" required>
                                             </div>
                                             <div class="mb-3">
                                                 <label class="form-label">Proceso</label>
@@ -278,6 +283,10 @@
                                                     <input type="text" class="form-control" id="_codigoSAPeditar" required>
                                                 </div>
                                                 <div class="mb-3">
+                                                    <label class="form-label">Personas Asignadas</label>
+                                                    <input type="number" class="form-control" id="_personasAsignadaseditar" required>
+                                                </div>
+                                                <div class="mb-3">
                                                     <label class="form-label">Proceso</label>
                                                     <select class="form-select" id="_procesoIdeditar">
                                                         <option value="">Seleccione un proceso</option>
@@ -367,42 +376,42 @@
 
     //___________________________________________________________________ Crear Equipo __________________________________________________________________//
 
-    function newEquipment() {
-    // Mostrar el modal
+    // ======================= ANTI DOBLE-CLICK (FLAG GLOBAL) =======================
+let isCreateSubmitting = false;
+
+// ======================= ABRIR MODAL NUEVO EQUIPO ============================
+function newEquipment() {
     const modalElement = document.getElementById("newEquipment");
     const modal = new bootstrap.Modal(modalElement);
     modal.show();
-
-    // Cargar los combos al abrir
     cargarCombosEquipo();
-    }
+}
 
-    function cargarCombosEquipo() {
-    // Limpiar selects
+// ======================= CARGA DE COMBOS =====================================
+function cargarCombosEquipo() {
     limpiarSelect("_procesoId");
     limpiarSelect("_plantaId");
     limpiarSelect("_unidadOperativaId");
     limpiarSelect("_paisId");
 
-    // Llamadas AJAX a cada endpoint
     fetch('@Url.Action("GetProceso", "Equipo")')
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => llenarSelect("_procesoId", data, "ProcesoID", "Descripcion"));
 
     fetch('@Url.Action("GetPlanta", "Equipo")')
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => llenarSelect("_plantaId", data, "PlantaID", "Descripcion"));
 
     fetch('@Url.Action("GetUnidadOperativa", "Equipo")')
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => llenarSelect("_unidadOperativaId", data, "UnidadOperativaID", "Descripcion"));
 
     fetch('@Url.Action("GetPais", "Equipo")')
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => llenarSelect("_paisId", data, "PaisID", "Descripcion"));
 }
 
-    function llenarSelect(selectId, data, valueField, textField) {
+function llenarSelect(selectId, data, valueField, textField) {
     const select = document.getElementById(selectId);
     data.forEach(item => {
         const option = document.createElement("option");
@@ -412,77 +421,120 @@
     });
 }
 
-    function limpiarSelect(selectId) {
+function limpiarSelect(selectId) {
     const select = document.getElementById(selectId);
     select.innerHTML = '<option value="">Seleccione una opción</option>';
 }
 
+// ======================= LISTENER DEL BOTÓN (ANTI DOBLE CLICK) ===============
+const btnCrear = document.getElementById("crearequipo");
+btnCrear.addEventListener("click", function () {
+    if (isCreateSubmitting) return;           // evita doble click inmediato
+    isCreateSubmitting = true;
 
+    // Deshabilita visual y funcionalmente el botón
+    btnCrear.disabled = true;
+    btnCrear.style.pointerEvents = 'none';
+    btnCrear.dataset.originalHtml = btnCrear.innerHTML;
+    btnCrear.innerHTML = 'Creando…';
+    btnCrear.setAttribute('aria-busy', 'true');
 
-    document.getElementById("crearequipo").addEventListener("click", crearEquipoNuevo);
+    // Llama a la función (devuelve promesa)
+    crearEquipoNuevo()
+        .catch(() => { /* el manejo de error ya re-habilita abajo */ });
+});
 
-    function crearEquipoNuevo() {
-        // Obtener valores del formulario
-        const descripcion = document.getElementById("_descripcion").value.trim();
-        const condigoDetalle = document.getElementById("_condigoDetalle").value.trim();
-        const condigoSAP = document.getElementById("_codigoSAP").value.trim();
-        const procesoId = document.getElementById("_procesoId").value;
-        const plantaId = document.getElementById("_plantaId").value;
-        const unidadOperativaId = document.getElementById("_unidadOperativaId").value;
-        const paisId = document.getElementById("_paisId").value;
-        const buscarParo = document.getElementById("_buscarParo").checked;
-        const active = document.getElementById("_active").checked;
-        const enviarASAP = document.getElementById("_enviarASAP").checked;
+// ======================= CREAR EQUIPO (RETORNA PROMESA) ======================
+function crearEquipoNuevo() {
+    // Doble guard por si llaman la función directamente
+    if (isCreateSubmitting !== true) isCreateSubmitting = true;
 
-        const url = document.getElementById("crearequipo").getAttribute("data-url");
+    // Obtener valores del formulario
+    const descripcion        = document.getElementById("_descripcion").value.trim();
+    const condigoDetalle     = document.getElementById("_condigoDetalle").value.trim();
+    const condigoSAP         = document.getElementById("_codigoSAP").value.trim();
+    const personasAsignadas  = document.getElementById("_personasAsignadas").value.trim();
+    const procesoId          = document.getElementById("_procesoId").value;
+    const plantaId           = document.getElementById("_plantaId").value;
+    const unidadOperativaId  = document.getElementById("_unidadOperativaId").value;
+    const paisId             = document.getElementById("_paisId").value;
+    const buscarParo         = document.getElementById("_buscarParo").checked;
+    const active             = document.getElementById("_active").checked;
+    const enviarASAP         = document.getElementById("_enviarASAP").checked;
 
-        // Construir el objeto que será enviado al controlador
-        const data = {
-            _descripcion: descripcion,
-            _condigoDetalle: condigoDetalle,
-            _condigoSAP: condigoSAP,
-            _procesoId: parseInt(procesoId),
-            _plantaId: parseInt(plantaId),
-            _unidadOperativaId: parseInt(unidadOperativaId),
-            _paisId: parseInt(paisId),
-            _buscarParo: buscarParo,
-            _active: active,
-            _enviarASAP: enviarASAP
-        };
+    const url = document.getElementById("crearequipo").getAttribute("data-url");
 
-        // Enviar al backend vía fetch
-        fetch(url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(data)
-        })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    // Mostrar alerta
-                    document.getElementById("alertSuccess").style.display = "block";
+    // Construir payload
+    const data = {
+        _descripcion: descripcion,
+        _condigoDetalle: condigoDetalle,
+        _condigoSAP: condigoSAP,
+        _procesoId: parseInt(procesoId),
+        _plantaId: parseInt(plantaId),
+        _unidadOperativaId: parseInt(unidadOperativaId),
+        _paisId: parseInt(paisId),
+        _buscarParo: buscarParo,
+        _active: active,
+        _enviarASAP: enviarASAP,
+        _personasAsignadas: personasAsignadas
+    };
 
-                    // Ocultar modal y limpiar formulario después de unos segundos
-                    setTimeout(() => {
-                        document.getElementById("alertSuccess").style.display = "none";
-                        var modal = bootstrap.Modal.getInstance(document.getElementById("newEquipment"));
-                        modal.hide();
-                        document.querySelector("#newEquipment form").reset();
+    // Enviar al backend vía fetch
+    return fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            // Mostrar alerta
+            document.getElementById("alertSuccess").style.display = "block";
 
-                        // Puedes recargar la tabla de equipos si es necesario
-                        loadEquipmentTable();
-                    }, 1500);
-                } else {
-                    alert(result.message || "Ocurrió un error al crear el equipo.");
+            // Cerrar modal, limpiar y recargar tabla
+            setTimeout(() => {
+                document.getElementById("alertSuccess").style.display = "none";
+                const modal = bootstrap.Modal.getInstance(document.getElementById("newEquipment"));
+                modal.hide();
+                document.querySelector("#newEquipment form").reset();
+
+                if (typeof loadEquipmentTable === 'function') {
+                    loadEquipmentTable();
                 }
-            })
-            .catch(error => {
-                console.error("Error al enviar el formulario:", error);
-                alert("Ocurrió un error al enviar los datos.");
-            });
-    }
+
+                // Rehabilitar botón y liberar candado (flujo exitoso)
+                btnCrear.disabled = false;
+                btnCrear.style.pointerEvents = '';
+                btnCrear.innerHTML = btnCrear.dataset.originalHtml || 'Crear';
+                btnCrear.removeAttribute('aria-busy');
+                isCreateSubmitting = false;
+            }, 1500);
+        } else {
+            alert(result.message || "Ocurrió un error al crear el equipo.");
+
+            // Rehabilitar en error lógico
+            btnCrear.disabled = false;
+            btnCrear.style.pointerEvents = '';
+            btnCrear.innerHTML = btnCrear.dataset.originalHtml || 'Crear';
+            btnCrear.removeAttribute('aria-busy');
+            isCreateSubmitting = false;
+        }
+    })
+    .catch(error => {
+        console.error("Error al enviar el formulario:", error);
+        alert("Ocurrió un error al enviar los datos.");
+
+        // Rehabilitar en error de red
+        btnCrear.disabled = false;
+        btnCrear.style.pointerEvents = '';
+        btnCrear.innerHTML = btnCrear.dataset.originalHtml || 'Crear';
+        btnCrear.removeAttribute('aria-busy');
+        isCreateSubmitting = false;
+
+        // Propaga por si arriba quisieras manejarlo
+        throw error;
+    });
+}
 
     //____________________________________________________________________ Mostrar Equipos en el datatable_______________________________________________//
 
@@ -529,6 +581,7 @@
                     <td class="text-center">
                         ${item._buscarParo ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}
                     </td>
+                    <td class="text-center">${item._personasAsignadas ?? ''}</td>
                     <td class="text-center bg-white">
                         <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditarEquipo(${item._equipoId})">
                             <i class="bi bi-pencil me-2"></i>
@@ -582,6 +635,7 @@
             document.getElementById("_descripcioneditar").value = data._descripcion;
             document.getElementById("_condigoDetalleeditar").value = data._condigoDetalle;
             document.getElementById("_codigoSAPeditar").value = data._condigoSAP;
+            document.getElementById("_personasAsignadaseditar").value = data._personasAsignadas;
             document.getElementById("_buscarParoeditar").checked = data._buscarParo;
             document.getElementById("_activeeditar").checked = data._active;
             document.getElementById("_enviarASAPeditar").checked = data._enviarASAP;
@@ -630,11 +684,20 @@
     function submitEditEquipmentForm() {
     cargando();
 
+    // deshabilitar el botón Editar para evitar doble submit
+    const btnSave = document.getElementById('editarequipo');
+    if (btnSave && !btnSave.disabled) {
+        btnSave.disabled = true;
+        btnSave.dataset.originalHtml = btnSave.innerHTML; // guarda HTML (incluye el <span>)
+        btnSave.innerHTML = 'Guardando…';
+    }
+
     const data = {
         _equipoId: document.getElementById("equipoIdhidden").value,
         _descripcion: document.getElementById("_descripcioneditar").value,
         _condigoDetalle: document.getElementById("_condigoDetalleeditar").value,
         _condigoSAP: document.getElementById("_codigoSAPeditar").value,
+        _personasAsignadas: document.getElementById("_personasAsignadaseditar").value,
         _procesoId: document.getElementById("_procesoIdeditar").value,
         _plantaId: document.getElementById("_plantaIdeditar").value,
         _unidadOperativaId: document.getElementById("_unidadOperativaIdeditar").value,
@@ -646,35 +709,41 @@
 
     fetch('@Url.Action("EditEquipment", "Equipo")', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     })
     .then(res => res.json())
     .then(response => {
         if (response.success) {
-            // Mostrar mensaje de éxito
+            // mostrar éxito
             document.getElementById("alertEditeSuccesseditar").style.display = "block";
 
-            // Ocultar el modal y mensaje después de un tiempo
             setTimeout(() => {
                 document.getElementById("alertEditeSuccesseditar").style.display = "none";
                 const modal = bootstrap.Modal.getInstance(document.getElementById("editEquipment"));
                 modal.hide();
-
-                // Opcional: recargar para ver cambios reflejados
                 location.reload();
             }, 2000);
         } else {
             alert("Error: " + response.message);
+            // re-habilitar si hubo error lógico
+            if (btnSave) {
+                btnSave.disabled = false;
+                btnSave.innerHTML = btnSave.dataset.originalHtml || 'Editar';
+            }
         }
     })
     .catch(error => {
         console.error("Error al enviar datos:", error);
         alert("Ocurrió un error al enviar los datos.");
+        // re-habilitar si hubo error de red
+        if (btnSave) {
+            btnSave.disabled = false;
+            btnSave.innerHTML = btnSave.dataset.originalHtml || 'Editar';
+        }
     });
-    }
+}
+
 
 
 

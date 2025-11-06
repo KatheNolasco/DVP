@@ -24,9 +24,9 @@ namespace DataAccess
         public Nullable<int> MaterialID { get; set; }
         public Nullable<int> MaterialProducidoID { get; set; }
     
-        public virtual Equipo Equipo { get; set; }
         public virtual Material Material { get; set; }
         public virtual Material Material1 { get; set; }
         public virtual TipoOperacion TipoOperacion { get; set; }
+        public virtual Equipo Equipo { get; set; }
     }
 }

@@ -27,6 +27,7 @@ namespace DVP.Models
         public bool _active { get; set; }
         public bool _enviarASAP { get; set; }
         public DateTime _fechaCreacion { get; set; }
+        public int _personasAsignadas { get; set; }
 
 
 

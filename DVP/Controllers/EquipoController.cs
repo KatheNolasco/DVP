@@ -124,7 +124,8 @@ namespace DVP.Controllers
                     _paisID = p.PaisID,
                     _buscarParo = p.BuscarParo,
                     _active = p.Active,
-                    _enviarASAP = p.EnviarASAP
+                    _enviarASAP = p.EnviarASAP,
+                    _personasAsignadas = p.PersonasAsignadas,
                 })
                 .FirstOrDefault();
 
@@ -155,7 +156,8 @@ namespace DVP.Controllers
                     _buscarParo = p.BuscarParo,
                     _active = p.Active,
                     _enviarASAP = p.EnviarASAP,
-                    _fechaCreacion = p.FechaCreación
+                    _fechaCreacion = p.FechaCreación,
+                    _personasAsignadas = p.PersonasAsignadas
                 })
                 .ToList();
 
@@ -225,6 +227,7 @@ namespace DVP.Controllers
                     Active = data._active,
                     EnviarASAP = data._enviarASAP,
                     FechaCreación = DateTime.Now,
+                    PersonasAsignadas = data._personasAsignadas
                 };
 
                 _dvpEntities.Equipo.Add(nuevoEquipo);
@@ -256,10 +259,11 @@ namespace DVP.Controllers
                     equipoExistente.ProcesoID = data._procesoId;
                     equipoExistente.PlantaID = data._plantaId;
                     equipoExistente.UnidadOperativaID = data._unidadOperativaId;
-                    equipoExistente.PaisID = data._plantaId;
+                    equipoExistente.PaisID = data._paisId;
                     equipoExistente.BuscarParo = data._buscarParo;
                     equipoExistente.Active = data._active;
                     equipoExistente.EnviarASAP = data._enviarASAP;
+                    equipoExistente.PersonasAsignadas = data._personasAsignadas;
 
                     _dvpEntities.SaveChanges();
 

@@ -34,7 +34,6 @@ namespace DataAccess
         public virtual DbSet<ComponenteEquipo> ComponenteEquipo { get; set; }
         public virtual DbSet<DataOperacion> DataOperacion { get; set; }
         public virtual DbSet<Entradas> Entradas { get; set; }
-        public virtual DbSet<Equipo> Equipo { get; set; }
         public virtual DbSet<Gerencia> Gerencia { get; set; }
         public virtual DbSet<Inventarios> Inventarios { get; set; }
         public virtual DbSet<Material> Material { get; set; }
@@ -59,6 +58,7 @@ namespace DataAccess
         public virtual DbSet<UsuarioRol> UsuarioRol { get; set; }
         public virtual DbSet<ValidacionReportes> ValidacionReportes { get; set; }
         public virtual DbSet<TagEquipo> TagEquipo { get; set; }
+        public virtual DbSet<Equipo> Equipo { get; set; }
     
         public virtual int sp_alterdiagram(string diagramname, Nullable<int> owner_id, Nullable<int> version, byte[] definition)
         {
