@@ -132,7 +132,7 @@
                                         <button onclick="cerrarReporte()" id="btnCerrarReporte" class="btn btn-link p-0 m-0 align-baseline" title="Close report">
                                             <i class="bi bi-unlock-fill text-warning ms-2"></i>
                                         </button>
-                                        <input type="date" id="fechaReporte" onchange="filtrarPorFecha()">
+                                        <input type="date" id="fechaReporte" onchange="">
                                         <a id="btnenergy" onclick="sendtoenergyvalidation()"
                                            class="btn btn-link p-0 m-0 align-baseline"
                                            style="display: none;" role="button">
@@ -834,26 +834,9 @@ function cerrarReporte() {
         // Asignar la fecha al input
         inputFecha.value = fechaFormateada;
 
-        // Ejecutar fetch automáticamente al cargar con la fecha de ayer
-        filtrarPorFecha();
     });
 
-    function filtrarPorFecha() {
-        const fecha = document.getElementById("fechaReporte").value;
-
-        fetch(`/TuControlador/GetCapturasHumedad?fecha=${encodeURIComponent(fecha)}`)
-            .then(response => {
-                if (!response.ok) throw new Error("Error al obtener datos");
-                return response.json();
-            })
-            .then(data => {
-                console.log("Datos recibidos:", data);
-                // aquí puedes llenar tu tabla o contenedor con los datos
-            })
-            .catch(error => {
-                console.error("Error en la solicitud:", error);
-            });
-    }
+    
 </script>
 
 @*Loading*@
@@ -899,7 +882,7 @@ function cerrarReporte() {
         document.getElementById("loadingModal").style.display = "block";
     };
 
-    //________________________________________________________________________ Llamar el script de python para descargar paros _____________________________________//
+    //________________________________________________________________________ Llamar el script de python para descargar _____________________________________//
 
     document.addEventListener("DOMContentLoaded", function () {
         const btn = document.getElementById("btnDescargarEnergy");

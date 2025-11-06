@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data.Entity;
+using System.Globalization;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
@@ -936,8 +937,145 @@ namespace DVP.Controllers
         [HttpGet]
         public JsonResult EjecutarScriptKWH(string fecha = null)
         {
-            string resultado = RunPythonScriptKWH(fecha);
-            return Json(new { success = true, output = resultado }, JsonRequestBehavior.AllowGet);
+            try
+            {
+                // validar fecha si viene
+                if (!string.IsNullOrWhiteSpace(fecha))
+                {
+                    if (!DateTime.TryParseExact(
+                            fecha,
+                            "yyyy-MM-dd",
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.None,
+                            out var fechaDt))
+                    {
+                        return Json(new
+                        {
+                            success = false,
+                            message = "Formato de fecha invalido. Use yyyy-MM-dd."
+                        }, JsonRequestBehavior.AllowGet);
+                    }
+
+                    // misma logica que EjecutarScriptProd: bloquear hoy y futuro
+                    if (fechaDt.Date > DateTime.Today.AddDays(-1))
+                    {
+                        return Json(new
+                        {
+                            success = false,
+                            message = "No se puede ejecutar el script para fechas posteriores al dia de ayer."
+                        }, JsonRequestBehavior.AllowGet);
+                    }
+                }
+
+                // si no viene, usar hoy en el formato esperado
+                var fechaArg = string.IsNullOrWhiteSpace(fecha)
+                    ? DateTime.Today.ToString("yyyy-MM-dd")
+                    : fecha;
+
+                string resultado = RunPythonScriptKWH(fechaArg);
+
+                return Json(new { success = true, output = resultado }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                // devolver el error que envia el catch
+                Response.StatusCode = 500;
+                return Json(new
+                {
+                    success = false,
+                    error = ex.Message,
+                    message = ex.Message,
+                    detail = ex.ToString()
+                }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+
+
+        public static string RunPythonScriptProd(string fecha = null)
+        {
+            var exePath = ConfigurationManager.AppSettings["PythonExePathProdDO"];
+            var scriptPath = ConfigurationManager.AppSettings["PythonScriptPathProdDO"];
+
+            if (string.IsNullOrEmpty(fecha))
+                fecha = DateTime.Now.AddDays(-1).ToString("yyyy-MM-dd");
+
+            var start = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = exePath,
+                Arguments = $"\"{scriptPath}\" {fecha}",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+                StandardOutputEncoding = System.Text.Encoding.UTF8,
+                StandardErrorEncoding = System.Text.Encoding.UTF8,
+                WorkingDirectory = System.IO.Path.GetDirectoryName(scriptPath)
+            };
+
+            using (var process = System.Diagnostics.Process.Start(start))
+            {
+                string stdout = process.StandardOutput.ReadToEnd();
+                string stderr = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                    stdout += $"\nEXIT CODE: {process.ExitCode}";
+
+                if (!string.IsNullOrEmpty(stderr))
+                    stdout += "\nERROR: " + stderr;
+
+                return stdout;
+            }
+        }
+
+
+        [HttpGet]
+        public JsonResult EjecutarScriptProd(string fecha = null)
+        {
+            try
+            {
+                // validar fecha si viene
+                if (!string.IsNullOrWhiteSpace(fecha))
+                {
+                    if (!DateTime.TryParseExact(fecha, "yyyy-MM-dd",
+                                                CultureInfo.InvariantCulture,
+                                                DateTimeStyles.None,
+                                                out var fechaDt))
+                    {
+                        return Json(new { success = false, message = "Formato de fecha invalido. Use yyyy-MM-dd." },
+                                    JsonRequestBehavior.AllowGet);
+                    }
+
+                    if (fechaDt.Date > DateTime.Today.AddDays(-1))
+                    {
+                        return Json(new { success = false, message = "No se puede ejecutar el script para fechas posteriores al dia de ayer." },
+                                    JsonRequestBehavior.AllowGet);
+                    }
+                }
+
+                // si no viene, usar hoy en el formato esperado
+                var fechaArg = string.IsNullOrWhiteSpace(fecha)
+                    ? DateTime.Today.ToString("yyyy-MM-dd")
+                    : fecha;
+
+                string resultado = RunPythonScriptProd(fechaArg);
+
+                return Json(new { success = true, output = resultado }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                
+                Response.StatusCode = 500;
+
+                return Json(new
+                {
+                    success = false,
+                    error = ex.Message,      
+                    message = ex.Message,    
+                    detail = ex.ToString()   
+                }, JsonRequestBehavior.AllowGet);
+            }
         }
 
 

@@ -16,6 +16,7 @@ using System.Data.Entity;
 using System.Web.Helpers;
 using System.Diagnostics;
 using System.Configuration;
+using System.Globalization;
 
 namespace DVP.Controllers
 {
@@ -1843,9 +1844,58 @@ namespace DVP.Controllers
         [HttpGet]
         public JsonResult EjecutarScript(string fecha = null)
         {
-            string resultado = RunPythonScript(fecha);
-            return Json(new { success = true, output = resultado }, JsonRequestBehavior.AllowGet);
+            try
+            {
+                // validar fecha si viene
+                if (!string.IsNullOrWhiteSpace(fecha))
+                {
+                    if (!DateTime.TryParseExact(
+                            fecha,
+                            "yyyy-MM-dd",
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.None,
+                            out var fechaDt))
+                    {
+                        return Json(new
+                        {
+                            success = false,
+                            message = "Formato de fecha invalido. Use yyyy-MM-dd."
+                        }, JsonRequestBehavior.AllowGet);
+                    }
+
+                    // misma regla que en Prod/KWH: bloquear hoy y futuras
+                    if (fechaDt.Date > DateTime.Today)
+                    {
+                        return Json(new
+                        {
+                            success = false,
+                            message = "No se puede ejecutar el script para fechas futuras."
+                        }, JsonRequestBehavior.AllowGet);
+                    }
+                }
+
+                // si no viene, usar hoy en el formato esperado
+                var fechaArg = string.IsNullOrWhiteSpace(fecha)
+                    ? DateTime.Today.ToString("yyyy-MM-dd")
+                    : fecha;
+
+                string resultado = RunPythonScript(fechaArg);
+
+                return Json(new { success = true, output = resultado }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                Response.StatusCode = 500;
+                return Json(new
+                {
+                    success = false,
+                    error = ex.Message,
+                    message = ex.Message,
+                    detail = ex.ToString()
+                }, JsonRequestBehavior.AllowGet);
+            }
         }
+
 
 
 

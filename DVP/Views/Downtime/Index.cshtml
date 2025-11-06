@@ -92,7 +92,7 @@
                     </div>
                 </h5>
                 <div id="alertsuccesclose" class="alert alert-success" role="alert" style="display: none;">
-                     Done!
+                    Done!
                 </div>
                 <div class="card">
                     <div class="card-body p-4">
@@ -146,420 +146,420 @@
             </div>
         </div>
     </div>
-            @*___________________________________________________________________Modal Cargando__________________________________________________*@
-            <div id="loadingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: rgba(0, 0, 0, 0.5);">
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 25px 35px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.3); min-width: 250px;">
-                    <div style="display: flex; align-items: center; justify-content: center;">
-                        <img src="/Content/loading-green-loading.gif" alt="Cargando..." style="width: 40px; height: 40px; margin-right: 15px;" />
-                        <span style="color: black; font-size: 16px;">Cargando...</span>
-                    </div>
-                </div>
+    @*___________________________________________________________________Modal Cargando__________________________________________________*@
+    <div id="loadingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: rgba(0, 0, 0, 0.5);">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 25px 35px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.3); min-width: 250px;">
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <img src="/Content/loading-green-loading.gif" alt="Cargando..." style="width: 40px; height: 40px; margin-right: 15px;" />
+                <span style="color: black; font-size: 16px;">Cargando...</span>
             </div>
+        </div>
+    </div>
 
-            @*___________________________________________________________________Modal Delete Paro__________________________________________________*@
-            <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
+    @*___________________________________________________________________Modal Delete Paro__________________________________________________*@
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="card-body">
+                        <div class="card">
                             <div class="card-body">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <form>
-                                            <h4 class="card-title fw-semibold mb-2">¿Desea eliminar este evento?</h4>
-                                            <input type="hidden" id="paroIdtoDeleteEventHidden" value="" />
-                                            <br />
-                                            <div class="d-flex justify-content-end">
-                                                <button type="button" id="deleteParo" class="btn btn-outline-danger m-1">
-                                                    Delete <i class="ti ti-trash me-2"></i>
-                                                </button>
-                                            </div>
-                                            <div id="alertdeleteEvent" class="alert alert-danger" role="alert" style="display: none;">
-                                                Eliminado
-                                            </div>
-                                        </form>
+                                <form>
+                                    <h4 class="card-title fw-semibold mb-2">¿Desea eliminar este evento?</h4>
+                                    <input type="hidden" id="paroIdtoDeleteEventHidden" value="" />
+                                    <br />
+                                    <div class="d-flex justify-content-end">
+                                        <button type="button" id="deleteParo" class="btn btn-outline-danger m-1">
+                                            Delete <i class="ti ti-trash me-2"></i>
+                                        </button>
                                     </div>
-                                </div>
+                                    <div id="alertdeleteEvent" class="alert alert-danger" role="alert" style="display: none;">
+                                        Eliminado
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            @*___________________________________________________________________Modal Day Delay__________________________________________________*@
-            <div class="modal fade" id="daydelayModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="card-body">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <form>
-                                            <h4 class="card-title fw-semibold mb-2">Day Delay Validation</h4>
-                                            <input type="hidden" id="paroIdhidden" value="" />
-                                            <br />
-                                            <select class="form-select" id="_equipoIddaydelay">
-                                                @foreach (var item in Model.Equipos)
-                                                {
-                                                    <option value="@item.EquipoID">@item.Descripcion</option>
-                                                }
-                                            </select>
-                                            <br />
-                                            <select class="form-select" id="_subEquipoIddaydelay">
-                                                <option value="">Seleccione un sub equipo</option>
-                                            </select>
-                                            <br />
-                                            <select class="form-select" id="_componenteEquipoIddaydelay">
-                                                <option value="">Seleccione un componente</option>
-                                            </select>
-                                            <br />
-                                            <select class="form-select" id="_clasificacionIddaydelay">
-                                                <option value="" selected disabled>Seleccione una clasificación</option>
-                                                @foreach (var evento in Model.GetClasificacionFalla())
-                                                {
-                                                    <option value="@evento.ClasificacionID">
-                                                        @evento.Descripcion (@(evento.TipoParo != null ? evento.TipoParo.Descripcion : "Sin Tipo Paro"))
-                                                    </option>
-                                                }
-                                            </select>
-                                            <br />
-                                            <select class="form-select" id="_tipoFallaIddaydelay">
-                                                <option value="">La falla para este paro es:</option>
-                                            </select>
-                                            <br />
-                                            <div class="mb-3">
-                                                <label class="form-label">Comment</label>
-                                                <textarea type="text" class="form-control" id="_commentdaydelay" required></textarea>
-                                            </div>
-                                            <br />
-                                            <div>
-                                                <label for="fecha">Fecha:</label>
-                                                <input type="date" id="_fechaEventodaydelay" required>
-                                                <label for="hora">Hora:</label>
-                                                <input type="time" id="_horaEventodaydelay" step="1" disabled>
-                                            </div>
-                                            <br />
-                                            <br />
-                                            <div class="d-flex justify-content-end">
-                                                <button type="button" id="validatedaydelay" class="btn btn-outline-success m-1">
-                                                    Validate <span class="text-success ms-2">&#10004;</span>
-                                                </button>
-                                            </div>
-                                        </form>
-                                        <div id="alertValidatereclasification" class="alert alert-success" role="alert" style="display: none;">
-                                            ¡Validado!
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        </div>
+    </div>
+    @*___________________________________________________________________Modal Day Delay__________________________________________________*@
+    <div class="modal fade" id="daydelayModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-            </div>
-            @*___________________________________________________________________Modal Reclasification__________________________________________________*@
-            <div class="modal fade" id="reclasificationModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
+                <div class="modal-body">
+                    <div class="card-body">
+                        <div class="card">
                             <div class="card-body">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <form>
-                                            <h4 class="card-title fw-semibold mb-2">Reclasification Validation</h4>
-                                            <input type="hidden" id="paroIdhidden" value="" />
-                                            <br />
-                                            <select class="form-select" id="_equipoIdreclasification">
-                                                @foreach (var item in Model.Equipos)
-                                                {
-                                                    <option value="@item.EquipoID">@item.Descripcion</option>
-                                                }
-                                            </select>
-                                            <br />
-                                            <select class="form-select" id="_subEquipoIdreclasification">
-                                                <option value="">Seleccione un sub equipo</option>
-                                            </select>
-                                            <br />
-                                            <select class="form-select" id="_componenteEquipoIdreclasification">
-                                                <option value="">Seleccione un componente</option>
-                                            </select>
-                                            <br />
-                                            <select class="form-select" id="_clasificacionIdreclasification">
-                                                <option value="" selected disabled>Seleccione una clasificación</option>
-                                                @foreach (var evento in Model.GetClasificacionFalla())
-                                                {
-                                                    <option value="@evento.ClasificacionID">
-                                                        @evento.Descripcion (@(evento.TipoParo != null ? evento.TipoParo.Descripcion : "Sin Tipo Paro"))
-                                                    </option>
-                                                }
-                                            </select>
-                                            <br />
-                                            <select class="form-select" id="_tipoFallaIdreclasification">
-                                                <option value="">La falla para este paro es:</option>
-                                            </select>
-                                            <br />
-                                            <div class="mb-3">
-                                                <label class="form-label">Comment</label>
-                                                <textarea type="text" class="form-control" id="_commentreclasification" required></textarea>
-                                            </div>
-                                            <br />
-                                            <div>
-                                                <label for="fecha">Fecha:</label>
-                                                <input type="date" id="_fechaEventoreclasification" required>
-                                                <label for="hora">Hora:</label>
-                                                <input type="time" id="_horaEventoreclasification" step="1" required>
-                                            </div>
-                                            <br />
-                                            <br />
-                                            <div class="d-flex justify-content-end">
-                                                <button type="button" id="validatereclasification" class="btn btn-outline-success m-1">
-                                                    Validate <span class="text-success ms-2">&#10004;</span>
-                                                </button>
-                                            </div>
-                                        </form>
-                                        <div id="alertValidatereclasification" class="alert alert-success" role="alert" style="display: none;">
-                                            ¡Validado!
-                                        </div>
+                                <form>
+                                    <h4 class="card-title fw-semibold mb-2">Day Delay Validation</h4>
+                                    <input type="hidden" id="paroIdhidden" value="" />
+                                    <br />
+                                    <select class="form-select" id="_equipoIddaydelay">
+                                        @foreach (var item in Model.Equipos)
+                                        {
+                                            <option value="@item.EquipoID">@item.Descripcion</option>
+                                        }
+                                    </select>
+                                    <br />
+                                    <select class="form-select" id="_subEquipoIddaydelay">
+                                        <option value="">Seleccione un sub equipo</option>
+                                    </select>
+                                    <br />
+                                    <select class="form-select" id="_componenteEquipoIddaydelay">
+                                        <option value="">Seleccione un componente</option>
+                                    </select>
+                                    <br />
+                                    <select class="form-select" id="_clasificacionIddaydelay">
+                                        <option value="" selected disabled>Seleccione una clasificación</option>
+                                        @foreach (var evento in Model.GetClasificacionFalla())
+                                        {
+                                            <option value="@evento.ClasificacionID">
+                                                @evento.Descripcion (@(evento.TipoParo != null ? evento.TipoParo.Descripcion : "Sin Tipo Paro"))
+                                            </option>
+                                        }
+                                    </select>
+                                    <br />
+                                    <select class="form-select" id="_tipoFallaIddaydelay">
+                                        <option value="">La falla para este paro es:</option>
+                                    </select>
+                                    <br />
+                                    <div class="mb-3">
+                                        <label class="form-label">Comment</label>
+                                        <textarea type="text" class="form-control" id="_commentdaydelay" required></textarea>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @*___________________________________________________________________Modal Active Event__________________________________________________*@
-            <div class="modal fade" id="activeModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="card-body">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <form>
-                                            <h4 class="card-title fw-semibold mb-2">Active Event</h4>
-                                            <input type="hidden" id="paroIdtoAddActiveEventHidden" value="" />
-                                            <br />
-                                            <div class="mb-3">
-                                                <label class="form-label">Comment</label>
-                                                <textarea type="text" class="form-control" id="_commentActiveEvent" required></textarea>
-                                            </div>
-                                            <br />
-                                            <div>
-                                                <label for="fecha">Fecha:</label>
-                                                <input type="date" id="_fechaActiveEvent">
-                                                <label for="hora">Hora:</label>
-                                                <input type="time" id="_horaActiveEvent" step="1" required>
-                                            </div>
-                                            <br />
-                                            <br />
-                                            <div class="d-flex justify-content-end">
-                                                <button type="button" id="createActiveEvent" class="btn btn-outline-success m-1">
-                                                    Create <span class="text-success ms-2">&#10004;</span>
-                                                </button>
-                                            </div>
-                                            <div id="alertValidateactiveEvent" class="alert alert-success" role="alert" style="display: none;">
-                                                ¡Validado!
-                                            </div>
-                                        </form>
+                                    <br />
+                                    <div>
+                                        <label for="fecha">Fecha:</label>
+                                        <input type="date" id="_fechaEventodaydelay" required>
+                                        <label for="hora">Hora:</label>
+                                        <input type="time" id="_horaEventodaydelay" step="1" disabled>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            @*___________________________________________________________________Modal Edit Downtime__________________________________________________*@
-            <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="card-body">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <form>
-                                            <h4 class="card-title fw-semibold mb-2">Edit Downtime Validation</h4>
-                                            <input type="hidden" id="paroIdhidden" value="" />
-                                            <br />
-                                            <select class="form-select" id="_equipoIdedit">
-                                                @foreach (var item in Model.Equipos)
-                                                {
-                                                    <option value="@item.EquipoID">@item.Descripcion</option>
-                                                }
-                                            </select>
-                                            <br />
-                                            <select class="form-select" id="_tipoeventoIdedit" hidden>
-                                                @foreach (var item in Model.GetTipoEvento())
-                                                {
-                                                    <option value="@item.TipoEventoID">@item.Descripcion</option>
-                                                }
-                                            </select>
-                                            <select class="form-select" id="_subEquipoIdedit">
-                                                <option value="">Seleccione un sub equipo</option>
-                                            </select>
-                                            <br />
-                                            <select class="form-select" id="_componenteEquipoIdedit">
-                                                <option value="">Seleccione un componente</option>
-                                            </select>
-                                            <br />
-                                            <select class="form-select" id="_clasificacionIdedit">
-                                                <option value="" selected disabled>Seleccione una clasificación</option>
-                                                @foreach (var evento in Model.GetClasificacionFalla())
-                                                {
-                                                    <option value="@evento.ClasificacionID">
-                                                        @evento.Descripcion (@(evento.TipoParo != null ? evento.TipoParo.Descripcion : "Sin Tipo Paro"))
-                                                    </option>
-                                                }
-                                            </select>
-                                            <br />
-                                            <select class="form-select" id="_tipoFallaIdedit">
-                                                <option value="">La falla para este paro es:</option>
-                                            </select>
-                                            <br />
-                                            <div class="mb-3">
-                                                <label class="form-label">Usuario Creador</label>
-                                                <input type="text" class="form-control" id="_userName" readonly>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Comment</label>
-                                                <textarea type="text" class="form-control" id="_commentedit" required></textarea>
-                                            </div>
-                                            <br />
-                                            <div>
-                                                <label for="fecha">Fecha:</label>
-                                                <input type="date" id="_fechaEventoedit" required>
-                                                <label for="hora">Hora:</label>
-                                                <input type="time" id="_horaEventoedit" step="1" required>
-                                            </div>
-                                            <br />
-                                            <br />
-                                            <div class="d-flex justify-content-end">
-                                                <button type="button" id="pendingEdit" class="btn btn-outline-danger m-1">
-                                                    Pending <span class="text-danger ms-2">&#10060;</span>
-                                                </button>
-                                                <button type="button" id="validateEdit" class="btn btn-outline-success m-1">
-                                                    Validate <span class="text-success ms-2">&#10004;</span>
-                                                </button>
-                                            </div>
-                                        </form>
-                                        <div id="alertValidateSuccess" class="alert alert-success" role="alert" style="display: none;">
-                                            ¡Validado!
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @*______________________________________________________________________Modal Creación de Paro__________________________________________*@
-            <div class="modal fade" id="newdowntime" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modalLabel">Create Downtime</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="card-body">
-                                <div class="card">
-                                    <form>
-                                        <div class="card-body">
-                                            <h4 class="card-title fw-semibold mb-2">Downtime Validation</h4>
-                                            <br />
-                                            <div class="d-flex gap-3">
-                                                <div class="mb-3" style="width: 300px;">
-                                                    <label class="form-label">Select Equipment</label>
-                                                    <select class="form-select" id="_equipoId">
-                                                        <option value="">Seleccione un equipo</option>
-                                                        @foreach (var equipo in Model.Equipos)
-                                                        {
-                                                            <option value="@equipo.EquipoID">@equipo.Descripcion</option>
-                                                        }
-                                                    </select>
-                                                </div>
-                                                <div class="mb-3" style="width: 350px;">
-                                                    <label class="form-label">Downtime Type</label>
-                                                    <select class="form-select" id="_tipoEventoId">
-                                                        @foreach (var evento in Model.GetTipoEvento().Where(e => e.TipoEventoID == 1))
-                                                        {
-                                                            <option value="@evento.TipoEventoID">@evento.Descripcion</option>
-                                                        }
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Sub Equipo</label>
-                                                <select class="form-select" id="_subEquipoId">
-                                                    <option value="">Seleccione un sub equipo</option>
-                                                </select>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Componente Equipo</label>
-                                                <select class="form-select" id="_componenteEquipoId">
-                                                    <option value="">Seleccione un componente</option>
-                                                </select>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Clasificación</label>
-                                                <select class="form-select" id="_clasificacionId">
-                                                    <option value="" selected disabled>Seleccione una clasificación</option>
-                                                    @foreach (var evento in Model.GetClasificacionFalla())
-                                                    {
-                                                        <option value="@evento.ClasificacionID">
-                                                            @evento.Descripcion (@(evento.TipoParo != null ? evento.TipoParo.Descripcion : "Sin Tipo Paro"))
-                                                        </option>
-                                                    }
-                                                </select>
-                                            </div>
-                                            <label class="form-label">Tipo Falla</label>
-                                            <select class="form-select" id="_tipoFallaId">
-                                                <option value="">La falla para este paro es:</option>
-                                            </select>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Comment</label>
-                                            <textarea type="text" class="form-control" id="_comment" required></textarea>
-                                        </div>
-                                        <div>
-                                            <label for="fecha">Fecha:</label>
-                                            <input type="date" id="_fechaEvento" required>
-                                            <label for="hora">Hora:</label>
-                                            <input type="time" id="_horaEvento" step="1" required>
-                                        </div>
-                                        <br />
-                                        <br />
-                                        <button type="button" id="crearparo" class="btn btn-outline-success m-1"
-                                                data-url="@Url.Action("CreateDowntime", "Downtime")">
+                                    <br />
+                                    <br />
+                                    <div class="d-flex justify-content-end">
+                                        <button type="button" id="validatedaydelay" class="btn btn-outline-success m-1">
                                             Validate <span class="text-success ms-2">&#10004;</span>
                                         </button>
-                                        <div id="alertSuccess" class="alert alert-success" role="alert" style="display: none;">
-                                            ¡Paro creado exitosamente!
-                                        </div>
-                                    </form>
+                                    </div>
+                                </form>
+                                <div id="alertValidatereclasification" class="alert alert-success" role="alert" style="display: none;">
+                                    ¡Validado!
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+    @*___________________________________________________________________Modal Reclasification__________________________________________________*@
+    <div class="modal fade" id="reclasificationModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="card-body">
+                        <div class="card">
+                            <div class="card-body">
+                                <form>
+                                    <h4 class="card-title fw-semibold mb-2">Reclasification Validation</h4>
+                                    <input type="hidden" id="paroIdhidden" value="" />
+                                    <br />
+                                    <select class="form-select" id="_equipoIdreclasification">
+                                        @foreach (var item in Model.Equipos)
+                                        {
+                                            <option value="@item.EquipoID">@item.Descripcion</option>
+                                        }
+                                    </select>
+                                    <br />
+                                    <select class="form-select" id="_subEquipoIdreclasification">
+                                        <option value="">Seleccione un sub equipo</option>
+                                    </select>
+                                    <br />
+                                    <select class="form-select" id="_componenteEquipoIdreclasification">
+                                        <option value="">Seleccione un componente</option>
+                                    </select>
+                                    <br />
+                                    <select class="form-select" id="_clasificacionIdreclasification">
+                                        <option value="" selected disabled>Seleccione una clasificación</option>
+                                        @foreach (var evento in Model.GetClasificacionFalla())
+                                        {
+                                            <option value="@evento.ClasificacionID">
+                                                @evento.Descripcion (@(evento.TipoParo != null ? evento.TipoParo.Descripcion : "Sin Tipo Paro"))
+                                            </option>
+                                        }
+                                    </select>
+                                    <br />
+                                    <select class="form-select" id="_tipoFallaIdreclasification">
+                                        <option value="">La falla para este paro es:</option>
+                                    </select>
+                                    <br />
+                                    <div class="mb-3">
+                                        <label class="form-label">Comment</label>
+                                        <textarea type="text" class="form-control" id="_commentreclasification" required></textarea>
+                                    </div>
+                                    <br />
+                                    <div>
+                                        <label for="fecha">Fecha:</label>
+                                        <input type="date" id="_fechaEventoreclasification" required>
+                                        <label for="hora">Hora:</label>
+                                        <input type="time" id="_horaEventoreclasification" step="1" required>
+                                    </div>
+                                    <br />
+                                    <br />
+                                    <div class="d-flex justify-content-end">
+                                        <button type="button" id="validatereclasification" class="btn btn-outline-success m-1">
+                                            Validate <span class="text-success ms-2">&#10004;</span>
+                                        </button>
+                                    </div>
+                                </form>
+                                <div id="alertValidatereclasification" class="alert alert-success" role="alert" style="display: none;">
+                                    ¡Validado!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @*___________________________________________________________________Modal Active Event__________________________________________________*@
+    <div class="modal fade" id="activeModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="card-body">
+                        <div class="card">
+                            <div class="card-body">
+                                <form>
+                                    <h4 class="card-title fw-semibold mb-2">Active Event</h4>
+                                    <input type="hidden" id="paroIdtoAddActiveEventHidden" value="" />
+                                    <br />
+                                    <div class="mb-3">
+                                        <label class="form-label">Comment</label>
+                                        <textarea type="text" class="form-control" id="_commentActiveEvent" required></textarea>
+                                    </div>
+                                    <br />
+                                    <div>
+                                        <label for="fecha">Fecha:</label>
+                                        <input type="date" id="_fechaActiveEvent">
+                                        <label for="hora">Hora:</label>
+                                        <input type="time" id="_horaActiveEvent" step="1" required>
+                                    </div>
+                                    <br />
+                                    <br />
+                                    <div class="d-flex justify-content-end">
+                                        <button type="button" id="createActiveEvent" class="btn btn-outline-success m-1">
+                                            Create <span class="text-success ms-2">&#10004;</span>
+                                        </button>
+                                    </div>
+                                    <div id="alertValidateactiveEvent" class="alert alert-success" role="alert" style="display: none;">
+                                        ¡Validado!
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @*___________________________________________________________________Modal Edit Downtime__________________________________________________*@
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalLabel">Downtime Validation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="card-body">
+                        <div class="card">
+                            <div class="card-body">
+                                <form>
+                                    <h4 class="card-title fw-semibold mb-2">Edit Downtime Validation</h4>
+                                    <input type="hidden" id="paroIdhidden" value="" />
+                                    <br />
+                                    <select class="form-select" id="_equipoIdedit">
+                                        @foreach (var item in Model.Equipos)
+                                        {
+                                            <option value="@item.EquipoID">@item.Descripcion</option>
+                                        }
+                                    </select>
+                                    <br />
+                                    <select class="form-select" id="_tipoeventoIdedit" hidden>
+                                        @foreach (var item in Model.GetTipoEvento())
+                                        {
+                                            <option value="@item.TipoEventoID">@item.Descripcion</option>
+                                        }
+                                    </select>
+                                    <select class="form-select" id="_subEquipoIdedit">
+                                        <option value="">Seleccione un sub equipo</option>
+                                    </select>
+                                    <br />
+                                    <select class="form-select" id="_componenteEquipoIdedit">
+                                        <option value="">Seleccione un componente</option>
+                                    </select>
+                                    <br />
+                                    <select class="form-select" id="_clasificacionIdedit">
+                                        <option value="" selected disabled>Seleccione una clasificación</option>
+                                        @foreach (var evento in Model.GetClasificacionFalla())
+                                        {
+                                            <option value="@evento.ClasificacionID">
+                                                @evento.Descripcion (@(evento.TipoParo != null ? evento.TipoParo.Descripcion : "Sin Tipo Paro"))
+                                            </option>
+                                        }
+                                    </select>
+                                    <br />
+                                    <select class="form-select" id="_tipoFallaIdedit">
+                                        <option value="">La falla para este paro es:</option>
+                                    </select>
+                                    <br />
+                                    <div class="mb-3">
+                                        <label class="form-label">Usuario Creador</label>
+                                        <input type="text" class="form-control" id="_userName" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Comment</label>
+                                        <textarea type="text" class="form-control" id="_commentedit" required></textarea>
+                                    </div>
+                                    <br />
+                                    <div>
+                                        <label for="fecha">Fecha:</label>
+                                        <input type="date" id="_fechaEventoedit" required>
+                                        <label for="hora">Hora:</label>
+                                        <input type="time" id="_horaEventoedit" step="1" required>
+                                    </div>
+                                    <br />
+                                    <br />
+                                    <div class="d-flex justify-content-end">
+                                        <button type="button" id="pendingEdit" class="btn btn-outline-danger m-1">
+                                            Pending <span class="text-danger ms-2">&#10060;</span>
+                                        </button>
+                                        <button type="button" id="validateEdit" class="btn btn-outline-success m-1">
+                                            Validate <span class="text-success ms-2">&#10004;</span>
+                                        </button>
+                                    </div>
+                                </form>
+                                <div id="alertValidateSuccess" class="alert alert-success" role="alert" style="display: none;">
+                                    ¡Validado!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @*______________________________________________________________________Modal Creación de Paro__________________________________________*@
+    <div class="modal fade" id="newdowntime" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalLabel">Create Downtime</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="card-body">
+                        <div class="card">
+                            <form>
+                                <div class="card-body">
+                                    <h4 class="card-title fw-semibold mb-2">Downtime Validation</h4>
+                                    <br />
+                                    <div class="d-flex gap-3">
+                                        <div class="mb-3" style="width: 300px;">
+                                            <label class="form-label">Select Equipment</label>
+                                            <select class="form-select" id="_equipoId">
+                                                <option value="">Seleccione un equipo</option>
+                                                @foreach (var equipo in Model.Equipos)
+                                                {
+                                                    <option value="@equipo.EquipoID">@equipo.Descripcion</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="mb-3" style="width: 350px;">
+                                            <label class="form-label">Downtime Type</label>
+                                            <select class="form-select" id="_tipoEventoId">
+                                                @foreach (var evento in Model.GetTipoEvento().Where(e => e.TipoEventoID == 1))
+                                                {
+                                                    <option value="@evento.TipoEventoID">@evento.Descripcion</option>
+                                                }
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Sub Equipo</label>
+                                        <select class="form-select" id="_subEquipoId">
+                                            <option value="">Seleccione un sub equipo</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Componente Equipo</label>
+                                        <select class="form-select" id="_componenteEquipoId">
+                                            <option value="">Seleccione un componente</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Clasificación</label>
+                                        <select class="form-select" id="_clasificacionId">
+                                            <option value="" selected disabled>Seleccione una clasificación</option>
+                                            @foreach (var evento in Model.GetClasificacionFalla())
+                                            {
+                                                <option value="@evento.ClasificacionID">
+                                                    @evento.Descripcion (@(evento.TipoParo != null ? evento.TipoParo.Descripcion : "Sin Tipo Paro"))
+                                                </option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <label class="form-label">Tipo Falla</label>
+                                    <select class="form-select" id="_tipoFallaId">
+                                        <option value="">La falla para este paro es:</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Comment</label>
+                                    <textarea type="text" class="form-control" id="_comment" required></textarea>
+                                </div>
+                                <div>
+                                    <label for="fecha">Fecha:</label>
+                                    <input type="date" id="_fechaEvento" required>
+                                    <label for="hora">Hora:</label>
+                                    <input type="time" id="_horaEvento" step="1" required>
+                                </div>
+                                <br />
+                                <br />
+                                <button type="button" id="crearparo" class="btn btn-outline-success m-1"
+                                        data-url="@Url.Action("CreateDowntime", "Downtime")">
+                                    Validate <span class="text-success ms-2">&#10004;</span>
+                                </button>
+                                <div id="alertSuccess" class="alert alert-success" role="alert" style="display: none;">
+                                    ¡Paro creado exitosamente!
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 
@@ -2406,13 +2406,15 @@ function cargarTiposFallaDaydelay(clasificacionId, componenteEquipoId, tipoFalla
 
     //________________________________________________________________________ Llamar el script de python para descargar paros _____________________________________//
 
+
+
     document.addEventListener("DOMContentLoaded", function () {
         const btn = document.getElementById("btnDescargarDowntime");
         const fechaInput = document.getElementById("fechaReporte");
         const alertaOk = document.getElementById("alertsuccesclose");
 
         btn.addEventListener("click", async function () {
-            // Tomar fecha o usar hoy
+            // tomar fecha o usar hoy
             let fecha = fechaInput?.value;
             if (!fecha) {
                 const hoy = new Date();
@@ -2424,7 +2426,6 @@ function cargarTiposFallaDaydelay(clasificacionId, componenteEquipoId, tipoFalla
 
             const url = `/Downtime/EjecutarScript?fecha=${encodeURIComponent(fecha)}`;
 
-            // Mostrar cargando
             cargando();
             btn.disabled = true;
 
@@ -2433,26 +2434,31 @@ function cargarTiposFallaDaydelay(clasificacionId, componenteEquipoId, tipoFalla
                     method: "GET",
                     headers: { "Accept": "application/json" }
                 });
-                if (!resp.ok) throw new Error(`Status ${resp.status}`);
 
-                const data = await resp.json();
-                if (!data?.success) throw new Error(data?.error || "Fallo al ejecutar el script.");
+                // intentar leer json aun cuando no sea OK
+                let data = null;
+                try { data = await resp.json(); } catch (e) { }
 
-                // ÉXITO: mostrar alerta y recargar
+                if (!resp.ok || !data?.success) {
+                    const serverMsg = data?.message || data?.error || `Status ${resp.status}`;
+                    throw new Error(serverMsg);
+                }
+
+                // exito
                 alertaOk.style.display = "block";
-                setTimeout(() => {
-                    location.reload();
-                }, 1200);
+                setTimeout(() => { location.reload(); }, 1200);
+
             } catch (err) {
                 console.error(err);
-                alert("Ocurrió un error al ejecutar el script. Revisa la consola.");
+                alert(err?.message || "Ocurrio un error al ejecutar el script.");
             } finally {
-                // Ocultar cargando en el mismo bloque
                 document.getElementById("loadingModal").style.display = "none";
                 btn.disabled = false;
             }
         });
     });
+
+
 
 
 

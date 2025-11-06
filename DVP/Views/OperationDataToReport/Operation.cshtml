@@ -94,7 +94,6 @@
         --bs-table-bg: #e6ffec; /* Un verde muy claro, casi blanco verdoso */
         --bs-table-accent-bg: var(--bs-table-bg);
     }
-       
 </style>
 
 
@@ -120,14 +119,11 @@
                                         <button onclick="" id="btnDescargarEnergy" class="btn btn-link p-0 m-0 align-baseline" title="Download energy">
                                             <i class="bi bi-arrow-down-circle-fill text-success ms-2"></i>
                                         </button>
-                                        <button type="button" id="create" class="btn btn-link p-0 m-0" title="New energy">
-                                            <i class="bi bi-plus-circle-fill fs-4 text-dark"></i>
-                                        </button>
                                         <span>Operation Validation Date:</span>
                                         <button onclick="cerrarReporte()" id="btnCerrarReporte" class="btn btn-link p-0 m-0 align-baseline" title="Close report">
                                             <i class="bi bi-unlock-fill text-warning ms-2"></i>
                                         </button>
-                                        <input type="date" id="fechaReporte" onchange="filtrarPorFecha()">
+                                        <input type="date" id="fechaReporte" onchange="">
                                         <a id="btnenergy" onclick="sendtoenergyvalidation()"
                                            class="btn btn-link p-0 m-0 align-baseline"
                                            style="display: none;" role="button">
@@ -136,16 +132,6 @@
                                     </div>
                                 </div>
                             </h5>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <div id="totalkwhpims" class="alert alert-success p-2 my-2"
-                                 style="width: fit-content;">
-                                Total KWH PIMS: <strong id="countkwhpims">0</strong>
-                            </div>
-                            <div id="totalkwhvalidado" class="alert alert-success p-2 my-2"
-                                 style="width: fit-content;">
-                                Total KWH Validado: <strong id="countkwhvalidado">0</strong>
-                            </div>
                         </div>
                         <div id="filtrosListado" class="row g-3 mb-2"></div>
                         <div id="contenedorListado" class="mt-3"></div>
@@ -181,17 +167,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const contenedorListado = document.getElementById('contenedorListado');
     const inputFecha        = document.getElementById('fechaReporte');
     const selectEquipoList  = document.getElementById('selectEquipoList');
-    const totalKwhPimsEl = document.getElementById('countkwhpims');
-    const totalKwhValidadoEl = document.getElementById('countkwhvalidado');
 
     // URLS DE ACCIÓN: (SIN CAMBIOS)
     const URL_GET_OPERATION = '@Url.Action("GetOperation", "OperationDataToReport")';
     const URL_EQUIPOS       = '@Url.Action("GetEquiposporPaislogguedUser", "Equipo")';
     const URL_SAVE_VALIDATED_QTY = '@Url.Action("UpdateEnergy", "OperationDataToReport")';
     const URL_SAVE_SAP_ORDER = '@Url.Action("UpdateSapOrder", "OperationDataToReport")';
-
-    // ... [Todas las funciones de formato y utilidad (fmtFechaHora, option, fillSelect, etc.) VAN AQUÍ SIN CAMBIOS] ...
-    // Para brevedad, el código omitido (las funciones utilitarias) se asume que sigue igual.
 
     function fmtFechaHora(d){
         if(!d) return '';
@@ -222,7 +203,6 @@ document.addEventListener('DOMContentLoaded', function () {
     function showMsg(msg,type='info'){
         if (!msg || msg.includes('Cargando datos') || type === 'secondary' || type === 'success') {
             contenedorListado.innerHTML = '';
-            updateTotals(0, 0);
             return;
         }
         if (type === 'danger' || type === 'warning') {
@@ -246,32 +226,13 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!Number.isFinite(num)) return '';
         return num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: decimals, useGrouping: true });
     }
-    function updateTotals(totalPims, totalValidado) {
-        if (totalKwhPimsEl) totalKwhPimsEl.textContent = fmtNumero(totalPims, 3);
-        if (totalKwhValidadoEl) totalKwhValidadoEl.textContent = fmtNumero(totalValidado, 3);
-    }
-    function calculateAndRenderTotals(rows) {
-        let totalPims = 0;
-        let totalValidado = 0;
-        (Array.isArray(rows) ? rows : []).forEach(r => {
-            const pimsRaw = getPimsRaw(r);
-            const valRaw  = (r.CantidadValidada !== undefined && r.CantidadValidada !== null) ? Number(r.CantidadValidada) : null;
-            if (pimsRaw !== null && Number.isFinite(pimsRaw)) totalPims += Number(pimsRaw);
-            if (valRaw !== null && Number.isFinite(valRaw)) totalValidado += Number(valRaw);
-        });
-        updateTotals(totalPims, totalValidado);
-    }
-
 
     // --- FUNCIÓN DE AGRUPACIÓN CLAVE (SIN CAMBIOS FUNCIONALES) ---
-    // Esta función ya prepara los datos con la relación Producción/Consumo
     function groupDataByEquipo(rows) {
         if (!Array.isArray(rows) || rows.length === 0) return [];
-
         const groups = new Map();
         const finalRows = [];
 
-        // 1️⃣ Agrupar por equipo
         rows.forEach(r => {
             const key = `${r.EquipoID}`;
             if (!groups.has(key)) {
@@ -285,44 +246,30 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        // 2️⃣ Ordenar grupos de equipos por ID (para respetar el orden de la BD)
         const orderedGroups = Array.from(groups.values())
             .sort((a, b) => a.EquipoID - b.EquipoID);
 
-        // 3️⃣ Procesar cada grupo
         orderedGroups.forEach(group => {
             const detalles = group.Detalles;
-
-            // Producción: los dejamos con su orden natural o alfabético
             const produccion = detalles
                 .filter(r => r.TipoMaterial === "PRODUCCION")
                 .sort((a, b) => a.Material.localeCompare(b.Material));
-
-            // Consumo: SIN reordenar, para mantener el orden del backend
             const consumo = detalles.filter(r => r.TipoMaterial === "CONSUMO");
-
-            // Consumo de equipo (sin padre)
             const consumoEquipo = detalles
                 .filter(r => r.TipoMaterial === "CONSUMO_EQUIPO")
                 .sort((a, b) => a.Material.localeCompare(b.Material));
-
             const orderedDetails = [];
 
-            // Primero cada material de producción y sus consumos relacionados
             produccion.forEach(prodItem => {
                 orderedDetails.push(prodItem);
-
-                // Agregar los consumos relacionados exactamente en el orden recibido del backend
                 const relatedConsumo = consumo.filter(c => c.MaterialProduccionPadreID === prodItem.MaterialID);
                 orderedDetails.push(...relatedConsumo);
             });
 
-            // Por último los consumos sin padre (CONSUMO_EQUIPO)
             consumoEquipo.forEach(item => {
                 orderedDetails.push({ ...item, TipoMaterial: "CONSUMO_EQUIPO" });
             });
 
-            // Cargar al arreglo final
             const rowCount = orderedDetails.length;
             orderedDetails.forEach((detail, index) => {
                 finalRows.push({
@@ -336,10 +283,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return finalRows;
     }
 
-
-    // ------------------------------------------
-
-    // ... [Las funciones getCurrentParams y buildTheadHtml VAN AQUÍ SIN CAMBIOS] ...
     const getCurrentParams = function(){
       const fechaISO  = (inputFecha && inputFecha.value) ? inputFecha.value : defaultAyerISO();
       const equipoId  = selectEquipoList && selectEquipoList.value ? Number(selectEquipoList.value) : null;
@@ -350,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function () {
       <th class="text-center">Equipo</th>
       <th class="text-center">Close</th>
       <th class="text-center">Validate</th>
-      <th class="text-center">Humedad (%)</th> <!-- ✅ NUEVA COLUMNA -->
+      <th class="text-center">Humedad (%)</th>
       <th class="text-center">Material Consumido</th>
       <th class="text-center">Cant PIMS</th>
       <th class="text-center">Cant Validada</th>
@@ -360,19 +303,13 @@ document.addEventListener('DOMContentLoaded', function () {
     </tr></thead>`;
     }
 
-    // -----------------------------
-
-    // === FUNCIÓN RENDER MODIFICADA (Negrita Asegurada para Producción y Sin Color para Consumo) ===
     function renderTabla(rows) {
         const data = Array.isArray(rows) ? rows : [];
-        calculateAndRenderTotals(data);
 
         if (!data.length) { showMsg('No hay registros para los filtros aplicados', 'warning'); return; }
 
         contenedorListado.innerHTML = '';
         let tbody = '<tbody>';
-
-        // VARIABLES PARA EL CAMBIO DE COLOR POR EQUIPO (Tonos de VERDE)
         let currentEquipoID = null;
         const colorClasses = ['table-success', 'table-success-light'];
         let alternateColorIndex = 0;
@@ -381,56 +318,39 @@ document.addEventListener('DOMContentLoaded', function () {
             const pimsRaw = getPimsRaw(r);
             const isEditable = !!r.DataOperacionID;
             const valRaw = r.DataOperacionID !== null ? (r.CantidadValidada !== undefined ? r.CantidadValidada : null) : null;
-
             const pimsTxt = (pimsRaw === null || pimsRaw === undefined) ? '—' : fmtNumero(pimsRaw, 3);
             const valTxt = (valRaw === null || valRaw === undefined) ? '—' : fmtNumero(valRaw, 3);
-
             const materialDesc = r.Material ?? '—';
             const sapMovShown = r.TipoMovimientoSAP || (r.TipoMovimientoSAPID ?? '—');
-            const sapMovIdShown = r.TipoMovimientoSAPID ?? '—';
             const ordenSap = r.OrdenProcesoSAP ?? '';
-
             const dataOpId = r.DataOperacionID ?? null;
-
             const editableValidadaClass = isEditable ? 'editable-validada' : '';
             const editableSapClass = isEditable ? 'editable-sap' : '';
             const dataValue = valRaw ?? '';
 
-
-            // LÓGICA DE CAMBIO DE COLOR POR EQUIPO (Alternancia)
             if (r.EquipoID !== currentEquipoID) {
                 alternateColorIndex = (alternateColorIndex + 1) % colorClasses.length;
                 currentEquipoID = r.EquipoID;
             }
             const equipoColorClass = colorClasses[alternateColorIndex];
-
-            // 🚨 LÓGICA DE ESTILO MODIFICADA 🚨
-            let rowClass = ''; // Fila sin color de fondo
+            let rowClass = '';
             let materialDisplay = escapeHtml(materialDesc);
 
             if (r.TipoMaterial === "PRODUCCION" || r.TipoMaterial === "CONSUMO_EQUIPO") {
-                // Material de Producción (Padre) -> ¡Aplicar negrita directamente al texto!
-                rowClass = ''; // Se asegura que la fila NO tenga color de fondo
                 materialDisplay = `<span style="font-weight: bold;">${materialDisplay}</span>`;
             } else if (r.TipoMaterial === "CONSUMO") {
-                // Material de Consumo (Hijo) -> Sin color de fondo ni negrita, solo indentación
-                rowClass = '';
                 materialDisplay = `<span style="padding-left: 20px;">↳ ${materialDisplay}</span>`;
             }
 
             let rowHtml = `<tr class="${rowClass}">`;
-
-            // 1. Equipo (ROWSPAN, solo en la primera fila del grupo)
             if (r.IsFirstRow) {
-                // La celda del equipo mantiene el color alternado y la negrita.
                 rowHtml += `<td class="text-center ${equipoColorClass} font-weight-bold" data-col="equipo" data-id="${r.EquipoID}" rowspan="${r.RowCount}">${escapeHtml(r.Equipo || '—')}</td>`;
             }
 
-            // Celdas de Detalle
             rowHtml += `
             <td class="text-center">${renderCloseStatus(!!r.StatusClose)}</td>
             <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>
-            <td class="text-end" data-col="humedad">${fmtNumero(r.Humedad ?? 0, 2)}</td> <!-- ✅ NUEVA COLUMNA -->
+            <td class="text-end" data-col="humedad">${fmtNumero(r.Humedad ?? 0, 2)}</td>
             <td class="text-start" data-col="material">${materialDisplay}</td>
             <td class="text-end" data-col="pims" data-value="${pimsRaw ?? ''}">${pimsTxt}</td>
             <td class="text-end ${editableValidadaClass}" data-col="validada" data-id="${dataOpId}" data-value="${dataValue}">${valTxt}</td>
@@ -438,25 +358,19 @@ document.addEventListener('DOMContentLoaded', function () {
             <td class="text-center">${escapeHtml(sapMovShown)}</td>
             <td class="text-center ${editableSapClass}" data-col="orden-sap" data-id="${dataOpId}" data-value="${escapeHtml(ordenSap)}">${escapeHtml(ordenSap || '—')}</td>
            </tr>`;
-
-
             tbody += rowHtml;
         });
         tbody += '</tbody>';
 
         contenedorListado.innerHTML = `
-      <div class="table-responsive w-100" style="max-height:420px; overflow-y:auto; background-color:#fff; padding:10px; border-radius:10px;">
+      <div class="table-responsive w-100" style="max-height:560px; overflow-y:auto; background-color:#fff; padding:10px; border-radius:10px;">
         <table class="table table-bordered table-sm table-striped mb-0" style="background-color:#fff;">
           ${buildTheadHtml()}${tbody}
         </table>
       </div>`;
     }
-    // ------------------------------------------
 
-    // ... [Las funciones de Edición en Línea (restoreCellContent, startInlineEdit) VAN AQUÍ SIN CAMBIOS] ...
-    // ... [Las funciones de Guardado (saveValidatedQuantity, saveSapOrder) VAN AQUÍ SIN CAMBIOS] ...
-    // ... [Las funciones de Fetch Principal (cargarCapturas), Filtro e Inicialización (filtrarPorFecha, loadEquiposList) VAN AQUÍ SIN CAMBIOS] ...
-    // ... [Los Listeners y la inicialización VAN AQUÍ SIN CAMBIOS] ...
+    // --- Funciones de edición, guardado, fetch e inicialización sin cambios ---
 
     const restoreCellContent = function(cell, val, type = 'number') {
         cell.classList.remove('editing');
@@ -471,32 +385,25 @@ document.addEventListener('DOMContentLoaded', function () {
         const dataOpId = tdCell.dataset.id;
         const col = tdCell.dataset.col;
         const originalValue = tdCell.dataset.value;
-
         if (!dataOpId) return;
-
         tdCell.classList.add('editing');
         tdCell.textContent = '';
-
         const isQuantity = col === 'validada';
         const isSapOrder = col === 'orden-sap';
         const input = document.createElement('input');
-
         input.type = isQuantity ? 'number' : 'text';
         input.value = originalValue;
         input.classList.add('form-control', 'form-control-sm');
-
         if (isQuantity) {
             input.step = '0.001';
             input.min = '0';
             input.max = String(MAX_QUANTITY);
         }
-
         tdCell.appendChild(input);
         input.focus();
 
         const handleSave = () => {
             const newValue = input.value.trim();
-
             if (isQuantity) {
                 const numericValue = Number(newValue) || 0.0;
                 if (numericValue < 0 || numericValue > MAX_QUANTITY) {
@@ -512,7 +419,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const handleCancel = () => {
             restoreCellContent(tdCell, originalValue, isQuantity ? 'number' : 'text');
         };
-
         input.addEventListener('blur', handleSave);
         input.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
@@ -585,26 +491,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function cargarCapturas(params){
       const { fechaISO, equipoId } = params;
-
       showMsg('Cargando datos...', 'secondary');
-
       if (window.showLoading) window.showLoading();
-
       let url = `${URL_GET_OPERATION}?_fecha=${encodeURIComponent(fechaISO)}`;
-
       if(equipoId !== null && equipoId > 0){
           url += `&_equipoId=${encodeURIComponent(equipoId)}`;
       }
-
       fetch(url, { headers:{'Accept':'application/json'} })
         .then(r=>{
-            if(!r.ok) {
-                throw new Error('HTTP ' + r.status + (r.statusText ? ': ' + r.statusText : ''));
-            }
+            if(!r.ok) throw new Error('HTTP ' + r.status + (r.statusText ? ': ' + r.statusText : ''));
             return r.json();
         })
         .then(arr => {
-            // Aquí se aplica la agrupación y el ordenamiento Producción/Consumo
             const groupedAndFlattenedData = groupDataByEquipo(arr);
             renderTabla(groupedAndFlattenedData);
         })
@@ -633,7 +531,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-    // Listeners de filtro
     if(inputFecha){
       if(!inputFecha.value) inputFecha.value = defaultAyerISO();
       inputFecha.addEventListener('change', filtrarPorFecha);
@@ -642,13 +539,10 @@ document.addEventListener('DOMContentLoaded', function () {
       selectEquipoList.addEventListener('change', filtrarPorFecha);
     }
 
-    // Inicialización
     loadEquiposList();
 
-    // --- LISTENER GLOBAL PARA EDICIÓN EN LÍNEA ---
     contenedorListado.addEventListener('click', function(e) {
       const targetCell = e.target.closest('td.editable-validada, td.editable-sap');
-
       if (targetCell && !targetCell.classList.contains('editing')) {
           startInlineEdit(targetCell);
       }
@@ -656,6 +550,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 </script>
+
 
 
 @*Cerrar Reporte*@
@@ -733,81 +628,119 @@ function cerrarReporte() {
 @*Fecha*@
 
 <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const inputFecha = document.getElementById("fechaReporte");
+    document.addEventListener("DOMContentLoaded", function () {
+        const inputFecha = document.getElementById("fechaReporte");
 
-            // Obtener la fecha de ayer
-            const hoy = new Date();
-            hoy.setDate(hoy.getDate() - 1); // resta un día
+        // Obtener la fecha de ayer
+        const hoy = new Date();
+        hoy.setDate(hoy.getDate() - 1); // resta un día
 
-            // Formatear a yyyy-mm-dd
-            const año = hoy.getFullYear();
-            const mes = String(hoy.getMonth() + 1).padStart(2, "0");
-            const dia = String(hoy.getDate()).padStart(2, "0");
-            const fechaFormateada = `${año}-${mes}-${dia}`;
+        // Formatear a yyyy-mm-dd
+        const año = hoy.getFullYear();
+        const mes = String(hoy.getMonth() + 1).padStart(2, "0");
+        const dia = String(hoy.getDate()).padStart(2, "0");
+        const fechaFormateada = `${año}-${mes}-${dia}`;
 
-            // Asignar la fecha al input
-            inputFecha.value = fechaFormateada;
+        // Asignar la fecha al input
+        inputFecha.value = fechaFormateada;
 
-            // Ejecutar fetch automáticamente al cargar con la fecha de ayer
-            filtrarPorFecha();
-        });
+    });
 
-        function filtrarPorFecha() {
-            const fecha = document.getElementById("fechaReporte").value;
 
-            fetch(`/TuControlador/GetCapturasHumedad?fecha=${encodeURIComponent(fecha)}`)
-                .then(response => {
-                    if (!response.ok) throw new Error("Error al obtener datos");
-                    return response.json();
-                })
-                .then(data => {
-                    console.log("Datos recibidos:", data);
-                    // aquí puedes llenar tu tabla o contenedor con los datos
-                })
-                .catch(error => {
-                    console.error("Error en la solicitud:", error);
-                });
-        }
 </script>
 
 @*Loading*@
 
 <script>
 
-        (function () {
-            function showLoading() {
-                var m = document.getElementById('loadingModal');
-                if (m) m.style.display = 'block';
-            }
-            function hideLoading() {
-                var m = document.getElementById('loadingModal');
-                if (m) m.style.display = 'none';
-            }
-            // expone helpers por si quieres usarlos en otros fetch
-            window.showLoading = showLoading;
-            window.hideLoading = hideLoading;
+    (function () {
+        function showLoading() {
+            var m = document.getElementById('loadingModal');
+            if (m) m.style.display = 'block';
+        }
+        function hideLoading() {
+            var m = document.getElementById('loadingModal');
+            if (m) m.style.display = 'none';
+        }
+        // expone helpers por si quieres usarlos en otros fetch
+        window.showLoading = showLoading;
+        window.hideLoading = hideLoading;
 
-            // muestra lo antes posible (cuando el DOM ya esta parseado)
-            document.addEventListener('readystatechange', function () {
-                if (document.readyState === 'interactive') showLoading();
-            });
+        // muestra lo antes posible (cuando el DOM ya esta parseado)
+        document.addEventListener('readystatechange', function () {
+            if (document.readyState === 'interactive') showLoading();
+        });
 
-            // oculta cuando ya cargo todo (assets incluidos)
-            window.addEventListener('load', function () {
-                setTimeout(hideLoading, 200);
-            });
+        // oculta cuando ya cargo todo (assets incluidos)
+        window.addEventListener('load', function () {
+            setTimeout(hideLoading, 200);
+        });
 
-            // muestra al navegar/recargar (cuando cambias de pagina)
-            window.addEventListener('beforeunload', function () {
-                showLoading();
-            });
-        })();
+        // muestra al navegar/recargar (cuando cambias de pagina)
+        window.addEventListener('beforeunload', function () {
+            showLoading();
+        });
+    })();
 
 </script>
 
 
 
 
+<script>
+    function cargando() {
+        document.getElementById("loadingModal").style.display = "block";
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const btn = document.getElementById("btnDescargarEnergy");
+        const fechaInput = document.getElementById("fechaReporte");
+        const alertaOk = document.getElementById("alertsuccesclose");
+
+        btn.addEventListener("click", async function () {
+            // tomar fecha o usar hoy
+            let fecha = fechaInput?.value;
+            if (!fecha) {
+                const hoy = new Date();
+                const yyyy = hoy.getFullYear();
+                const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+                const dd = String(hoy.getDate()).padStart(2, '0');
+                fecha = `${yyyy}-${mm}-${dd}`;
+            }
+
+            const url = `/OperationDataToReport/EjecutarScriptProd?fecha=${encodeURIComponent(fecha)}`;
+
+            cargando();
+            btn.disabled = true;
+
+            try {
+                const resp = await fetch(url, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" }
+                });
+
+                // intentar leer json aun cuando no sea OK
+                let data = null;
+                try { data = await resp.json(); } catch (e) { }
+
+                if (!resp.ok || !data?.success) {
+                    const serverMsg = data?.message || data?.error || `Status ${resp.status}`;
+                    throw new Error(serverMsg);
+                }
+
+                // exito
+                alertaOk.style.display = "block";
+                setTimeout(() => { location.reload(); }, 1200);
+
+            } catch (err) {
+                console.error(err);
+                alert(err?.message || "Ocurrio un error al ejecutar el script.");
+            } finally {
+                document.getElementById("loadingModal").style.display = "none";
+                btn.disabled = false;
+            }
+        });
+    });
+</script>
 
 

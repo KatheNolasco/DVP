@@ -924,7 +924,6 @@
     <Content Include="Views\Account\Index.cshtml" />
     <Content Include="Views\Downtime\Index.cshtml" />
     <Content Include="Views\User\Index.cshtml" />
-    <Content Include="Views\OperationDataToReport\Index.cshtml" />
     <Content Include="Views\Inventory\Index.cshtml" />
     <Content Include="Views\Equipo\Index.cshtml" />
     <Content Include="Views\Material\Index.cshtml" />
