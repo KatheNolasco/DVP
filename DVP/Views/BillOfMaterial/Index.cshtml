@@ -360,6 +360,15 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        data.sort((a, b) => {
+            const aTieneMat = !!a._materialProduccionDescripcion;
+            const bTieneMat = !!b._materialProduccionDescripcion;
+            // Los que tienen material de producción van primero
+            if (aTieneMat && !bTieneMat) return -1;
+            if (!aTieneMat && bTieneMat) return 1;
+            return 0;
+        });
+
         let tbody='<tbody>';
         data.forEach(r=>{
             const prodSec = !!r._produccionSeca;

@@ -271,10 +271,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const groups = new Map();
         const finalRows = [];
 
-        // 1. Agrupación inicial por Equipo
+        // 1️⃣ Agrupar por equipo
         rows.forEach(r => {
             const key = `${r.EquipoID}`;
-
             if (!groups.has(key)) {
                 groups.set(key, {
                     EquipoID: r.EquipoID,
@@ -286,62 +285,58 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
-        // 2. Ordenamiento interno (Producción -> Consumo relacionado) y aplanamiento
-        Array.from(groups.values()).forEach(group => {
+        // 2️⃣ Ordenar grupos de equipos por ID (para respetar el orden de la BD)
+        const orderedGroups = Array.from(groups.values())
+            .sort((a, b) => a.EquipoID - b.EquipoID);
 
+        // 3️⃣ Procesar cada grupo
+        orderedGroups.forEach(group => {
             const detalles = group.Detalles;
 
-            // Identificar los materiales de producción (TipoMaterial === "PRODUCCION")
-            const produccion = detalles.filter(r => r.TipoMaterial === "PRODUCCION")
-                                     .sort((a, b) => a.Material.localeCompare(b.Material));
+            // Producción: los dejamos con su orden natural o alfabético
+            const produccion = detalles
+                .filter(r => r.TipoMaterial === "PRODUCCION")
+                .sort((a, b) => a.Material.localeCompare(b.Material));
 
-            // Identificar los materiales de consumo (TipoMaterial === "CONSUMO")
+            // Consumo: SIN reordenar, para mantener el orden del backend
             const consumo = detalles.filter(r => r.TipoMaterial === "CONSUMO");
+
+            // Consumo de equipo (sin padre)
+            const consumoEquipo = detalles
+                .filter(r => r.TipoMaterial === "CONSUMO_EQUIPO")
+                .sort((a, b) => a.Material.localeCompare(b.Material));
 
             const orderedDetails = [];
 
-            // Construir la lista ordenada: Producción, seguido de sus Consumos
+            // Primero cada material de producción y sus consumos relacionados
             produccion.forEach(prodItem => {
-                // A. Agregar el Material de Producción (el "padre")
                 orderedDetails.push(prodItem);
 
-                // B. Agregar los Materiales de Consumo relacionados (los "hijos")
-                const relatedConsumo = consumo
-                    .filter(c => c.MaterialProduccionPadreID === prodItem.MaterialID)
-                    .sort((a, b) => {
-                        // Orden personalizado por Clasificacion
-                        const orderMap = {
-                            'MATERIAL': 1,
-                            'COMBUSTIBLE': 2,
-                            'HORAS': 3,
-                            'KWH': 4,
-                            'SACOS': 5
-                        };
-                        const aOrder = orderMap[a.Clasificacion?.toUpperCase?.()] || 999;
-                        const bOrder = orderMap[b.Clasificacion?.toUpperCase?.()] || 999;
-
-                        if (aOrder !== bOrder) return aOrder - bOrder;
-                        return a.Material.localeCompare(b.Material);
-                    });
-
-
+                // Agregar los consumos relacionados exactamente en el orden recibido del backend
+                const relatedConsumo = consumo.filter(c => c.MaterialProduccionPadreID === prodItem.MaterialID);
                 orderedDetails.push(...relatedConsumo);
             });
 
-            // ... [Lógica de fallback omitida por brevedad] ...
+            // Por último los consumos sin padre (CONSUMO_EQUIPO)
+            consumoEquipo.forEach(item => {
+                orderedDetails.push({ ...item, TipoMaterial: "CONSUMO_EQUIPO" });
+            });
 
+            // Cargar al arreglo final
             const rowCount = orderedDetails.length;
             orderedDetails.forEach((detail, index) => {
                 finalRows.push({
                     ...detail,
                     RowCount: rowCount,
-                    IsFirstRow: index === 0,
+                    IsFirstRow: index === 0
                 });
             });
         });
 
         return finalRows;
     }
+
+
     // ------------------------------------------
 
     // ... [Las funciones getCurrentParams y buildTheadHtml VAN AQUÍ SIN CAMBIOS] ...
@@ -350,19 +345,21 @@ document.addEventListener('DOMContentLoaded', function () {
       const equipoId  = selectEquipoList && selectEquipoList.value ? Number(selectEquipoList.value) : null;
       return { fechaISO, equipoId };
     };
-    function buildTheadHtml(){
+    function buildTheadHtml() {
         return `<thead><tr>
-          <th class="text-center">Equipo</th>
-          <th class="text-center">Close</th>
-          <th class="text-center">Validate</th>
-          <th class="text-center">Material Consumido</th>
-          <th class="text-center">Cant PIMS</th>
-          <th class="text-center">Cant Validada</th>
-          <th class="text-center">Unidad</th>
-          <th class="text-center">Tipo Mov. SAP</th>
-          <th class="text-center">Orden Proceso SAP</th>
-        </tr></thead>`;
+      <th class="text-center">Equipo</th>
+      <th class="text-center">Close</th>
+      <th class="text-center">Validate</th>
+      <th class="text-center">Humedad (%)</th> <!-- ✅ NUEVA COLUMNA -->
+      <th class="text-center">Material Consumido</th>
+      <th class="text-center">Cant PIMS</th>
+      <th class="text-center">Cant Validada</th>
+      <th class="text-center">Unidad</th>
+      <th class="text-center">Tipo Mov. SAP</th>
+      <th class="text-center">Orden Proceso SAP</th>
+    </tr></thead>`;
     }
+
     // -----------------------------
 
     // === FUNCIÓN RENDER MODIFICADA (Negrita Asegurada para Producción y Sin Color para Consumo) ===
@@ -411,7 +408,7 @@ document.addEventListener('DOMContentLoaded', function () {
             let rowClass = ''; // Fila sin color de fondo
             let materialDisplay = escapeHtml(materialDesc);
 
-            if (r.TipoMaterial === "PRODUCCION") {
+            if (r.TipoMaterial === "PRODUCCION" || r.TipoMaterial === "CONSUMO_EQUIPO") {
                 // Material de Producción (Padre) -> ¡Aplicar negrita directamente al texto!
                 rowClass = ''; // Se asegura que la fila NO tenga color de fondo
                 materialDisplay = `<span style="font-weight: bold;">${materialDisplay}</span>`;
@@ -431,15 +428,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Celdas de Detalle
             rowHtml += `
-          <td class="text-center">${renderCloseStatus(!!r.StatusClose)}</td>
-          <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>
-          <td class="text-start" data-col="material">${materialDisplay}</td>
-          <td class="text-end" data-col="pims" data-value="${pimsRaw ?? ''}">${pimsTxt}</td>
-          <td class="text-end ${editableValidadaClass}" data-col="validada" data-id="${dataOpId}" data-value="${dataValue}">${valTxt}</td>
-          <td class="text-center" data-col="unidad">${escapeHtml(r.UnidadMedida || 'N/A')}</td>
-          <td class="text-center">${escapeHtml(sapMovShown)}</td>
-          <td class="text-center ${editableSapClass}" data-col="orden-sap" data-id="${dataOpId}" data-value="${escapeHtml(ordenSap)}">${escapeHtml(ordenSap || '—')}</td>
-        </tr>`;
+            <td class="text-center">${renderCloseStatus(!!r.StatusClose)}</td>
+            <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>
+            <td class="text-end" data-col="humedad">${fmtNumero(r.Humedad ?? 0, 2)}</td> <!-- ✅ NUEVA COLUMNA -->
+            <td class="text-start" data-col="material">${materialDisplay}</td>
+            <td class="text-end" data-col="pims" data-value="${pimsRaw ?? ''}">${pimsTxt}</td>
+            <td class="text-end ${editableValidadaClass}" data-col="validada" data-id="${dataOpId}" data-value="${dataValue}">${valTxt}</td>
+            <td class="text-center" data-col="unidad">${escapeHtml(r.UnidadMedida || 'N/A')}</td>
+            <td class="text-center">${escapeHtml(sapMovShown)}</td>
+            <td class="text-center ${editableSapClass}" data-col="orden-sap" data-id="${dataOpId}" data-value="${escapeHtml(ordenSap)}">${escapeHtml(ordenSap || '—')}</td>
+           </tr>`;
+
 
             tbody += rowHtml;
         });

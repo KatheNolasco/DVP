@@ -262,7 +262,7 @@ namespace DVP.Controllers
                     TipoMovimientoSAPID = TIPO_MOV_SAP_NA,
                     FechaReporte = fechaReporte,
                     StatusClose = false,
-                    StatusValidate = true
+                    StatusValidate = false
                 };
 
                 _dvpEntities.DataOperacion.Add(nuevo);
@@ -738,25 +738,22 @@ namespace DVP.Controllers
         {
             var day = (_fecha ?? DateTime.Today).Date;
 
-            var queryEquipos = _dvpEntities.Equipo
-                .Where(e => e.PlantaID == 1);
-
+            // ===== 1) Equipos =====
+            var queryEquipos = _dvpEntities.Equipo.Where(e => e.PlantaID == 1);
             if (_equipoId.HasValue && _equipoId.Value > 0)
-            {
                 queryEquipos = queryEquipos.Where(e => e.EquipoID == _equipoId.Value);
-            }
 
             var equiposSeleccionados = queryEquipos
                 .Select(e => new { e.EquipoID, EquipoDescripcion = e.Descripcion })
                 .ToList();
 
-            var equipoIdsSeleccionados = equiposSeleccionados
-                .Select(e => e.EquipoID)
-                .ToList();
+            var equipoIdsSeleccionados = equiposSeleccionados.Select(e => e.EquipoID).ToList();
 
+            // ===== 2) BOM =====
             var queryBillOfMaterial = _dvpEntities.BillOfMaterial
                 .Where(b => equipoIdsSeleccionados.Contains(b.EquipoID.Value));
 
+            // Producción
             var produccionHeaders = queryBillOfMaterial
                 .Where(b => b.MaterialProduccionID.HasValue)
                 .GroupBy(b => new { b.EquipoID, b.MaterialProduccionID, b.Material1.Descripcion })
@@ -769,6 +766,7 @@ namespace DVP.Controllers
                     MaterialProduccionPadreID = (int?)null
                 });
 
+            // Consumo con padre
             var consumoDetails = queryBillOfMaterial
                 .Where(b => b.MaterialConsumoID.HasValue && b.MaterialProduccionID.HasValue)
                 .Select(b => new
@@ -780,10 +778,25 @@ namespace DVP.Controllers
                     MaterialProduccionPadreID = b.MaterialProduccionID
                 });
 
+            // Consumo para equipo
+            var consumoParaEquipo = queryBillOfMaterial
+                .Where(b => b.MaterialConsumoID.HasValue && !b.MaterialProduccionID.HasValue)
+                .Select(b => new
+                {
+                    EquipoID = b.EquipoID.Value,
+                    MaterialID = b.MaterialConsumoID.Value,
+                    MaterialDescripcion = b.Material.Descripcion,
+                    TipoMaterial = "CONSUMO_EQUIPO",
+                    MaterialProduccionPadreID = (int?)null
+                });
+
+            // ===== 3) Unión =====
             var combinacionesMaterialesUnicas = produccionHeaders
                 .Union(consumoDetails)
+                .Union(consumoParaEquipo)
                 .ToList();
 
+            // ===== 4) Equipo x Material =====
             var combinacionesRequeridas = (
                 from equipo in equiposSeleccionados
                 join material in combinacionesMaterialesUnicas on equipo.EquipoID equals material.EquipoID
@@ -800,8 +813,9 @@ namespace DVP.Controllers
 
             var materialIdsRequeridos = combinacionesRequeridas.Select(c => c.MaterialID).ToList();
 
+            // ===== 5) DataOperacion principal =====
             var datosOperacionReales = _dvpEntities.DataOperacion
-                .Include("Material.ClasificacionMaterial") 
+                .Include("Material.ClasificacionMaterial")
                 .Include("UnidadMedida")
                 .Include("TipoMovimientoSAP")
                 .Where(d => DbFunctions.TruncateTime(d.FechaReporte) == day)
@@ -809,50 +823,76 @@ namespace DVP.Controllers
                 .Where(d => d.MaterialID.HasValue && materialIdsRequeridos.Contains(d.MaterialID.Value))
                 .ToList();
 
+            // ===== 6) Humedad (TipoOperacionID = HUMEDAD) =====
+            int humedadId = _dvpEntities.TipoOperacion
+                .Where(t => t.Descripcion.ToUpper() == "HUMEDAD")
+                .Select(t => t.TipoOperacionID)
+                .FirstOrDefault();
+
+            var datosHumedad = _dvpEntities.DataOperacion
+                .Where(d => DbFunctions.TruncateTime(d.FechaReporte) == day)
+                .Where(d => d.EquipoID.HasValue && equipoIdsSeleccionados.Contains(d.EquipoID.Value))
+                .Where(d => d.MaterialID.HasValue && materialIdsRequeridos.Contains(d.MaterialID.Value))
+                .Where(d => d.TipoOperacionID == humedadId)
+                .Select(d => new
+                {
+                    d.EquipoID,
+                    d.MaterialID,
+                    Humedad = d.CantidadValidada ?? d.CantidadPIMS ?? 0.0m
+                })
+                .ToList();
+
+            // ===== 7) JOIN con humedad =====
             var resultados = combinacionesRequeridas
-                .Select(comb => new
+                .Select(comb =>
                 {
-                    Data = datosOperacionReales.FirstOrDefault(d =>
-                                d.EquipoID == comb.EquipoID &&
-                                d.MaterialID == comb.MaterialID),
-                    Combinacion = comb
+                    var data = datosOperacionReales.FirstOrDefault(d =>
+                        d.EquipoID == comb.EquipoID && d.MaterialID == comb.MaterialID);
+
+                    var hum = datosHumedad.FirstOrDefault(h =>
+                        h.EquipoID == comb.EquipoID && h.MaterialID == comb.MaterialID);
+
+                    return new
+                    {
+                        EquipoID = comb.EquipoID,
+                        Equipo = comb.EquipoDescripcion,
+                        MaterialID = comb.MaterialID,
+                        Material = comb.MaterialDescripcion,
+                        TipoMaterial = comb.TipoMaterial,
+                        MaterialProduccionPadreID = comb.MaterialProduccionPadreID,
+                        DataOperacionID = data?.DataOperacionID,
+                        CantidadPIMS = data?.CantidadPIMS ?? 0.0m,
+                        CantidadValidada = data?.CantidadValidada ?? 0.0m,
+                        UnidadMedida = data?.UnidadMedida?.Descripcion ?? "N/A",
+                        TipoMovimientoSAPID = data?.TipoMovimientoSAPID,
+                        TipoMovimientoSAP = data?.TipoMovimientoSAP?.Descripcion,
+                        FechaReporte = data?.FechaReporte ?? day,
+                        StatusClose = data?.StatusClose ?? false,
+                        StatusValidate = data?.StatusValidate ?? false,
+                        OrdenProcesoSAP = data?.OrdenProcesoSAP,
+                        Clasificacion = data?.Material?.ClasificacionMaterial?.Descripcion ?? "N/A",
+                        Humedad = hum?.Humedad ?? 0.0m // <-- NUEVA COLUMNA
+                    };
                 })
-                .Select(x => new
-                {
-                    EquipoID = x.Combinacion.EquipoID,
-                    Equipo = x.Combinacion.EquipoDescripcion,
-                    MaterialID = x.Combinacion.MaterialID,
-                    Material = x.Combinacion.MaterialDescripcion,
-                    TipoMaterial = x.Combinacion.TipoMaterial,
-                    MaterialProduccionPadreID = x.Combinacion.MaterialProduccionPadreID,
-                    DataOperacionID = x.Data?.DataOperacionID,
-                    CantidadPIMS = x.Data?.CantidadPIMS ?? 0.0m,
-                    CantidadPims = x.Data?.CantidadPIMS ?? 0.0m,
-                    CantidadValidada = x.Data?.CantidadValidada ?? 0.0m,
-                    UnidadMedida = x.Data?.UnidadMedida?.Descripcion ?? "N/A",
-                    TipoMovimientoSAPID = x.Data?.TipoMovimientoSAPID,
-                    TipoMovimientoSAP = x.Data?.TipoMovimientoSAP?.Descripcion,
-                    FechaReporte = x.Data?.FechaReporte ?? day,
-                    StatusClose = x.Data?.StatusClose ?? false,
-                    StatusValidate = x.Data?.StatusValidate ?? false,
-                    OrdenProcesoSAP = x.Data?.OrdenProcesoSAP,
-                    Clasificacion = x.Data?.Material?.ClasificacionMaterial?.Descripcion ?? "N/A"
-                })
-                // ✅ ORDEN PERSONALIZADO AQUÍ
-                .OrderBy(x =>
+                // ===== 8) Ordenamiento =====
+                .OrderBy(x => x.Equipo)
+                .ThenBy(x =>
+                    x.TipoMaterial == "PRODUCCION" ? 1 :
+                    x.TipoMaterial == "CONSUMO" ? 2 :
+                    x.TipoMaterial == "CONSUMO_EQUIPO" ? 3 : 4
+                )
+                .ThenBy(x =>
                     x.Clasificacion == "MATERIAL" ? 1 :
                     x.Clasificacion == "COMBUSTIBLE" ? 2 :
                     x.Clasificacion == "HORAS" ? 3 :
                     x.Clasificacion == "KWH" ? 4 :
                     x.Clasificacion == "SACOS" ? 5 : 6
                 )
-                .ThenBy(x => x.Equipo)
                 .ThenBy(x => x.Material)
                 .ToList();
 
             return Json(resultados, JsonRequestBehavior.AllowGet);
         }
-
 
 
         public static string RunPythonScriptKWH(string fecha = null)
