@@ -94,6 +94,12 @@
         --bs-table-bg: #e6ffec; /* Un verde muy claro, casi blanco verdoso */
         --bs-table-accent-bg: var(--bs-table-bg);
     }
+
+
+    .produccion-row td {
+        color: #008f39 !important; /* verde oscuro para el texto */
+        font-weight: 700 !important; /* negrita */
+    }
 </style>
 
 
@@ -254,7 +260,23 @@ document.addEventListener('DOMContentLoaded', function () {
             const produccion = detalles
                 .filter(r => r.TipoMaterial === "PRODUCCION")
                 .sort((a, b) => a.Material.localeCompare(b.Material));
-            const consumo = detalles.filter(r => r.TipoMaterial === "CONSUMO");
+            const consumo = detalles
+                .filter(r => r.TipoMaterial === "CONSUMO")
+                .sort((a, b) => {
+                    const order = {
+                        "MATERIAL": 1,
+                        "COMBUSTIBLE": 2,
+                        "KWH": 3,
+                        "HORAS": 4,
+                        "SACOS": 5
+                    };
+
+                    const aOrder = order[a.Clasificacion?.toUpperCase()] ?? 99;
+                    const bOrder = order[b.Clasificacion?.toUpperCase()] ?? 99;
+
+                    if (aOrder !== bOrder) return aOrder - bOrder;
+                    return a.Material.localeCompare(b.Material);
+                });
             const consumoEquipo = detalles
                 .filter(r => r.TipoMaterial === "CONSUMO_EQUIPO")
                 .sort((a, b) => a.Material.localeCompare(b.Material));
@@ -262,7 +284,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
             produccion.forEach(prodItem => {
                 orderedDetails.push(prodItem);
-                const relatedConsumo = consumo.filter(c => c.MaterialProduccionPadreID === prodItem.MaterialID);
+                const relatedConsumo = consumo
+                    .filter(c => c.MaterialProduccionPadreID === prodItem.MaterialID)
+                    .sort((a, b) => {
+                        const order = {
+                            "MATERIAL": 1,
+                            "COMBUSTIBLE": 2,
+                            "KWH": 3,
+                            "HORAS": 4,
+                            "OTROS": 5
+                        };
+                        const aOrder = order[a.Clasificacion?.toUpperCase()] ?? 99;
+                        const bOrder = order[b.Clasificacion?.toUpperCase()] ?? 99;
+
+                        if (aOrder !== bOrder) return aOrder - bOrder;
+                        return a.Material.localeCompare(b.Material);
+                    });
                 orderedDetails.push(...relatedConsumo);
             });
 
@@ -297,12 +334,15 @@ document.addEventListener('DOMContentLoaded', function () {
       <th class="text-center">Material Consumido</th>
       <th class="text-center">Cant PIMS</th>
       <th class="text-center">Cant Validada</th>
+      <th class="text-center">Cant PIMS Humedad</th>
+      <th class="text-center">Cant Validada Humedad</th>
       <th class="text-center">Unidad</th>
       <th class="text-center">Tipo Mov. SAP</th>
       <th class="text-center">Orden Proceso SAP</th>
     </tr></thead>`;
     }
 
+    /** ✅ AQUI ESTA LA MODIFICACIÓN */
     function renderTabla(rows) {
         const data = Array.isArray(rows) ? rows : [];
 
@@ -315,7 +355,13 @@ document.addEventListener('DOMContentLoaded', function () {
         let alternateColorIndex = 0;
 
         data.forEach(r => {
-            const pimsRaw = getPimsRaw(r);
+
+            /** ✅ NO MOSTRAR HUMEDAD EN CANT PIMS */
+            let pimsRaw = getPimsRaw(r);
+            if (r.TipoOperacionID === 11) {   // humedad
+                pimsRaw = null;
+            }
+
             const isEditable = !!r.DataOperacionID;
             const valRaw = r.DataOperacionID !== null ? (r.CantidadValidada !== undefined ? r.CantidadValidada : null) : null;
             const pimsTxt = (pimsRaw === null || pimsRaw === undefined) ? '—' : fmtNumero(pimsRaw, 3);
@@ -336,10 +382,13 @@ document.addEventListener('DOMContentLoaded', function () {
             let rowClass = '';
             let materialDisplay = escapeHtml(materialDesc);
 
-            if (r.TipoMaterial === "PRODUCCION" || r.TipoMaterial === "CONSUMO_EQUIPO") {
-                materialDisplay = `<span style="font-weight: bold;">${materialDisplay}</span>`;
+            if (r.TipoMaterial === "PRODUCCION") {
+                rowClass = 'produccion-row';
+                materialDisplay = `<span style="font-weight:bold;">${materialDisplay}</span>`;
             } else if (r.TipoMaterial === "CONSUMO") {
                 materialDisplay = `<span style="padding-left: 20px;">↳ ${materialDisplay}</span>`;
+            } else if (r.TipoMaterial === "CONSUMO_EQUIPO") {
+                materialDisplay = `<span style="font-weight:bold;">${materialDisplay}</span>`;
             }
 
             let rowHtml = `<tr class="${rowClass}">`;
@@ -350,18 +399,26 @@ document.addEventListener('DOMContentLoaded', function () {
             rowHtml += `
             <td class="text-center">${renderCloseStatus(!!r.StatusClose)}</td>
             <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>
-            <td class="text-end" data-col="humedad">${fmtNumero(r.Humedad ?? 0, 2)}</td>
+
+            <!-- ✅ LA HUMEDAD SIGUE MOSTRÁNDOSE AQUÍ -->
+            <td class="text-end" data-col="humedad">${fmtNumero(r.Humedad ?? 0, 2)}%</td>
+
             <td class="text-start" data-col="material">${materialDisplay}</td>
+
+            <!-- ❌ CANT PIMS YA NO MUESTRA HUMEDAD -->
             <td class="text-end" data-col="pims" data-value="${pimsRaw ?? ''}">${pimsTxt}</td>
+
             <td class="text-end ${editableValidadaClass}" data-col="validada" data-id="${dataOpId}" data-value="${dataValue}">${valTxt}</td>
+            <td class="text-end" data-col="">0</td>
+            <td class="text-end" data-col="">0</td>
             <td class="text-center" data-col="unidad">${escapeHtml(r.UnidadMedida || 'N/A')}</td>
             <td class="text-center">${escapeHtml(sapMovShown)}</td>
             <td class="text-center ${editableSapClass}" data-col="orden-sap" data-id="${dataOpId}" data-value="${escapeHtml(ordenSap)}">${escapeHtml(ordenSap || '—')}</td>
            </tr>`;
             tbody += rowHtml;
         });
-        tbody += '</tbody>';
 
+        tbody += '</tbody>';
         contenedorListado.innerHTML = `
       <div class="table-responsive w-100" style="max-height:560px; overflow-y:auto; background-color:#fff; padding:10px; border-radius:10px;">
         <table class="table table-bordered table-sm table-striped mb-0" style="background-color:#fff;">
@@ -371,7 +428,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // --- Funciones de edición, guardado, fetch e inicialización sin cambios ---
-
     const restoreCellContent = function(cell, val, type = 'number') {
         cell.classList.remove('editing');
         if (type === 'number') {
@@ -550,6 +606,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 </script>
+
 
 
 
