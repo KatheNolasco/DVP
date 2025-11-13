@@ -361,5 +361,28 @@ namespace DVP.Controllers
                 return Json(new { success = false, message = "Error al obtener Materiales Producidos: " + ex.Message }, JsonRequestBehavior.AllowGet);
             }
         }
+
+
+        [HttpPost]
+        public JsonResult EliminarMaterial(int id)
+        {
+            try
+            {
+                var material = _dvpEntities.Material
+                    .FirstOrDefault(t => t.MaterialID == id);
+
+                if (material == null)
+                    return Json(new { ok = false, msg = "Material no encontrado" }, JsonRequestBehavior.AllowGet);
+
+                _dvpEntities.Material.Remove(material);
+                _dvpEntities.SaveChanges();
+
+                return Json(new { ok = true }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, msg = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
     }
 }

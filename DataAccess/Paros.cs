@@ -42,10 +42,10 @@ namespace DataAccess
         public virtual ICollection<CierreStatus> CierreStatus { get; set; }
         public virtual Clasificacion Clasificacion { get; set; }
         public virtual ComponenteEquipo ComponenteEquipo { get; set; }
+        public virtual Equipo Equipo { get; set; }
         public virtual SubEquipo SubEquipo { get; set; }
         public virtual TipoEvento TipoEvento { get; set; }
         public virtual TipoFalla TipoFalla { get; set; }
         public virtual Usuario Usuario { get; set; }
-        public virtual Equipo Equipo { get; set; }
     }
 }

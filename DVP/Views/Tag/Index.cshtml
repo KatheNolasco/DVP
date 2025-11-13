@@ -464,6 +464,9 @@
     document.getElementById("creartag")?.addEventListener("click", crearEquipoNuevo);
 
     function crearEquipoNuevo() {
+
+        cargando(); // Mostrar modal de cargando
+
         const descripcion = document.getElementById("_descripcion")?.value.trim();
         const tagName = document.getElementById("_tagName")?.value.trim();
         const tagCode = document.getElementById("_tagCode")?.value.trim();
@@ -471,6 +474,7 @@
         const equipoVal = document.getElementById("_equipoId")?.value;
         const materialVal = document.getElementById("_materialId")?.value;
         const materialProducidoVal = document.getElementById("_materialProducidoId")?.value;
+
         const tipoOperacionId = tipoOperacionVal ? parseInt(tipoOperacionVal) : null;
         const equipoId = equipoVal ? parseInt(equipoVal) : null;
         const materialId = materialVal ? parseInt(materialVal) : null;
@@ -478,8 +482,10 @@
         const activo = document.getElementById("_activo")?.checked;
         const url = document.getElementById("creartag")?.getAttribute("data-url");
 
+        // VALIDACIÓN CAMPOS OBLIGATORIOS
         if (!descripcion || !tagName || !tagCode || !tipoOperacionId || !equipoId) {
             alert("Complete los campos requeridos.");
+            document.getElementById("loadingModal").style.display = "none";
             return;
         }
 
@@ -499,27 +505,51 @@
             headers: { "Content-Type": "application/json; charset=utf-8" },
             body: JSON.stringify(data)
         })
-        .then(r => r.json())
-        .then(result => {
-            if (result.success) {
-                const alertEl = document.getElementById("alertSuccess");
-                if (alertEl) alertEl.style.display = "block";
-                setTimeout(() => {
-                    if (alertEl) alertEl.style.display = "none";
+            .then(r => r.json())
+            .then(result => {
+
+                if (result.success) {
+
+                    // ÉXITO
+                    const alertEl = document.getElementById("alertSuccess");
+                    if (alertEl) alertEl.style.display = "block";
+
+                    setTimeout(() => {
+                        if (alertEl) alertEl.style.display = "none";
+
+                        const modal = bootstrap.Modal.getInstance(document.getElementById("newTag"));
+                        if (modal) modal.hide();
+
+                        document.querySelector("#newTag form")?.reset();
+
+                        if (typeof loadEquipmentTable === "function") loadEquipmentTable();
+
+                    }, 1500);
+
+                } else {
+
+                    // ERROR DEL BACKEND (ej: TAG DUPLICADO)
+                    alert(result.message || "Ocurrió un error al crear el tag.");
+
+                    // Mantener modal abierto para corregir
                     const modal = bootstrap.Modal.getInstance(document.getElementById("newTag"));
-                    if (modal) modal.hide();
-                    document.querySelector("#newTag form")?.reset();
-                    if (typeof loadEquipmentTable === "function") loadEquipmentTable();
-                }, 1500);
-            } else {
-                alert(result.message || "Ocurrio un error al crear el tag.");
-            }
-        })
-        .catch(err => {
-            console.error("Error:", err);
-            alert("Ocurrio un error al enviar los datos.");
-        });
+                    if (modal) modal.show();
+                }
+            })
+            .catch(err => {
+                console.error("Error:", err);
+                alert("Ocurrió un error al enviar los datos.");
+
+                // Mantener modal abierto para corregir
+                const modal = bootstrap.Modal.getInstance(document.getElementById("newTag"));
+                if (modal) modal.show();
+            })
+            .finally(() => {
+                // SIEMPRE apaga el modal de cargando
+                document.getElementById("loadingModal").style.display = "none";
+            });
     }
+
 
 
     //______________________________________________________________________________________Tag List_______________________________________________
@@ -647,10 +677,17 @@
                             <td class="text-center">${item._equipoDescripcion || ''}</td>
                             <td class="text-center">${item._materialProducidoDescripcion || ''}</td>
                             <td class="text-center bg-white">
-                                <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditarTag(${item._tagEquipoId})">
-                                    <i class="bi bi-pencil me-2"></i>
-                                </a>
+                                <div class="d-inline-flex justify-content-center align-items-center gap-2">
+                                    <a href="javascript:void(0)" onclick="abrirModalEditarTag(${item._tagEquipoId})">
+                                        <i class="bi bi-pencil text-success"></i>
+                                    </a>
+                                    <a href="javascript:void(0)" onclick="eliminarTag(${item._tagEquipoId})">
+                                        <i class="bi bi-trash3 text-danger"></i>
+                                    </a>
+                                </div>
                             </td>
+
+
                         `;
                         tbody.appendChild(row);
                     });
@@ -798,43 +835,63 @@
     }
 
     function submitEditEquipmentForm() {
-        cargando();
-        const data = {
-            _tagEquipoId: document.getElementById("tagIdhidden")?.value,
-            _descripcion: document.getElementById("_descripcioneditar")?.value,
-            _tagName: document.getElementById("_tagNameeditar")?.value,
-            _tagCode: document.getElementById("_tagCodeeditar")?.value,
-            _tipoOperacionId: document.getElementById("_tipoOperacionIdeditar")?.value,
-            _equipoId: document.getElementById("_equipoIdeditar")?.value,
-            _activo: document.getElementById("_activoeditar")?.checked,
-            _materialId: document.getElementById("_materialIdeditar")?.value,
-            _materialProducidoId: document.getElementById("_materialProducidoIdeditar")?.value,
-        };
+    cargando();
 
-        fetch('@Url.Action("EditTag", "Tag")', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        })
-        .then(res => res.json())
-        .then(response => {
-            if (response.success) {
-                document.getElementById("alertEditeSuccesseditar").style.display = "block";
-                setTimeout(() => {
-                    document.getElementById("alertEditeSuccesseditar").style.display = "none";
-                    const modal = bootstrap.Modal.getInstance(document.getElementById("editTag"));
-                    modal.hide();
-                    loadEquipmentTable();
-                }, 2000);
-            } else {
-                alert("Error: " + response.message);
-            }
-        })
-        .catch(error => {
-            console.error("Error al enviar datos:", error);
-            alert("Ocurrió un error al enviar los datos.");
-        });
-    }
+    const data = {
+        _tagEquipoId: document.getElementById("tagIdhidden")?.value,
+        _descripcion: document.getElementById("_descripcioneditar")?.value,
+        _tagName: document.getElementById("_tagNameeditar")?.value,
+        _tagCode: document.getElementById("_tagCodeeditar")?.value,
+        _tipoOperacionId: document.getElementById("_tipoOperacionIdeditar")?.value,
+        _equipoId: document.getElementById("_equipoIdeditar")?.value,
+        _activo: document.getElementById("_activoeditar")?.checked,
+        _materialId: document.getElementById("_materialIdeditar")?.value,
+        _materialProducidoId: document.getElementById("_materialProducidoIdeditar")?.value,
+    };
+
+    fetch('@Url.Action("EditTag", "Tag")', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(response => {
+
+        if (response.success) {
+            // EXITO
+            document.getElementById("alertEditeSuccesseditar").style.display = "block";
+
+            setTimeout(() => {
+                document.getElementById("alertEditeSuccesseditar").style.display = "none";
+                const modal = bootstrap.Modal.getInstance(document.getElementById("editTag"));
+                modal.hide();
+                loadEquipmentTable();
+            }, 2000);
+
+        } else {
+
+            // ERROR DEL BACKEND (ej: TAG REPETIDO)
+            alert("Error: " + response.message);
+
+            // Permitir escribir de nuevo
+            const modal = bootstrap.Modal.getInstance(document.getElementById("editTag"));
+            modal.show();
+        }
+    })
+    .catch(error => {
+        console.error("Error al enviar datos:", error);
+        alert("Ocurrió un error al enviar los datos.");
+
+        // Reactivar el modal si se cerró por accidente
+        const modal = bootstrap.Modal.getInstance(document.getElementById("editTag"));
+        modal.show();
+    })
+    .finally(() => {
+        // SIEMPRE quitar el modal de CARGANDO
+        document.getElementById("loadingModal").style.display = "none";
+    });
+}
+
 
     document.addEventListener('DOMContentLoaded', function () {
         const selectEquipo = document.getElementById('selectFiltroEquipo');
@@ -878,6 +935,9 @@
         });
     });
 
+
+    //____________________________________________________________________________________________Buscar Tags_______________________________________________________
+
     document.getElementById("_buscar")?.addEventListener("keyup", function () {
         const filtro = this.value.toLowerCase();
         const filas = document.querySelectorAll("#downtimeTableBody tr");
@@ -919,7 +979,58 @@
             countElement.textContent = visibles;
         }
     });
-</script>   
 
 
-        
+    //____________________________________________________________________________________________Eliminar Tags_______________________________________________________
+
+    async function eliminarTag(id) {
+
+        // 1) Primera confirmación
+        const seguro = confirm("¿Estas seguro que quieres eliminar este tag?");
+        if (!seguro) return;
+
+        // 2) Requerir palabra ELIMINAR
+        const palabra = prompt("Para eliminar este tag escribe: ELIMINAR");
+
+        if (!palabra || palabra.trim() !== "ELIMINAR") {
+            alert("Debes escribir la palabra 'ELIMINAR' para completar la eliminación.");
+            return;
+        }
+
+        try {
+            const resp = await fetch("/Tag/EliminarTag", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ id: id })
+            });
+
+            if (!resp.ok) {
+                alert("Error eliminando el tag");
+                return;
+            }
+
+            const data = await resp.json();
+
+            if (data.ok) {
+                alert("Tag eliminado correctamente");
+                // refrescar lista o recargar tabla
+                location.reload();
+            } else {
+                alert("No se pudo eliminar: " + data.msg);
+            }
+
+        } catch (e) {
+            alert("Error: " + e.message);
+        }
+    }
+
+
+
+</script>
+
+
+
+
+

@@ -420,14 +420,19 @@
     document.getElementById("crear").addEventListener("click", crearNuevo);
 
     function crearNuevo() {
+
+        cargando(); // Mostrar modal de cargando inmediatamente
+
         // Obtener valores del formulario
         const descripcion = document.getElementById("_descripcion").value.trim();
         const codSAPNuevo = document.getElementById("_codSAPNuevo").value.trim();
         const codOldSAP = document.getElementById("_codOldSAP").value.trim();
         const idStock = document.getElementById("_idStock").value.trim();
+
         const clasificacionMaterialID = document.getElementById("_clasificacionMaterialID").value;
         const plantaId = document.getElementById("_plantaId").value;
         const unidadMedidaId = document.getElementById("_unidadMedidaId").value;
+
         const producido = document.getElementById("_producido").checked;
         const consumido = document.getElementById("_consumido").checked;
         const alterno = document.getElementById("_alterno").checked;
@@ -452,39 +457,54 @@
             _consumido: consumido
         };
 
-        // Enviar al backend vía fetch
         fetch(url, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         })
             .then(response => response.json())
             .then(result => {
-                if (result.success) {
-                    // Mostrar alerta
-                    document.getElementById("alertSuccess").style.display = "block";
 
-                    // Ocultar modal y limpiar formulario después de unos segundos
+                if (result.success) {
+                    // EXITO
+                    const alertEl = document.getElementById("alertSuccess");
+                    alertEl.style.display = "block";
+
                     setTimeout(() => {
-                        document.getElementById("alertSuccess").style.display = "none";
-                        var modal = bootstrap.Modal.getInstance(document.getElementById("newMaterial"));
+                        alertEl.style.display = "none";
+
+                        const modal = bootstrap.Modal.getInstance(document.getElementById("newMaterial"));
                         modal.hide();
+
                         document.querySelector("#newMaterial form").reset();
 
-                        //recargar la tabla
-                        loadTable();
+                        loadTable(); // Recargar tabla
                     }, 1500);
+
                 } else {
+                    // ERROR DEL BACKEND
                     alert(result.message || "Ocurrió un error al crear el material.");
+
+                    // Mantener modal abierto para seguir corrigiendo
+                    const modal = bootstrap.Modal.getInstance(document.getElementById("newMaterial"));
+                    if (modal) modal.show();
                 }
+
             })
             .catch(error => {
                 console.error("Error al enviar el formulario:", error);
                 alert("Ocurrió un error al enviar los datos.");
+
+                // Volver a habilitar el formulario
+                const modal = bootstrap.Modal.getInstance(document.getElementById("newMaterial"));
+                if (modal) modal.show();
+            })
+            .finally(() => {
+                // SIEMPRE ocultar modal cargando
+                document.getElementById("loadingModal").style.display = "none";
             });
     }
+
 
     document.getElementById('formNewMaterial').addEventListener('submit', function (e) {
         if (!this.checkValidity()) {
@@ -547,9 +567,14 @@
                        ${Consumido}
                     </td>
                     <td class="text-center bg-white">
-                        <a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalEditar(${item._materialID})">
-                            <i class="bi bi-pencil me-2"></i>
-                        </a>
+                        <div class="d-inline-flex justify-content-center align-items-center gap-2">
+                            <a href="javascript:void(0)" onclick="abrirModalEditar(${item._materialID})">
+                                <i class="bi bi-pencil text-success"></i>
+                            </a>
+                            <a href="javascript:void(0)" onclick="eliminarMaterial(${item._materialID})">
+                                <i class="bi bi-trash3 text-danger"></i>
+                            </a>
+                        </div>
                     </td>
                 `;
 
@@ -705,66 +730,83 @@
 }
 
   function submitEditForm() {
-  cargando();
+    cargando();
 
-  const plantaVal = document.getElementById('_plantaIdeditar')?.value || '';
-  const plantaID = plantaVal === '' ? null : parseInt(plantaVal, 10);
+    const plantaVal = document.getElementById('_plantaIdeditar')?.value || '';
+    const plantaID = plantaVal === '' ? null : parseInt(plantaVal, 10);
 
-  const clasifVal = document.getElementById('_clasificacionMaterialIdeditar')?.value || '';
-  const materialIdVal = document.getElementById('materialidhidden')?.value || '';
+    const clasifVal = document.getElementById('_clasificacionMaterialIdeditar')?.value || '';
+    const materialIdVal = document.getElementById('materialidhidden')?.value || '';
 
-  // Unidad de Medida
-  const umVal = document.getElementById('_unidadMedidaIdeditar')?.value || '';
-  const unidadMedidaID = umVal === '' ? null : parseInt(umVal, 10);
+    const umVal = document.getElementById('_unidadMedidaIdeditar')?.value || '';
+    const unidadMedidaID = umVal === '' ? null : parseInt(umVal, 10);
 
-  const data = {
-    _materialId: materialIdVal === '' ? null : parseInt(materialIdVal, 10),
-    _descripcion: (document.getElementById('_descripcioneditar').value || '').trim(),
-    _codSAPNuevo: (document.getElementById('_codSAPNuevoeditar').value || '').trim(),
-    _codOldSAP: (document.getElementById('_codOldSAPeditar').value || '').trim(),
-    _producido: document.getElementById('_producidoeditar').checked,
-    _consumido: document.getElementById('_consumidoeditar').checked,
-    _clasificacionMaterialID: clasifVal === '' ? null : parseInt(clasifVal, 10),
-    _activo: document.getElementById('_activoedit').checked,
-    _alterno: document.getElementById('_alternoeditar').checked,
-    _afectaInventario: document.getElementById('_afectaInventarioeditar').checked,
-    _idStock: (document.getElementById('_idStockeditar').value || '').trim(),
-    _plantaID: plantaID,
-    _unidadMedidaID: unidadMedidaID   // <<< AQUI se envía la UM
-  };
+    const data = {
+        _materialId: materialIdVal === '' ? null : parseInt(materialIdVal, 10),
+        _descripcion: (document.getElementById('_descripcioneditar').value || '').trim(),
+        _codSAPNuevo: (document.getElementById('_codSAPNuevoeditar').value || '').trim(),
+        _codOldSAP: (document.getElementById('_codOldSAPeditar').value || '').trim(),
+        _producido: document.getElementById('_producidoeditar').checked,
+        _consumido: document.getElementById('_consumidoeditar').checked,
+        _clasificacionMaterialID: clasifVal === '' ? null : parseInt(clasifVal, 10),
+        _activo: document.getElementById('_activoedit').checked,
+        _alterno: document.getElementById('_alternoeditar').checked,
+        _afectaInventario: document.getElementById('_afectaInventarioeditar').checked,
+        _idStock: (document.getElementById('_idStockeditar').value || '').trim(),
+        _plantaID: plantaID,
+        _unidadMedidaID: unidadMedidaID
+    };
 
-  fetch('@Url.Action("Edit", "Material")', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-    credentials: 'same-origin'
-  })
-  .then(res => {
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    return res.json();
-  })
-  .then(response => {
-    if (response.success) {
-      document.getElementById('alertEditSuccess').style.display = 'block';
-      setTimeout(() => {
-        document.getElementById('alertEditSuccess').style.display = 'none';
+    fetch('@Url.Action("Edit", "Material")', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        credentials: 'same-origin'
+    })
+    .then(res => res.json())
+    .then(response => {
+
+        if (response.success) {
+
+            // ÉXITO
+            const alertEl = document.getElementById('alertEditSuccess');
+            alertEl.style.display = 'block';
+
+            setTimeout(() => {
+                alertEl.style.display = 'none';
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editar'));
+                if (modal) modal.hide();
+
+                location.reload();
+            }, 1200);
+
+        } else {
+
+            // ERROR DEL BACKEND
+            alert('Error: ' + (response.message || 'No se pudo guardar los cambios.'));
+
+            // Mantiene el modal abierto para corregir
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editar'));
+            if (modal) modal.show();
+        }
+
+    })
+    .catch(error => {
+        console.error('Error al enviar datos:', error);
+        alert('Ocurrió un error al enviar los datos.');
+
+        // Dejar modal abierto para reintentar
         const modal = bootstrap.Modal.getInstance(document.getElementById('editar'));
-        if (modal) modal.hide();
-        location.reload();
-      }, 1200);
-    } else {
-      alert('Error: ' + (response.message || 'No se pudo guardar'));
-    }
-  })
-  .catch(error => {
-    console.error('Error al enviar datos:', error);
-    alert('Ocurrio un error al enviar los datos.');
-  })
-  .finally(() => {
-    const lm = document.getElementById('loadingModal');
-    if (lm) lm.style.display = 'none';
-  });
+        if (modal) modal.show();
+    })
+    .finally(() => {
+        // SIEMPRE cerrar modal de cargando
+        const lm = document.getElementById('loadingModal');
+        if (lm) lm.style.display = 'none';
+    });
 }
+
 
 
 
@@ -780,6 +822,53 @@
             fila.style.display = textoFila.includes(filtro) ? "" : "none";
         });
     });
+
+
+
+    //____________________________________________________________________________________________Eliminar Tags_______________________________________________________
+
+    async function eliminarMaterial(id) {
+
+        // 1) Primera confirmación
+        const seguro = confirm("¿Estas seguro que quieres eliminar este material?");
+        if (!seguro) return;
+
+        // 2) Requerir palabra ELIMINAR
+        const palabra = prompt("Para eliminar este material escribe: ELIMINAR");
+
+        if (!palabra || palabra.trim() !== "ELIMINAR") {
+            alert("Debes escribir la palabra 'ELIMINAR' para completar la eliminación.");
+            return;
+        }
+
+        try {
+            const resp = await fetch("/Material/EliminarMaterial", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ id: id })
+            });
+
+            if (!resp.ok) {
+                alert("Error eliminando el material");
+                return;
+            }
+
+            const data = await resp.json();
+
+            if (data.ok) {
+                alert("Material eliminado correctamente");
+                // refrescar lista o recargar tabla
+                location.reload();
+            } else {
+                alert("No se pudo eliminar: " + data.msg);
+            }
+
+        } catch (e) {
+            alert("Error: " + e.message);
+        }
+    }
 
 
 </script>

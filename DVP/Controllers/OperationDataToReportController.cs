@@ -754,7 +754,7 @@ namespace DVP.Controllers
             var queryBillOfMaterial = _dvpEntities.BillOfMaterial
                 .Where(b => equipoIdsSeleccionados.Contains(b.EquipoID.Value));
 
-            // Producción
+            // Produccion
             var produccionHeaders = queryBillOfMaterial
                 .Where(b => b.MaterialProduccionID.HasValue)
                 .GroupBy(b => new { b.EquipoID, b.MaterialProduccionID, b.Material1.Descripcion })
@@ -767,7 +767,7 @@ namespace DVP.Controllers
                     MaterialProduccionPadreID = (int?)null
                 });
 
-            // Consumo con padre
+            // Consumo con padre (CONSUMO)
             var consumoDetails = queryBillOfMaterial
                 .Where(b => b.MaterialConsumoID.HasValue && b.MaterialProduccionID.HasValue)
                 .Select(b => new
@@ -779,7 +779,7 @@ namespace DVP.Controllers
                     MaterialProduccionPadreID = b.MaterialProduccionID
                 });
 
-            // Consumo para equipo
+            // Consumo para equipo (CONSUMO_EQUIPO)
             var consumoParaEquipo = queryBillOfMaterial
                 .Where(b => b.MaterialConsumoID.HasValue && !b.MaterialProduccionID.HasValue)
                 .Select(b => new
@@ -791,7 +791,7 @@ namespace DVP.Controllers
                     MaterialProduccionPadreID = (int?)null
                 });
 
-            // ===== 3) Unión =====
+            // ===== 3) Union =====
             var combinacionesMaterialesUnicas = produccionHeaders
                 .Union(consumoDetails)
                 .Union(consumoParaEquipo)
@@ -839,19 +839,32 @@ namespace DVP.Controllers
                 {
                     d.EquipoID,
                     d.MaterialID,
+                    d.MaterialProducidoID,
                     Humedad = d.CantidadValidada ?? d.CantidadPIMS ?? 0.0m
                 })
                 .ToList();
 
-            // ===== 7) JOIN con humedad =====
+            // ===== 7) JOIN combinando con MaterialProducidoID =====
             var resultados = combinacionesRequeridas
                 .Select(comb =>
                 {
                     var data = datosOperacionReales.FirstOrDefault(d =>
-                        d.EquipoID == comb.EquipoID && d.MaterialID == comb.MaterialID);
+                        d.EquipoID == comb.EquipoID &&
+                        d.MaterialID == comb.MaterialID &&
+                        (
+                            (comb.MaterialProduccionPadreID != null && d.MaterialProducidoID == comb.MaterialProduccionPadreID)
+                            ||
+                            (comb.MaterialProduccionPadreID == null)
+                        ));
 
                     var hum = datosHumedad.FirstOrDefault(h =>
-                        h.EquipoID == comb.EquipoID && h.MaterialID == comb.MaterialID);
+                        h.EquipoID == comb.EquipoID &&
+                        h.MaterialID == comb.MaterialID &&
+                        (
+                            (comb.MaterialProduccionPadreID != null && h.MaterialProducidoID == comb.MaterialProduccionPadreID)
+                            ||
+                            (comb.MaterialProduccionPadreID == null)
+                        ));
 
                     return new
                     {
@@ -872,7 +885,7 @@ namespace DVP.Controllers
                         StatusValidate = data?.StatusValidate ?? false,
                         OrdenProcesoSAP = data?.OrdenProcesoSAP,
                         Clasificacion = data?.Material?.ClasificacionMaterial?.Descripcion ?? "N/A",
-                        Humedad = hum?.Humedad ?? 0.0m // <-- NUEVA COLUMNA
+                        Humedad = hum?.Humedad ?? 0.0m
                     };
                 })
                 // ===== 8) Ordenamiento =====
@@ -894,7 +907,6 @@ namespace DVP.Controllers
 
             return Json(resultados, JsonRequestBehavior.AllowGet);
         }
-
 
         public static string RunPythonScriptKWH(string fecha = null)
         {

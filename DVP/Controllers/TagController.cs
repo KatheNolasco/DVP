@@ -151,6 +151,12 @@ namespace DVP.Controllers
                               t.TipoOperacionID == data._tipoOperacionId &&
                               t.MaterialID == data._materialId &&
                               t.MaterialProducidoID == data._materialProducidoId)
+
+                              ||
+
+                               t.MaterialID == data._materialId &&
+                               t.MaterialProducidoID == data._materialProducidoId &&
+                               t.TipoOperacionID == data._tipoOperacionId 
                          )
                        );
 
@@ -272,7 +278,30 @@ namespace DVP.Controllers
             }
         }
 
+        [HttpPost]
+        public JsonResult EliminarTag(int id)
+        {
+            try
+            {
+                var tag = _dvpEntities.TagEquipo
+                    .FirstOrDefault(t => t.TagEquipoID == id);
+
+                if (tag == null)
+                    return Json(new { ok = false, msg = "Tag no encontrado" }, JsonRequestBehavior.AllowGet);
+
+                _dvpEntities.TagEquipo.Remove(tag);
+                _dvpEntities.SaveChanges();
+
+                return Json(new { ok = true }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, msg = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
 
 
     }
+
+
 }
