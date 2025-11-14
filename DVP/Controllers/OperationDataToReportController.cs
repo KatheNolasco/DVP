@@ -4,7 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data.Entity;
+using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
@@ -825,10 +827,7 @@ namespace DVP.Controllers
                 .ToList();
 
             // ===== 6) Humedad (TipoOperacionID = HUMEDAD) =====
-            int humedadId = _dvpEntities.TipoOperacion
-                .Where(t => t.Descripcion.ToUpper() == "HUMEDAD")
-                .Select(t => t.TipoOperacionID)
-                .FirstOrDefault();
+            int humedadId = HUMEDAD;
 
             var datosHumedad = _dvpEntities.DataOperacion
                 .Where(d => DbFunctions.TruncateTime(d.FechaReporte) == day)
@@ -844,7 +843,41 @@ namespace DVP.Controllers
                 })
                 .ToList();
 
-            // ===== 7) JOIN combinando con MaterialProducidoID =====
+            // ===== 7) PoderCalorifico (TipoOperacionID = Poder Calorifico) =====
+            int poderCalorificoId = PODER_CALORIFICO;
+
+            var datospoderCalorifico = _dvpEntities.DataOperacion
+                .Where(d => DbFunctions.TruncateTime(d.FechaReporte) == day)
+                .Where(d => d.EquipoID.HasValue && equipoIdsSeleccionados.Contains(d.EquipoID.Value))
+                .Where(d => d.MaterialID.HasValue && materialIdsRequeridos.Contains(d.MaterialID.Value))
+                .Where(d => d.TipoOperacionID == poderCalorificoId)
+                .Select(d => new
+                {
+                    d.EquipoID,
+                    d.MaterialID,
+                    d.MaterialProducidoID,
+                    PoderCalorifico = d.CantidadValidada ?? d.CantidadPIMS ?? 0.0m
+                })
+                .ToList();
+
+            // ===== 7) ConsumoCalorifico (TipoOperacionID = Consumo Calorifico) =====
+            int consumoCalorificoId = CONSUMO_CALORIFICO;
+
+            var datosconsumoCalorifico = _dvpEntities.DataOperacion
+                .Where(d => DbFunctions.TruncateTime(d.FechaReporte) == day)
+                .Where(d => d.EquipoID.HasValue && equipoIdsSeleccionados.Contains(d.EquipoID.Value))
+                .Where(d => d.MaterialID.HasValue && materialIdsRequeridos.Contains(d.MaterialID.Value))
+                .Where(d => d.TipoOperacionID == consumoCalorificoId)
+                .Select(d => new
+                {
+                    d.EquipoID,
+                    d.MaterialID,
+                    d.MaterialProducidoID,
+                    ConsumoCalorifico = d.CantidadValidada ?? d.CantidadPIMS ?? 0.0m
+                })
+                .ToList();
+
+            // ===== 8) JOIN combinando con MaterialProducidoID =====
             var resultados = combinacionesRequeridas
                 .Select(comb =>
                 {
@@ -858,6 +891,24 @@ namespace DVP.Controllers
                         ));
 
                     var hum = datosHumedad.FirstOrDefault(h =>
+                        h.EquipoID == comb.EquipoID &&
+                        h.MaterialID == comb.MaterialID &&
+                        (
+                            (comb.MaterialProduccionPadreID != null && h.MaterialProducidoID == comb.MaterialProduccionPadreID)
+                            ||
+                            (comb.MaterialProduccionPadreID == null)
+                        ));
+
+                    var podercal = datospoderCalorifico.FirstOrDefault(h =>
+                        h.EquipoID == comb.EquipoID &&
+                        h.MaterialID == comb.MaterialID &&
+                        (
+                            (comb.MaterialProduccionPadreID != null && h.MaterialProducidoID == comb.MaterialProduccionPadreID)
+                            ||
+                            (comb.MaterialProduccionPadreID == null)
+                        ));
+
+                    var conscal = datosconsumoCalorifico.FirstOrDefault(h =>
                         h.EquipoID == comb.EquipoID &&
                         h.MaterialID == comb.MaterialID &&
                         (
@@ -885,7 +936,9 @@ namespace DVP.Controllers
                         StatusValidate = data?.StatusValidate ?? false,
                         OrdenProcesoSAP = data?.OrdenProcesoSAP,
                         Clasificacion = data?.Material?.ClasificacionMaterial?.Descripcion ?? "N/A",
-                        Humedad = hum?.Humedad ?? 0.0m
+                        Humedad = hum?.Humedad ?? 0.0m,
+                        PoderCalorifico = podercal?.PoderCalorifico ?? 0.0m,
+                        ConsumoCalorifico = conscal?.ConsumoCalorifico ?? 0.0m,
                     };
                 })
                 // ===== 8) Ordenamiento =====
@@ -1042,57 +1095,81 @@ namespace DVP.Controllers
         }
 
 
-        [HttpGet]
         public JsonResult EjecutarScriptProd(string fecha = null)
         {
             try
             {
-                // validar fecha si viene
+                // -------- Validación de fecha --------
                 if (!string.IsNullOrWhiteSpace(fecha))
                 {
-                    if (!DateTime.TryParseExact(fecha, "yyyy-MM-dd",
-                                                CultureInfo.InvariantCulture,
-                                                DateTimeStyles.None,
-                                                out var fechaDt))
+                    if (!DateTime.TryParseExact(
+                            fecha, "yyyy-MM-dd",
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.None,
+                            out var fechaDt))
                     {
-                        return Json(new { success = false, message = "Formato de fecha invalido. Use yyyy-MM-dd." },
+                        return Json(new { success = false, message = "Fecha inválida (yyyy-MM-dd)" },
                                     JsonRequestBehavior.AllowGet);
                     }
 
                     if (fechaDt.Date > DateTime.Today.AddDays(-1))
                     {
-                        return Json(new { success = false, message = "No se puede ejecutar el script para fechas posteriores al dia de ayer." },
-                                    JsonRequestBehavior.AllowGet);
+                        return Json(new
+                        {
+                            success = false,
+                            message = "No puede ejecutar para fechas posteriores a ayer."
+                        },
+                        JsonRequestBehavior.AllowGet);
                     }
                 }
 
-                // si no viene, usar hoy en el formato esperado
+                // Fecha default
                 var fechaArg = string.IsNullOrWhiteSpace(fecha)
                     ? DateTime.Today.ToString("yyyy-MM-dd")
                     : fecha;
 
-                string resultado = RunPythonScriptProd(fechaArg);
+                string exePath = ConfigurationManager.AppSettings["PythonExePathProdDO"];
+                string scriptPath = ConfigurationManager.AppSettings["PythonScriptPathProdDO"];
+                string logPath = ConfigurationManager.AppSettings["PythonLogPathProdDO"];
 
-                return Json(new { success = true, output = resultado }, JsonRequestBehavior.AllowGet);
-            }
-            catch (Exception ex)
-            {
-                
-                Response.StatusCode = 500;
+                // -------- Crear proceso independiente --------
+                var psi = new ProcessStartInfo
+                {
+                    FileName = exePath,
+                    Arguments = $"\"{scriptPath}\" {fechaArg} >> \"{logPath}\" 2>&1",
+
+                    UseShellExecute = true,       // <-- IMPORTANTE
+                    CreateNoWindow = false,       // <-- IMPORTANTE: Permite UI
+                    WindowStyle = ProcessWindowStyle.Normal,  // <-- Ventana visible
+
+                    WorkingDirectory = Path.GetDirectoryName(scriptPath)
+                };
+
+                Process.Start(psi);   // 🔥 Arranca python como proceso externo
 
                 return Json(new
                 {
+                    success = true,
+                    message = "Script iniciado correctamente. Ejecutándose en background."
+                },
+                JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
                     success = false,
-                    error = ex.Message,      
-                    message = ex.Message,    
-                    detail = ex.ToString()   
-                }, JsonRequestBehavior.AllowGet);
+                    message = ex.Message
+                },
+                JsonRequestBehavior.AllowGet);
             }
         }
 
 
 
         public const int HUMEDAD = 11;
+        public const int PODER_CALORIFICO = 9;
+        public const int CONSUMO_CALORIFICO = 15;
         public const int KWH_OPERATION = 4;
         public const int TIPO_MOV_SAP_NA = 3;
         public const int UNIDAD_MEDIDA_HUMEDAD = 7;

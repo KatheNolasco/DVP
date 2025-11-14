@@ -122,7 +122,7 @@
                                         <option value="">Seleccione una planta</option>
                                     </select>
                                     <div class="d-flex align-items-center gap-2">
-                                        <button onclick="" id="btnDescargarEnergy" class="btn btn-link p-0 m-0 align-baseline" title="Download energy">
+                                        <button onclick="" id="btnDescargar" class="btn btn-link p-0 m-0 align-baseline" title="Download energy">
                                             <i class="bi bi-arrow-down-circle-fill text-success ms-2"></i>
                                         </button>
                                         <span>Operation Validation Date:</span>
@@ -140,6 +140,23 @@
                             </h5>
                         </div>
                         <div id="filtrosListado" class="row g-3 mb-2"></div>
+                        <!-- ✅ MENÚ DE COLUMNAS -->
+                        <div id="columnMenu" class="mb-2 p-2 border rounded bg-light">
+                            <strong>Mostrar / Ocultar columnas:</strong><br>
+                            <label><input type="checkbox" class="col-toggle" data-col="equipo" checked> Equipo</label>
+                            <label><input type="checkbox" class="col-toggle" data-col="close" checked> Close</label>
+                            <label><input type="checkbox" class="col-toggle" data-col="validate" checked> Validate</label>
+                            <label><input type="checkbox" class="col-toggle" data-col="humedad" checked> Humedad</label>
+                            <label><input type="checkbox" class="col-toggle" data-col="poder" checked> Poder Calorífico</label>
+                            <label><input type="checkbox" class="col-toggle" data-col="consumo-calor" checked> Consumo Calorífico</label>
+                            <label><input type="checkbox" class="col-toggle" data-col="material" checked> Material</label>
+                            <label><input type="checkbox" class="col-toggle" data-col="pims" checked> Cant PIMS</label>
+                            <label><input type="checkbox" class="col-toggle" data-col="validada" checked> Cant Validada</label>
+                            <label><input type="checkbox" class="col-toggle" data-col="unidad" checked> Unidad</label>
+                            <label><input type="checkbox" class="col-toggle" data-col="sap" checked> Tipo Mov. SAP</label>
+                            <label><input type="checkbox" class="col-toggle" data-col="orden-sap" checked> Orden SAP</label>
+                        </div>
+
                         <div id="contenedorListado" class="mt-3"></div>
                     </div>
                 </div>
@@ -327,20 +344,22 @@ document.addEventListener('DOMContentLoaded', function () {
     };
     function buildTheadHtml() {
         return `<thead><tr>
-      <th class="text-center">Equipo</th>
-      <th class="text-center">Close</th>
-      <th class="text-center">Validate</th>
-      <th class="text-center">Humedad (%)</th>
-      <th class="text-center">Material Consumido</th>
-      <th class="text-center">Cant PIMS</th>
-      <th class="text-center">Cant Validada</th>
-      <th class="text-center">Cant PIMS Humedad</th>
-      <th class="text-center">Cant Validada Humedad</th>
-      <th class="text-center">Unidad</th>
-      <th class="text-center">Tipo Mov. SAP</th>
-      <th class="text-center">Orden Proceso SAP</th>
+        <th class="text-center" data-col="equipo">Equipo</th>
+        <th class="text-center" data-col="close">Close</th>
+        <th class="text-center" data-col="validate">Validate</th>
+        <th class="text-center" data-col="humedad">Humedad (%)</th>
+        <th class="text-center" data-col="poder">Poder Calorífico (KJ/KG)</th>
+        <th class="text-center" data-col="consumo-calor">Consumo Calorífico</th> <!-- NUEVA -->
+        <th class="text-center" data-col="material">Material Consumido</th>
+        <th class="text-center" data-col="pims">Cant PIMS</th>
+        <th class="text-center" data-col="validada">Cant Validada</th>
+        <th class="text-center" data-col="unidad">Unidad</th>
+        <th class="text-center" data-col="sap">Tipo Mov. SAP</th>
+        <th class="text-center" data-col="orden-sap">Orden Proceso SAP</th>
     </tr></thead>`;
     }
+
+
 
     /** ✅ AQUI ESTA LA MODIFICACIÓN */
     function renderTabla(rows) {
@@ -355,29 +374,47 @@ document.addEventListener('DOMContentLoaded', function () {
         let alternateColorIndex = 0;
 
         data.forEach(r => {
-
-            /** ✅ NO MOSTRAR HUMEDAD EN CANT PIMS */
             let pimsRaw = getPimsRaw(r);
-            if (r.TipoOperacionID === 11) {   // humedad
-                pimsRaw = null;
+            const isEditable = !!r.DataOperacionID;
+            const valRaw = r.DataOperacionID !== null ? (r.CantidadValidada ?? null) : null;
+
+            // ✅ Si la unidad es de tipo KJ (igual que poder calorífico), mostrar 0 en Cant PIMS
+            let pimsTxt;
+            if (r.UnidadMedida && r.UnidadMedida.toUpperCase().includes('KJ')) {
+                pimsTxt = '0';
+            } else {
+                pimsTxt = (pimsRaw === null || pimsRaw === undefined) ? '—' : fmtNumero(pimsRaw, 3);
             }
 
-            const isEditable = !!r.DataOperacionID;
-            const valRaw = r.DataOperacionID !== null ? (r.CantidadValidada !== undefined ? r.CantidadValidada : null) : null;
-            const pimsTxt = (pimsRaw === null || pimsRaw === undefined) ? '—' : fmtNumero(pimsRaw, 3);
-            const valTxt = (valRaw === null || valRaw === undefined) ? '—' : fmtNumero(valRaw, 3);
+            // === CANT VALIDADA → MISMA LÓGICA DE VISUALIZACIÓN QUE CANT PIMS ===
+            let valTxt;
+
+            if (r.UnidadMedida && r.UnidadMedida.toUpperCase().includes('KJ')) {
+                // Poder calorífico → se visualiza como 0 (aunque valRaw tenga otro valor)
+                valTxt = '0';
+            }
+            else if (valRaw === null || valRaw === undefined) {
+                valTxt = '—';
+            }
+            else {
+                // Mostrar exactamente el valor de BD pero con el mismo formateo
+                valTxt = fmtNumero(valRaw, 3);
+            }
+
+            const humedadTxt = fmtNumero(r.Humedad ?? 0, 2);
+            const poderTxt = fmtNumero(r.PoderCalorifico ?? 0, 2);
             const materialDesc = r.Material ?? '—';
             const sapMovShown = r.TipoMovimientoSAP || (r.TipoMovimientoSAPID ?? '—');
             const ordenSap = r.OrdenProcesoSAP ?? '';
             const dataOpId = r.DataOperacionID ?? null;
             const editableValidadaClass = isEditable ? 'editable-validada' : '';
             const editableSapClass = isEditable ? 'editable-sap' : '';
-            const dataValue = valRaw ?? '';
 
             if (r.EquipoID !== currentEquipoID) {
                 alternateColorIndex = (alternateColorIndex + 1) % colorClasses.length;
                 currentEquipoID = r.EquipoID;
             }
+
             const equipoColorClass = colorClasses[alternateColorIndex];
             let rowClass = '';
             let materialDisplay = escapeHtml(materialDesc);
@@ -393,39 +430,61 @@ document.addEventListener('DOMContentLoaded', function () {
 
             let rowHtml = `<tr class="${rowClass}">`;
             if (r.IsFirstRow) {
-                rowHtml += `<td class="text-center ${equipoColorClass} font-weight-bold" data-col="equipo" data-id="${r.EquipoID}" rowspan="${r.RowCount}">${escapeHtml(r.Equipo || '—')}</td>`;
+                rowHtml += `<td class="text-center ${equipoColorClass} font-weight-bold"
+                        rowspan="${r.RowCount}">${escapeHtml(r.Equipo || '—')}</td>`;
             }
 
             rowHtml += `
-            <td class="text-center">${renderCloseStatus(!!r.StatusClose)}</td>
-            <td class="text-center">${renderCheck(!!r.StatusValidate)}</td>
+        <td class="text-center" data-col="close">${renderCloseStatus(!!r.StatusClose)}</td>
+        <td class="text-center" data-col="validate">${renderCheck(!!r.StatusValidate)}</td>
+        <td class="text-end" data-col="humedad">${humedadTxt}%</td>
+        <td class="text-end" data-col="poder">${poderTxt}</td>
+        <td class="text-end" data-col="consumo-calor">${fmtNumero(r.ConsumoCalorifico ?? 0, 2)}</td>
+        <td class="text-start" data-col="material">${materialDisplay}</td>
+        <td class="text-end" data-col="pims">${pimsTxt}</td>
+        <td class="text-end ${editableValidadaClass}" data-col="validada"
+            data-col="validada" data-id="${dataOpId}"
+            data-value="${valRaw ?? ''}">${valTxt}</td>
+        <td class="text-center" data-col="unidad">${escapeHtml(r.UnidadMedida || 'N/A')}</td>
+        <td class="text-center" data-col="sap">${escapeHtml(sapMovShown)}</td>
+        <td class="text-center ${editableSapClass}" data-col="orden-sap"
+            data-col="orden-sap" data-id="${dataOpId}"
+            data-value="${escapeHtml(ordenSap)}">${escapeHtml(ordenSap || '—')}</td>
+    </tr>`;
 
-            <!-- ✅ LA HUMEDAD SIGUE MOSTRÁNDOSE AQUÍ -->
-            <td class="text-end" data-col="humedad">${fmtNumero(r.Humedad ?? 0, 2)}%</td>
-
-            <td class="text-start" data-col="material">${materialDisplay}</td>
-
-            <!-- ❌ CANT PIMS YA NO MUESTRA HUMEDAD -->
-            <td class="text-end" data-col="pims" data-value="${pimsRaw ?? ''}">${pimsTxt}</td>
-
-            <td class="text-end ${editableValidadaClass}" data-col="validada" data-id="${dataOpId}" data-value="${dataValue}">${valTxt}</td>
-            <td class="text-end" data-col="">0</td>
-            <td class="text-end" data-col="">0</td>
-            <td class="text-center" data-col="unidad">${escapeHtml(r.UnidadMedida || 'N/A')}</td>
-            <td class="text-center">${escapeHtml(sapMovShown)}</td>
-            <td class="text-center ${editableSapClass}" data-col="orden-sap" data-id="${dataOpId}" data-value="${escapeHtml(ordenSap)}">${escapeHtml(ordenSap || '—')}</td>
-           </tr>`;
             tbody += rowHtml;
         });
 
         tbody += '</tbody>';
         contenedorListado.innerHTML = `
-      <div class="table-responsive w-100" style="max-height:560px; overflow-y:auto; background-color:#fff; padding:10px; border-radius:10px;">
-        <table class="table table-bordered table-sm table-striped mb-0" style="background-color:#fff;">
-          ${buildTheadHtml()}${tbody}
-        </table>
-      </div>`;
+<div class="table-responsive w-100" style="max-height:560px; overflow-y:auto; background-color:#fff; padding:10px; border-radius:10px;">
+  <table class="table table-bordered table-sm table-striped mb-0" style="background-color:#fff;">
+    ${buildTheadHtml()}${tbody}
+  </table>
+</div>`;
     }
+
+
+    // === FUNCIONALIDAD PARA MOSTRAR / OCULTAR COLUMNAS ===
+    function initColumnVisibilityMenu() {
+        const checkboxes = document.querySelectorAll('.col-toggle');
+        checkboxes.forEach(chk => {
+            chk.addEventListener('change', () => {
+                const colName = chk.dataset.col;
+                const visible = chk.checked;
+                toggleColumn(colName, visible);
+            });
+        });
+    }
+
+    // Oculta o muestra todas las celdas (th y td) con data-col="X"
+    function toggleColumn(colName, visible) {
+        const cells = document.querySelectorAll(`th[data-col="${colName}"], td[data-col="${colName}"]`);
+        cells.forEach(cell => {
+            cell.style.display = visible ? '' : 'none';
+        });
+    }
+
 
     // --- Funciones de edición, guardado, fetch e inicialización sin cambios ---
     const restoreCellContent = function(cell, val, type = 'number') {
@@ -596,6 +655,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     loadEquiposList();
+    initColumnVisibilityMenu();
 
     contenedorListado.addEventListener('click', function(e) {
       const targetCell = e.target.closest('td.editable-validada, td.editable-sap');
@@ -742,7 +802,7 @@ function cerrarReporte() {
 </script>
 
 
-
+@*Descargar data operaciones *@
 
 <script>
     function cargando() {
@@ -750,25 +810,22 @@ function cerrarReporte() {
     }
 
     document.addEventListener("DOMContentLoaded", function () {
-        const btn = document.getElementById("btnDescargarEnergy");
+        const btn = document.getElementById("btnDescargar");
         const fechaInput = document.getElementById("fechaReporte");
         const alertaOk = document.getElementById("alertsuccesclose");
 
         btn.addEventListener("click", async function () {
-            // tomar fecha o usar hoy
+
             let fecha = fechaInput?.value;
             if (!fecha) {
                 const hoy = new Date();
-                const yyyy = hoy.getFullYear();
-                const mm = String(hoy.getMonth() + 1).padStart(2, '0');
-                const dd = String(hoy.getDate()).padStart(2, '0');
-                fecha = `${yyyy}-${mm}-${dd}`;
+                fecha = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
             }
 
             const url = `/OperationDataToReport/EjecutarScriptProd?fecha=${encodeURIComponent(fecha)}`;
 
             cargando();
-            btn.disabled = true;
+            btn.disabled = true; // se deshabilita y NO se vuelve a habilitar antes del reload
 
             try {
                 const resp = await fetch(url, {
@@ -776,28 +833,39 @@ function cerrarReporte() {
                     headers: { "Accept": "application/json" }
                 });
 
-                // intentar leer json aun cuando no sea OK
-                let data = null;
-                try { data = await resp.json(); } catch (e) { }
+                const data = await resp.json();
 
                 if (!resp.ok || !data?.success) {
-                    const serverMsg = data?.message || data?.error || `Status ${resp.status}`;
-                    throw new Error(serverMsg);
+                    throw new Error(data?.message || "Error al iniciar script.");
                 }
 
-                // exito
+                alertaOk.innerText = "Script iniciado y ejecutándose en el servidor...";
                 alertaOk.style.display = "block";
-                setTimeout(() => { location.reload(); }, 1200);
+                alertaOk.style.marginTop = "40px";
+
+                // Cerrar modal después de 2.5s (botón sigue deshabilitado)
+                setTimeout(() => {
+                    document.getElementById("loadingModal").style.display = "none";
+                }, 2500);
+
+                // 🔄 Recargar página después de 5 minutos (300,000 ms)
+                setTimeout(() => {
+                    location.reload();
+                }, 300000);
 
             } catch (err) {
                 console.error(err);
-                alert(err?.message || "Ocurrio un error al ejecutar el script.");
-            } finally {
+                alert(err?.message || "Ocurrió un error.");
                 document.getElementById("loadingModal").style.display = "none";
-                btn.disabled = false;
+                btn.disabled = false; // en error sí se habilita de nuevo
             }
         });
     });
 </script>
+
+
+
+
+
 
 
